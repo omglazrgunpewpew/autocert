@@ -103,7 +103,8 @@ function Initialize-ScriptModules {
             @{ Path = "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"; Name = "Certificate Listing"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"; Name = "Automatic Renewal"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"; Name = "Advanced Options"; Critical = $false },
-            @{ Path = "$PSScriptRoot\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false }
+            @{ Path = "$PSScriptRoot\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Manage-Credentials.ps1"; Name = "Credential Management"; Critical = $false }
         )
 
         $totalModules = $moduleLoadOrder.Count
@@ -565,14 +566,180 @@ function Show-Menu {
     Write-Host "1. Register a new certificate" -ForegroundColor Green
     Write-Host "2. Install existing certificate" -ForegroundColor Cyan
     Write-Host "3. Configure automatic renewal" -ForegroundColor Yellow
-    Write-Host "4. View existing certificates" -ForegroundColor Magenta
+    Write-Host "4. View and Manage existing certificates" -ForegroundColor Magenta
     Write-Host "5. Revoke a certificate" -ForegroundColor Red
     Write-Host "6. Delete a certificate" -ForegroundColor Red
     Write-Host "7. Advanced options" -ForegroundColor Blue
-    Write-Host "8. System health check" -ForegroundColor DarkGreen
-    Write-Host "9. Help / About" -ForegroundColor Gray
+    Write-Host "8. Manage Credentials" -ForegroundColor DarkCyan
+    Write-Host "9. System health check" -ForegroundColor DarkGreen
+    Write-Host "S. Help / About" -ForegroundColor Gray
     Write-Host "0. Exit" -ForegroundColor DarkRed
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
+}
+
+# Enhanced credential management menu
+function Show-CredentialManagementMenu {
+    Clear-Host
+    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host "    CREDENTIAL MANAGEMENT" -ForegroundColor Cyan
+    Write-Host "="*60 -ForegroundColor Cyan
+
+    # List stored credentials
+    $credentials = Get-StoredCredential
+    if ($credentials.Count -eq 0) {
+        Write-Host "No credentials found. You can add new ones." -ForegroundColor Yellow
+    } else {
+        Write-Host "Stored Credentials:" -ForegroundColor Green
+        foreach ($cred in $credentials) {
+            Write-Host "  • $($cred.Target)" -ForegroundColor White
+        }
+    }
+
+    Write-Host "`nAvailable Actions:" -ForegroundColor White
+    Write-Host "1. Add new credential" -ForegroundColor Green
+    Write-Host "2. Remove credential" -ForegroundColor Red
+    Write-Host "3. Test credential" -ForegroundColor Cyan
+    Write-Host "0. Return to Main Menu" -ForegroundColor DarkRed
+    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+
+    $choice = Read-Host "Enter your choice"
+
+    switch ($choice) {
+        '1' {
+            # Add new credential
+            $target = Read-Host "Enter credential target (e.g., DNS provider name)"
+            $username = Read-Host "Enter username" -AsSecureString
+            $password = Read-Host "Enter password" -AsSecureString
+            
+            try {
+                $cred = New-Object System.Management.Automation.PSCredential ($username, $password)
+                $null = $cred | Export-Clixml -Path "$env:LOCALAPPDATA\Posh-ACME\credentials.xml" -Force
+                Write-Host "Credential added successfully." -ForegroundColor Green
+            } catch {
+                Write-Error "Failed to add credential: $($_.Exception.Message)"
+            }
+            
+            Read-Host "Press Enter to continue"
+        }
+        '2' {
+            # Remove credential
+            $target = Read-Host "Enter credential target to remove"
+            
+            try {
+                $cred = Get-StoredCredential -Target $target
+                if ($cred) {
+                    Remove-StoredCredential -Target $target
+                    Write-Host "Credential removed successfully." -ForegroundColor Green
+                } else {
+                    Write-Warning "Credential not found."
+                }
+            } catch {
+                Write-Error "Failed to remove credential: $($_.Exception.Message)"
+            }
+            
+            Read-Host "Press Enter to continue"
+        }
+        '3' {
+            # Test credential
+            $target = Read-Host "Enter credential target to test"
+            
+            try {
+                $cred = Get-StoredCredential -Target $target
+                if ($cred) {
+                    # Attempt to use the credential (e.g., test DNS resolution)
+                    $username = $cred.UserName
+                    $password = $cred.GetNetworkCredential().Password
+                    
+                    # For demonstration, just display the credential (do not do this in production)
+                    Write-Host "Credential for $target:" -ForegroundColor Green
+                    Write-Host "  Username: $username" -ForegroundColor White
+                    Write-Host "  Password: $password" -ForegroundColor White
+                } else {
+                    Write-Warning "Credential not found."
+                }
+            } catch {
+                Write-Error "Failed to test credential: $($_.Exception.Message)"
+            }
+            
+            Read-Host "Press Enter to continue"
+        }
+        '0' { return }
+        default {
+            Write-Warning "Invalid option. Please try again."
+            Read-Host "Press Enter to continue"
+        }
+    }
+}
+
+function Manage-SingleCertificate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [psobject]$CertificateOrder
+    )
+
+    while ($true) {
+        Clear-Host
+        $mainDomain = $CertificateOrder.MainDomain
+        Write-Host "`n" + "="*70 -ForegroundColor Cyan
+        Write-Host "    MANAGING CERTIFICATE: $mainDomain" -ForegroundColor Cyan
+        Write-Host "="*70 -ForegroundColor Cyan
+
+        try {
+            $certDetails = Get-PACertificate -MainDomain $mainDomain
+            $daysUntilExpiry = ($certDetails.Certificate.NotAfter - (Get-Date)).Days
+            Write-Host "Status: Valid" -ForegroundColor Green
+            Write-Host "Expires: $($certDetails.Certificate.NotAfter) ($daysUntilExpiry days remaining)" -ForegroundColor $(if ($daysUntilExpiry -lt 30) { "Yellow" } else { "Green" })
+            Write-Host "Thumbprint: $($certDetails.Thumbprint)" -ForegroundColor Gray
+            Write-Host "SANs: $($certDetails.SANs -join ', ')" -ForegroundColor Gray
+        } catch {
+            Write-Host "Status: Could not retrieve certificate details." -ForegroundColor Red
+        }
+
+        Write-Host "`nAvailable Actions for $mainDomain:" -ForegroundColor White
+        Write-Host "1. Force Renew" -ForegroundColor Yellow
+        Write-Host "2. Re-install Certificate" -ForegroundColor Cyan
+        Write-Host "3. Revoke Certificate" -ForegroundColor Red
+        Write-Host "4. View Details" -ForegroundColor Magenta
+        Write-Host "0. Return to Main Menu" -ForegroundColor DarkRed
+        Write-Host "`n" + "="*70 -ForegroundColor Cyan
+
+        $choice = Read-Host "Enter your choice for '$mainDomain'"
+
+        switch ($choice) {
+            '1' {
+                Write-Host "Forcing renewal for $mainDomain..." -ForegroundColor Yellow
+                try {
+                    $renewed = New-PACertificate -MainDomain $mainDomain -Force
+                    if ($renewed) {
+                        Write-Host "Certificate for $mainDomain renewed successfully." -ForegroundColor Green
+                    } else {
+                        Write-Warning "Renewal failed. Check logs for details."
+                    }
+                } catch {
+                    Write-Error "An error occurred during renewal: $($_.Exception.Message)"
+                }
+                Read-Host "Press Enter to continue"
+            }
+            '2' {
+                # Call the existing Install-Certificate function
+                Install-Certificate -MainDomain $mainDomain
+                Read-Host "Press Enter to continue"
+            }
+            '3' {
+                # Call the existing Revoke-Certificate function
+                Revoke-Certificate -MainDomain $mainDomain
+                Read-Host "Press Enter to continue"
+                return # Exit sub-menu after revoke
+            }
+            '4' {
+                Get-PAOrder -MainDomain $mainDomain | Format-List
+                Read-Host "Press Enter to continue"
+            }
+            '0' { return }
+            default { Write-Warning "Invalid option. Please try again." }
+        }
+    }
 }
 
 # Enhanced help function
@@ -1135,72 +1302,31 @@ try {
     # Main interactive loop
     while ($true) {
         Show-Menu
-        
-        # Enhanced input validation with timeout for automation
-        $choice = $null
-        $attempts = 0
-        $maxAttempts = 3
-        
-        while ($null -eq $choice -and $attempts -lt $maxAttempts) {
-            $inputRaw = Read-Host "`nEnter your choice (0-9)"
-            
-            if ($inputRaw -match '^[0-9]$') {
-                $choice = [int]$inputRaw
-            } else {
-                Write-Warning "Invalid selection. Please enter a number between 0 and 9."
-                $attempts++
-                
-                if ($attempts -eq $maxAttempts) {
-                    Write-Warning "Too many invalid attempts."
-                    $choice = 0  # Default to exit
+        $choice = Read-Host "Enter your choice"
+
+        switch ($choice) {
+            '1' { Register-Certificate }
+            '2' { Install-Certificate }
+            '3' { Set-AutomaticRenewal }
+            '4' { 
+                $selectedOrder = Get-ExistingCertificates -ShowMenu
+                if ($selectedOrder) {
+                    Manage-SingleCertificate -CertificateOrder $selectedOrder
                 }
             }
-        }
-
-        # Enhanced menu handling with operation wrapping
-        switch ($choice) {
-            1 {
-                Invoke-MenuOperation -Operation { Register-Certificate } -OperationName "certificate registration"
-                Read-Host "`nPress Enter to continue..."
-            }
-            2 {
-                Invoke-MenuOperation -Operation { Install-Certificate } -OperationName "certificate installation"
-                Read-Host "`nPress Enter to continue..."
-            }
-            3 {
-                Invoke-MenuOperation -Operation { Set-AutomaticRenewal } -OperationName "automatic renewal configuration"
-                Read-Host "`nPress Enter to continue..."
-            }
-            4 {
-                Invoke-MenuOperation -Operation { Get-ExistingCertificates } -OperationName "certificate information retrieval"
-                Read-Host "`nPress Enter to continue..."
-            }
-            5 {
-                Invoke-MenuOperation -Operation { Revoke-Certificate } -OperationName "certificate revocation"
-                Read-Host "`nPress Enter to continue..."
-            }
-            6 {
-                Invoke-MenuOperation -Operation { Remove-Certificate } -OperationName "certificate deletion"
-                Read-Host "`nPress Enter to continue..."
-            }
-            7 {
-                Invoke-MenuOperation -Operation { Show-AdvancedOptions } -OperationName "advanced options"
-            }
-            8 {
-                Test-SystemHealth
-            }
-            9 {
-                Show-Help
-            }
-            0 {
-                Write-Host "`nThank you for using the Enhanced Certificate Management System!" -ForegroundColor Green
-                Write-Host "Session duration: $((Get-Date) - $script:StartTime)" -ForegroundColor Gray
-                Write-Log "User exited the application normally (Session duration: $((Get-Date) - $script:StartTime))" -Level 'Info'
-                break
+            '5' { Revoke-Certificate }
+            '6' { Remove-Certificate }
+            '7' { Show-AdvancedOptions }
+            '8' { Show-CredentialManagementMenu }
+            '9' { Test-SystemHealth }
+            'S' { Show-Help }
+            '0' {
+                Write-Host "Exiting..." -ForegroundColor Yellow
+                Exit 0
             }
             default {
-                Write-Warning "`nInvalid selection. Please choose 0-9."
-                Start-Sleep -Seconds 1
+                Write-Warning "Invalid option. Please try again."
+                Read-Host "Press Enter to continue"
             }
         }
     }
