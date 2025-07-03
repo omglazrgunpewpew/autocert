@@ -1,4 +1,3 @@
-
 <#
     .SYNOPSIS
         Provides functions for securely managing credentials using the SecretManagement module.
@@ -113,70 +112,80 @@ function Show-CredentialManagementMenu {
     }
 }
 
-function Get-StoredCredentials {
+# Wrapper functions for compatibility with main script
+function Get-StoredCredential {
     [CmdletBinding()]
-    param()
-
-    $secrets = Get-SecretInfo
-    if ($secrets) {
-        Write-Host "`nStored Credentials:" -ForegroundColor Yellow
-        $secrets | Format-Table -AutoSize
-    } else {
-        Write-Host "No credentials stored yet." -ForegroundColor Green
-    }
-}
-
-function Set-StoredCredential {
-    [CmdletBinding()]
-    param()
-
-    $name = Read-Host "Enter a name for the credential (e.g., 'Cloudflare_API_Token')"
-    $secret = Read-Host "Enter the secret value (e.g., the API token or key)" -AsSecureString
+    param(
+        [string]$Target
+    )
     
-    if ([string]::IsNullOrWhiteSpace($name) -or $secret.Length -eq 0) {
-        Write-Warning "Credential name and secret value cannot be empty."
-        return
-    }
-
-    try {
-        Set-Secret -Name $name -Secret $secret -Vault (Get-SecretVault).Name
-        Write-Host "Credential '$name' stored successfully." -ForegroundColor Green
-    } catch {
-        Write-Error "Failed to store credential: $($_.Exception.Message)"
+    if ($Target) {
+        # Get specific credential by name/target
+        try {
+            $secret = Get-Secret -Name $Target -ErrorAction SilentlyContinue
+            if ($secret) {
+                return @{
+                    Target = $Target
+                    UserName = "StoredCredential"
+                    Password = $secret
+                }
+            }
+            return $null
+        } catch {
+            return $null
+        }
+    } else {
+        # Get all credentials
+        try {
+            $secrets = Get-SecretInfo -ErrorAction SilentlyContinue
+            if ($secrets) {
+                return $secrets | ForEach-Object {
+                    @{
+                        Target = $_.Name
+                        UserName = "StoredCredential"
+                    }
+                }
+            }
+            return @()
+        } catch {
+            return @()
+        }
     }
 }
 
 function Remove-StoredCredential {
     [CmdletBinding()]
-    param()
-
-    $secrets = Get-SecretInfo
-    if (-not $secrets) {
-        Write-Host "No credentials stored to remove." -ForegroundColor Green
-        return
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Target
+    )
+    
+    try {
+        Remove-Secret -Name $Target -ErrorAction Stop
+        Write-Host "Credential '$Target' removed successfully." -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Error "Failed to remove credential '$Target': $($_.Exception.Message)"
+        return $false
     }
+}
 
-    Write-Host "`nSelect a credential to remove:" -ForegroundColor Yellow
-    for ($i = 0; $i -lt $secrets.Count; $i++) {
-        Write-Host "$($i + 1). $($secrets[$i].Name)"
-    }
-    Write-Host "0. Cancel"
-
-    $choice = Read-Host "Enter your choice"
-    $index = $choice -as [int] - 1
-
-    if ($index -ge 0 -and $index -lt $secrets.Count) {
-        $secretToRemove = $secrets[$index]
-        $confirm = Read-Host "Are you sure you want to remove '$($secretToRemove.Name)'? (y/n)"
-        if ($confirm -eq 'y') {
-            try {
-                Remove-Secret -Name $secretToRemove.Name -Vault $secretToRemove.Vault
-                Write-Host "Credential '$($secretToRemove.Name)' removed successfully." -ForegroundColor Green
-            } catch {
-                Write-Error "Failed to remove credential: $($_.Exception.Message)"
-            }
-        }
-    } elseif ($choice -ne '0') {
-        Write-Warning "Invalid selection."
+function Set-StoredCredential {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Target,
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.PSCredential]$Credential
+    )
+    
+    try {
+        # Store the password as a secret
+        Set-Secret -Name $Target -Secret $Credential.Password -ErrorAction Stop
+        Write-Host "Credential '$Target' stored successfully." -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Error "Failed to store credential '$Target': $($_.Exception.Message)"
+        return $false
     }
 }
