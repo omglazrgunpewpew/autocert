@@ -27,7 +27,7 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 . "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"
 . "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"
 . "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"
-. "$PSScriptRoot\Functions\RenewAllCertificates.ps1"
+. "$PSScriptRoot\Functions\Update-AllCertificates.ps1"
 
 # Main Menu
 function Show-Menu {
