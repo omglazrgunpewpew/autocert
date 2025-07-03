@@ -1,148 +1,1249 @@
+# Enhanced Main.ps1
 <#
     .SYNOPSIS
-        Main script that orchestrates the menu and calls functions from other scripts.
+        Enhanced main script with comprehensive certificate management capabilities.
+
+    .DESCRIPTION
+        This script provides a comprehensive interface for Let's Encrypt certificate management
+        using Posh-ACME with enhanced features including robust error handling, caching,
+        DNS provider auto-detection, and advanced renewal scheduling.
+
+    .PARAMETER RenewAll
+        Runs in non-interactive mode to renew all certificates that need renewal.
+
+    .PARAMETER NonInteractive
+        Runs without user interaction (for scheduled tasks).
+
+    .PARAMETER Force
+        Forces operations even if they might not be necessary.
+
+    .PARAMETER ConfigTest
+        Runs configuration validation and exits.
+
+    .PARAMETER LogLevel
+        Sets the logging level (Debug, Info, Warning, Error).
 
     .NOTES
-        Must be run as Administrator.
+        Must be run as Administrator for certificate store operations.
+        Compatible with PowerShell 5.1 and PowerShell 7+.
+        
+    .EXAMPLE
+        .\Main.ps1
+        Run in interactive mode
+        
+    .EXAMPLE
+        .\Main.ps1 -RenewAll -NonInteractive
+        Run automatic renewal (for scheduled tasks)
+        
+    .EXAMPLE
+        .\Main.ps1 -ConfigTest
+        Validate configuration and exit
 #>
 
-# Ensure the script runs with administrative privileges
+[CmdletBinding()]
+param(
+    [switch]$RenewAll,
+    [switch]$NonInteractive,
+    [switch]$Force,
+    [switch]$ConfigTest,
+    [ValidateSet('Debug', 'Info', 'Warning', 'Error')]
+    [string]$LogLevel = 'Info'
+)
+
+# Script metadata
+$script:ScriptVersion = "2.0.0"
+$script:ScriptName = "Enhanced Certificate Management System"
+$script:StartTime = Get-Date
+
+# Ensure the script runs with administrative privileges for certificate operations
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
-    Write-Host "You need to run this script as an administrator." -ForegroundColor Yellow
-    Exit
+    Write-Host "Administrator privileges required for certificate operations." -ForegroundColor Yellow
+    Write-Host "Please run this script as an administrator." -ForegroundColor Yellow
+    
+    if (-not $NonInteractive) {
+        Read-Host "Press Enter to exit"
+    }
+    Exit 1
 }
 
-# Load core scripts
-. "$PSScriptRoot\Core\Initialize-PoshAcme.ps1"
-. "$PSScriptRoot\Core\Logging.ps1"
-. "$PSScriptRoot\Core\Helpers.ps1"
+# Set error handling and preferences
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = if ($NonInteractive) { 'SilentlyContinue' } else { 'Continue' }
+$VerbosePreference = if ($LogLevel -eq 'Debug') { 'Continue' } else { 'SilentlyContinue' }
 
-# Load function scripts
-. "$PSScriptRoot\Functions\Register-Certificate.ps1"
-. "$PSScriptRoot\Functions\Install-Certificate.ps1"
-. "$PSScriptRoot\Functions\Revoke-Certificate.ps1"
-. "$PSScriptRoot\Functions\Remove-Certificate.ps1"
-. "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"
-. "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"
-. "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"
-. "$PSScriptRoot\Functions\Update-AllCertificates.ps1"
+# Initialize script-wide variables
+$script:LoadedModules = @()
+$script:InitializationErrors = @()
 
-# Main Menu
+# Enhanced module loading with dependency tracking
+function Initialize-ScriptModules {
+    [CmdletBinding()]
+    param()
+    
+    try {
+        if (-not $NonInteractive) {
+            Write-Host "Loading certificate management system..." -ForegroundColor Cyan
+            Write-ProgressHelper -Activity "System Initialization" -Status "Loading core modules..." -PercentComplete 10
+        }
+        
+        # Define module loading order with dependencies
+        $moduleLoadOrder = @(
+            @{ Path = "$PSScriptRoot\Core\Logging.ps1"; Name = "Logging"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Core\Helpers.ps1"; Name = "Helpers"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Core\Initialize-PoshAcme.ps1"; Name = "PoshACME Initialization"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Core\CertificateCache.ps1"; Name = "Certificate Cache"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Core\DNSProviderDetection.ps1"; Name = "DNS Provider Detection"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Core\RenewalConfig.ps1"; Name = "Renewal Configuration"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Register-Certificate.ps1"; Name = "Certificate Registration"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Functions\Install-Certificate.ps1"; Name = "Certificate Installation"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Functions\Revoke-Certificate.ps1"; Name = "Certificate Revocation"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Remove-Certificate.ps1"; Name = "Certificate Removal"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"; Name = "Certificate Listing"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"; Name = "Automatic Renewal"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"; Name = "Advanced Options"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false }
+        )
+
+        $totalModules = $moduleLoadOrder.Count
+        $loadedCount = 0
+        
+        foreach ($module in $moduleLoadOrder) {
+            try {
+                if (Test-Path $module.Path) {
+                    . $module.Path
+                    $script:LoadedModules += $module.Name
+                    $loadedCount++
+                    
+                    if (-not $NonInteractive) {
+                        $percentComplete = [math]::Round(($loadedCount / $totalModules) * 80) + 10
+                        Write-ProgressHelper -Activity "System Initialization" -Status "Loaded: $($module.Name)" -PercentComplete $percentComplete
+                    }
+                    
+                    Write-Verbose "Successfully loaded module: $($module.Name)"
+                } else {
+                    $errorMsg = "Module file not found: $($module.Path)"
+                    $script:InitializationErrors += $errorMsg
+                    
+                    if ($module.Critical) {
+                        throw $errorMsg
+                    } else {
+                        Write-Warning $errorMsg
+                    }
+                }
+            } catch {
+                $errorMsg = "Failed to load module '$($module.Name)': $($_.Exception.Message)"
+                $script:InitializationErrors += $errorMsg
+                
+                if ($module.Critical) {
+                    throw $errorMsg
+                } else {
+                    Write-Warning $errorMsg
+                }
+            }
+        }
+
+        if (-not $NonInteractive) {
+            Write-ProgressHelper -Activity "System Initialization" -Status "Finalizing..." -PercentComplete 95
+        }
+
+        # Verify critical functions are available
+        $criticalFunctions = @('Register-Certificate', 'Install-Certificate', 'Write-Log')
+        foreach ($func in $criticalFunctions) {
+            if (-not (Get-Command $func -ErrorAction SilentlyContinue)) {
+                throw "Critical function '$func' is not available"
+            }
+        }
+
+        if (-not $NonInteractive) {
+            Write-ProgressHelper -Activity "System Initialization" -Status "Complete" -PercentComplete 100
+            Write-Progress -Activity "System Initialization" -Completed
+        }
+
+        Write-Log "Enhanced certificate management system loaded successfully (Version: $script:ScriptVersion)" -Level 'Info'
+        Write-Log "Loaded modules: $($script:LoadedModules -join ', ')" -Level 'Debug'
+        
+        if ($script:InitializationErrors.Count -gt 0) {
+            Write-Log "Initialization warnings: $($script:InitializationErrors.Count)" -Level 'Warning'
+        }
+
+        return $true
+
+    } catch {
+        $criticalError = "Failed to load required modules: $($_.Exception.Message)"
+        Write-Error $criticalError
+        
+        if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
+            Write-Log $criticalError -Level 'Error'
+        }
+        
+        Write-Host "Please ensure all script files are present and accessible." -ForegroundColor Red
+        Write-Host "Missing modules will prevent the system from functioning correctly." -ForegroundColor Red
+        
+        if (-not $NonInteractive) {
+            Read-Host "Press Enter to exit"
+        }
+        
+        return $false
+    }
+}
+
+# Configuration validation function
+function Test-SystemConfiguration {
+    [CmdletBinding()]
+    param()
+    
+    Write-Host "Running configuration validation..." -ForegroundColor Cyan
+    
+    $configIssues = @()
+    $configWarnings = @()
+    
+    try {
+        # Test PowerShell version
+        if ($PSVersionTable.PSVersion.Major -lt 5) {
+            $configIssues += "PowerShell version $($PSVersionTable.PSVersion) is not supported. Minimum version 5.1 required."
+        }
+        
+        # Test Posh-ACME module
+        if (-not (Get-Module -Name Posh-ACME -ListAvailable)) {
+            $configIssues += "Posh-ACME module not found. Run 'Install-Module Posh-ACME' to install."
+        }
+        
+        # Test script files
+        $requiredFiles = @(
+            "$PSScriptRoot\Core\Logging.ps1",
+            "$PSScriptRoot\Core\Helpers.ps1",
+            "$PSScriptRoot\Functions\Register-Certificate.ps1",
+            "$PSScriptRoot\Functions\Install-Certificate.ps1"
+        )
+        
+        foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+                $configIssues += "Required file missing: $file"
+            }
+        }
+        
+        # Test write permissions
+        try {
+            $testPath = "$env:LOCALAPPDATA\Posh-ACME\config_test.tmp"
+            New-Item -Path (Split-Path $testPath) -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null
+            "test" | Out-File -FilePath $testPath -ErrorAction Stop
+            Remove-Item $testPath -Force -ErrorAction SilentlyContinue
+        } catch {
+            $configIssues += "Insufficient write permissions to %LOCALAPPDATA%\Posh-ACME\"
+        }
+        
+        # Test internet connectivity
+        try {
+            $response = Invoke-WebRequest -Uri "https://acme-v02.api.letsencrypt.org/directory" -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+            if ($response.StatusCode -ne 200) {
+                $configWarnings += "Let's Encrypt API accessibility issue (Status: $($response.StatusCode))"
+            }
+        } catch {
+            $configWarnings += "Cannot reach Let's Encrypt API: $($_.Exception.Message)"
+        }
+        
+        # Display results
+        Write-Host "`nConfiguration Validation Results:" -ForegroundColor Cyan
+        
+        if ($configIssues.Count -eq 0) {
+            Write-Host "✓ Configuration validation passed" -ForegroundColor Green
+        } else {
+            Write-Host "✗ Configuration issues found:" -ForegroundColor Red
+            $configIssues | ForEach-Object { Write-Host "  • $_" -ForegroundColor Red }
+        }
+        
+        if ($configWarnings.Count -gt 0) {
+            Write-Host "⚠ Configuration warnings:" -ForegroundColor Yellow
+            $configWarnings | ForEach-Object { Write-Host "  • $_" -ForegroundColor Yellow }
+        }
+        
+        return ($configIssues.Count -eq 0)
+        
+    } catch {
+        Write-Error "Configuration validation failed: $($_.Exception.Message)"
+        return $false
+    }
+}
+
+# Enhanced renewal mode for scheduled tasks
+if ($RenewAll) {
+    # Initialize modules for renewal mode
+    $moduleLoadSuccess = Initialize-ScriptModules
+    if (-not $moduleLoadSuccess) {
+        Exit 1
+    }
+
+    Write-Host "Running in automatic renewal mode..." -ForegroundColor Cyan
+    Write-Log "Starting automatic renewal process (Version: $script:ScriptVersion)" -Level 'Info'
+
+    try {
+        # Load renewal configuration
+        $config = Get-RenewalConfig
+        
+        # Get all certificates and check renewal status
+        $orders = Get-PAOrder
+        if (-not $orders) {
+            Write-Host "No certificates found to renew." -ForegroundColor Yellow
+            Write-Log "No certificates found for renewal" -Level 'Warning'
+            Exit 0
+        }
+
+        Write-Host "Found $($orders.Count) certificate(s) to check for renewal." -ForegroundColor Green
+
+        $renewalCount = 0
+        $errorCount = 0
+        $skippedCount = 0
+        $results = @()
+
+        foreach ($order in $orders) {
+            $mainDomain = $order.MainDomain
+            Write-Host "`nProcessing certificate for $mainDomain..." -ForegroundColor Cyan
+
+            try {
+                # Get certificate details with caching
+                $cert = Get-CachedPACertificate -MainDomain $mainDomain -Force:$Force
+
+                # Check if renewal is needed
+                $renewalThreshold = (Get-Date).AddDays($config.RenewalThresholdDays)
+                $needsRenewal = $cert.Certificate.NotAfter -le $renewalThreshold
+
+                if (-not $needsRenewal -and -not $Force) {
+                    Write-Host "Certificate for $mainDomain is still valid until $($cert.Certificate.NotAfter). Skipping renewal." -ForegroundColor Green
+                    $skippedCount++
+                    
+                    $results += @{
+                        Domain = $mainDomain
+                        Status = "Skipped"
+                        ExpiryDate = $cert.Certificate.NotAfter
+                        DaysUntilExpiry = ($cert.Certificate.NotAfter - (Get-Date)).Days
+                    }
+                    continue
+                }
+
+                # Perform renewal with retry logic
+                Write-Host "Renewing certificate for $mainDomain..." -ForegroundColor Yellow
+                Write-Log "Starting renewal for $mainDomain" -Level 'Info'
+
+                $startTime = Get-Date
+
+                # Use enhanced retry logic for renewal
+                $newCert = Invoke-WithRetry -ScriptBlock {
+                    # Clear cache to force fresh retrieval
+                    Clear-CertificateCache
+                    
+                    # Trigger renewal using New-PACertificate with -Force
+                    $renewed = New-PACertificate -MainDomain $mainDomain -Force -Verbose
+                    
+                    # Verify the renewal was successful
+                    if (-not $renewed -or -not $renewed.CertFile) {
+                        throw "Certificate renewal did not produce a valid certificate"
+                    }
+                    
+                    return $renewed
+                } -MaxAttempts $config.MaxRetries -InitialDelaySeconds ($config.RetryDelayMinutes * 60) `
+                  -OperationName "Certificate renewal for $mainDomain" `
+                  -SuccessCondition { $null -ne $_ }
+
+                if ($newCert) {
+                    $duration = (Get-Date) - $startTime
+                    Write-Host "Certificate for $mainDomain renewed successfully in $($duration.TotalMinutes.ToString('F1')) minutes." -ForegroundColor Green
+                    Write-Log "Certificate for $mainDomain renewed successfully" -Level 'Success'
+                    
+                    $renewalCount++
+
+                    # Attempt to reinstall the certificate if it was previously installed
+                    try {
+                        # Check if certificate exists in local machine store
+                        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", "LocalMachine")
+                        $store.Open("ReadOnly")
+                        $existingCert = $store.Certificates | Where-Object { 
+                            $_.Subject -like "*$mainDomain*" -or $_.Subject -like "*$($mainDomain.Replace('*.', ''))*"
+                        }
+                        $store.Close()
+
+                        if ($existingCert) {
+                            Write-Host "Reinstalling renewed certificate to certificate store..." -ForegroundColor Cyan
+                            Install-PACertificate -PACertificate $newCert -StoreLocation LocalMachine
+                            Write-Host "Certificate reinstalled successfully." -ForegroundColor Green
+                        }
+                    } catch {
+                        Write-Warning "Certificate renewed but reinstallation failed: $($_.Exception.Message)"
+                        Write-Log "Certificate reinstallation failed for $mainDomain : $($_.Exception.Message)" -Level 'Warning'
+                    }
+
+                    $results += @{
+                        Domain = $mainDomain
+                        Status = "Renewed"
+                        ExpiryDate = $newCert.Certificate.NotAfter
+                        DaysUntilExpiry = ($newCert.Certificate.NotAfter - (Get-Date)).Days
+                        RenewalDuration = $duration
+                    }
+                }
+
+            } catch {
+                Write-Error "Error renewing certificate for ${mainDomain}: $($_.Exception.Message)"
+                Write-Log "Error renewing certificate for ${mainDomain}: $($_.Exception.Message)" -Level 'Error'
+                $errorCount++
+
+                $results += @{
+                    Domain = $mainDomain
+                    Status = "Failed"
+                    Error = $_.Exception.Message
+                    ExpiryDate = if ($cert) { $cert.Certificate.NotAfter } else { "Unknown" }
+                }
+
+                # Send notification if email is configured
+                if ($config.EmailNotifications -and $config.NotificationEmail) {
+                    $subject = "Certificate Renewal Failed: $mainDomain"
+                    $body = "Certificate renewal failed for $mainDomain with error: $($_.Exception.Message)"
+                    Send-RenewalNotification -Subject $subject -Body $body -ToEmail $config.NotificationEmail
+                }
+            }
+        }
+
+        # Generate comprehensive renewal summary
+        Write-Host "`n" + "="*60 -ForegroundColor Cyan
+        Write-Host "AUTOMATIC RENEWAL SUMMARY" -ForegroundColor Cyan
+        Write-Host "="*60 -ForegroundColor Cyan
+        Write-Host "Certificates processed: $($orders.Count)" -ForegroundColor White
+        Write-Host "Successful renewals: $renewalCount" -ForegroundColor Green
+        Write-Host "Skipped (still valid): $skippedCount" -ForegroundColor Yellow
+        Write-Host "Failed renewals: $errorCount" -ForegroundColor Red
+        Write-Host "Completion time: $(Get-Date)" -ForegroundColor White
+        Write-Host "Total runtime: $((Get-Date) - $script:StartTime)" -ForegroundColor White
+
+        # Detailed results
+        if ($results.Count -gt 0) {
+            Write-Host "`nDetailed Results:" -ForegroundColor Cyan
+            foreach ($result in $results) {
+                $color = switch ($result.Status) {
+                    "Renewed" { "Green" }
+                    "Skipped" { "Yellow" }
+                    "Failed" { "Red" }
+                    default { "White" }
+                }
+                
+                $statusLine = "$($result.Domain): $($result.Status)"
+                if ($result.Status -eq "Failed" -and $result.Error) {
+                    $statusLine += " - $($result.Error)"
+                } elseif ($result.ExpiryDate -ne "Unknown") {
+                    $statusLine += " (expires: $($result.ExpiryDate), $($result.DaysUntilExpiry) days)"
+                }
+                
+                Write-Host "  $statusLine" -ForegroundColor $color
+            }
+        }
+
+        # Send summary email if configured
+        if ($config.EmailNotifications -and $config.NotificationEmail -and ($renewalCount -gt 0 -or $errorCount -gt 0)) {
+            $subject = "Certificate Renewal Summary - $renewalCount renewed, $errorCount failed"
+            $body = @"
+Certificate Renewal Summary
+==========================
+
+Processed: $($orders.Count) certificates
+Renewed: $renewalCount
+Skipped: $skippedCount  
+Failed: $errorCount
+
+Detailed Results:
+$($results | ForEach-Object { "$($_.Domain): $($_.Status)" } | Out-String)
+
+Completion Time: $(Get-Date)
+Runtime: $((Get-Date) - $script:StartTime)
+"@
+            Send-RenewalNotification -Subject $subject -Body $body -ToEmail $config.NotificationEmail
+        }
+
+        Write-Log "Automatic renewal completed - Renewed: $renewalCount, Failed: $errorCount, Skipped: $skippedCount" -Level 'Info'
+
+        # Exit with appropriate code
+        if ($errorCount -gt 0) {
+            Exit 1  # Indicate some failures occurred
+        } else {
+            Exit 0  # Success
+        }
+
+    } catch {
+        $msg = "Critical error during automatic renewal: $($_.Exception.Message)"
+        Write-Error $msg
+        Write-Log $msg -Level 'Error'
+        
+        # Send critical error notification
+        $config = Get-RenewalConfig
+        if ($config.EmailNotifications -and $config.NotificationEmail) {
+            Send-RenewalNotification -Subject "Critical Certificate Renewal Error" -Body $msg -ToEmail $config.NotificationEmail
+        }
+        
+        Exit 1
+    }
+}
+
+# Configuration test mode
+if ($ConfigTest) {
+    Write-Host "Enhanced Certificate Management System - Configuration Test" -ForegroundColor Cyan
+    Write-Host "Version: $script:ScriptVersion" -ForegroundColor Gray
+    
+    $configValid = Test-SystemConfiguration
+    
+    if ($configValid) {
+        Write-Host "`nConfiguration test passed successfully." -ForegroundColor Green
+        Exit 0
+    } else {
+        Write-Host "`nConfiguration test failed." -ForegroundColor Red
+        Exit 1
+    }
+}
+
+# Enhanced interactive mode functions
 function Show-Menu {
     Clear-Host
-    Initialize-ACMEServer
-    Write-Host "=== Let's Encrypt Certificate Management ===`n"
-    Write-Host "1) Register a new certificate"
-    Write-Host "2) Install certificate"
-    Write-Host "3) Configure automatic renewal"
-    Write-Host "4) View existing certificates"
-    Write-Host "5) Revoke a certificate"
-    Write-Host "6) Delete a certificate"
-    Write-Host "7) Advanced options"
-    Write-Host "8) Help / About"
-    Write-Host "9) Exit"
+    
+    # Initialize ACME server if function is available
+    if (Get-Command Initialize-ACMEServer -ErrorAction SilentlyContinue) {
+        Initialize-ACMEServer
+    }
+    
+    # Display enhanced header with system information
+    Write-Host "`n" + "="*70 -ForegroundColor Cyan
+    Write-Host "    ENHANCED LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
+    Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
+    Write-Host "="*70 -ForegroundColor Cyan
+    
+    # Show current ACME server
+    try {
+        $currentServer = (Get-PAServer).Name
+        Write-Host "ACME Server: $currentServer" -ForegroundColor Yellow
+    } catch {
+        Write-Host "ACME Server: Not configured" -ForegroundColor Red
+    }
+    
+    # Show certificate summary with enhanced status
+    try {
+        $orders = Get-PAOrder
+        if ($orders) {
+            $config = Get-RenewalConfig
+            $renewalStatus = Get-CertificateRenewalStatus -Config $config
+            $needsRenewal = ($renewalStatus | Where-Object { $_.NeedsRenewal }).Count
+            $expiringSoon = ($renewalStatus | Where-Object { $_.DaysUntilExpiry -le 7 }).Count
+            
+            Write-Host "Certificates: $($orders.Count) total" -ForegroundColor Green
+            if ($needsRenewal -gt 0) {
+                Write-Host "             $needsRenewal need renewal" -ForegroundColor Yellow
+            }
+            if ($expiringSoon -gt 0) {
+                Write-Host "             $expiringSoon expire within 7 days" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "Certificates: None configured" -ForegroundColor Gray
+        }
+    } catch {
+        Write-Host "Certificates: Status unavailable" -ForegroundColor Gray
+    }
+    
+    # Show system status
+    try {
+        $task = Get-ScheduledTask -TaskName "Posh-ACME Certificate Renewal" -ErrorAction SilentlyContinue
+        if ($task) {
+            $taskStatus = switch ($task.State) {
+                "Ready" { "Configured" }
+                "Running" { "Running" }
+                "Disabled" { "Disabled" }
+                default { $task.State }
+            }
+            Write-Host "Auto-Renewal: $taskStatus" -ForegroundColor $(if ($task.State -eq "Ready") { "Green" } else { "Yellow" })
+        } else {
+            Write-Host "Auto-Renewal: Not configured" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Auto-Renewal: Status unavailable" -ForegroundColor Gray
+    }
+    
+    Write-Host "`nAvailable Actions:" -ForegroundColor White
+    Write-Host "1. Register a new certificate" -ForegroundColor Green
+    Write-Host "2. Install existing certificate" -ForegroundColor Cyan
+    Write-Host "3. Configure automatic renewal" -ForegroundColor Yellow
+    Write-Host "4. View existing certificates" -ForegroundColor Magenta
+    Write-Host "5. Revoke a certificate" -ForegroundColor Red
+    Write-Host "6. Delete a certificate" -ForegroundColor Red
+    Write-Host "7. Advanced options" -ForegroundColor Blue
+    Write-Host "8. System health check" -ForegroundColor DarkGreen
+    Write-Host "9. Help / About" -ForegroundColor Gray
+    Write-Host "0. Exit" -ForegroundColor DarkRed
+    Write-Host "`n" + "="*70 -ForegroundColor Cyan
 }
 
-# Show help/about information
+# Enhanced help function
 function Show-Help {
     Clear-Host
-    Write-Host "=== Help / About ===`n" -ForegroundColor Cyan
-    Write-Host "This tool manages Let's Encrypt certificates using Posh-ACME." -ForegroundColor Gray
-    Write-Host "Menu Options:" -ForegroundColor Yellow
-    Write-Host " 1) Register a new certificate: Start the process to obtain a new certificate."
-    Write-Host " 2) Install certificate: Install a previously obtained certificate."
-    Write-Host " 3) Configure automatic renewal: Set up or modify automatic renewal settings."
-    Write-Host " 4) View existing certificates: List all certificates managed by this tool."
-    Write-Host " 5) Revoke a certificate: Revoke a certificate that is no longer needed."
-    Write-Host " 6) Delete a certificate: Remove a certificate from the system."
-    Write-Host " 7) Advanced options: Access advanced features and settings."
-    Write-Host " 8) Help / About: Show this help information."
-    Write-Host " 9) Exit: Quit the tool."
-    Write-Host "\nFor best results, run as Administrator."
-    Write-Host "\nFor more information, see the README.md file."
-    Write-Host "\nPress any key to return to the menu..."
-    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    Write-Host "`n" + "="*70 -ForegroundColor Cyan
+    Write-Host "    HELP / ABOUT - CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
+    Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
+    Write-Host "="*70 -ForegroundColor Cyan
+    
+    Write-Host "`nThis enhanced tool manages Let's Encrypt certificates using Posh-ACME." -ForegroundColor Gray
+    Write-Host "Developed for enterprise environments with robust automation capabilities." -ForegroundColor Gray
+    
+    Write-Host "`nKey Features:" -ForegroundColor Yellow
+    Write-Host "• Automatic DNS provider detection with 10+ supported providers" -ForegroundColor Green
+    Write-Host "• Robust error handling with exponential backoff retry logic" -ForegroundColor Green
+    Write-Host "• Certificate caching for improved performance and reliability" -ForegroundColor Green
+    Write-Host "• Advanced renewal scheduling with randomization" -ForegroundColor Green
+    Write-Host "• Multiple certificate installation targets (IIS, stores, files)" -ForegroundColor Green
+    Write-Host "• Comprehensive logging and monitoring with event logs" -ForegroundColor Green
+    Write-Host "• Email notifications for renewal events and failures" -ForegroundColor Green
+    Write-Host "• System health checks and configuration validation" -ForegroundColor Green
+    Write-Host "• Multi-format certificate export (PFX, PEM, full-chain)" -ForegroundColor Green
+    
+    Write-Host "`nMenu Options:" -ForegroundColor Yellow
+    Write-Host " 1) Register: Obtain new certificates with automated DNS validation"
+    Write-Host " 2) Install: Deploy certificates to various targets with verification"
+    Write-Host " 3) Renewal: Set up automated renewal with flexible scheduling"
+    Write-Host " 4) View: List all certificates with detailed expiry information"
+    Write-Host " 5) Revoke: Revoke compromised or unused certificates safely"
+    Write-Host " 6) Delete: Remove certificate orders from local storage"
+    Write-Host " 7) Advanced: ACME server settings, plugins, and configurations"
+    Write-Host " 8) Health: System status, certificate validation, and diagnostics"
+    Write-Host " 9) Help: This comprehensive information screen"
+    Write-Host " 0) Exit: Safely close the application with cleanup"
+    
+    Write-Host "`nSupported DNS Providers:" -ForegroundColor Yellow
+    Write-Host "• Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS"
+    Write-Host "• DigitalOcean, DNS Made Easy, Namecheap, GoDaddy"
+    Write-Host "• Linode, Vultr, Hetzner, OVH, and many more"
+    Write-Host "• Manual DNS (compatible with any DNS provider)"
+    
+    Write-Host "`nInstallation Targets:" -ForegroundColor Yellow
+    Write-Host "• Windows Certificate Store (LocalMachine/CurrentUser)"
+    Write-Host "• IIS websites with automatic binding configuration"
+    Write-Host "• PEM files for Linux/Apache/Nginx servers"
+    Write-Host "• PFX files with custom password protection"
+    Write-Host "• Multi-format export for maximum compatibility"
+    
+    Write-Host "`nBest Practices:" -ForegroundColor Yellow
+    Write-Host "• Always run as Administrator for certificate store operations"
+    Write-Host "• Test certificates in Let's Encrypt staging before production"
+    Write-Host "• Set up automatic renewal at least 30 days before expiry"
+    Write-Host "• Keep secure backups of important certificates"
+    Write-Host "• Monitor renewal logs and configure email notifications"
+    Write-Host "• Use system health checks to validate configuration"
+    Write-Host "• Document your certificate deployment procedures"
+    
+    Write-Host "`nCommand Line Usage:" -ForegroundColor Yellow
+    Write-Host "• .\Main.ps1                    # Interactive mode"
+    Write-Host "• .\Main.ps1 -RenewAll          # Manual renewal check"
+    Write-Host "• .\Main.ps1 -ConfigTest        # Validate configuration"
+    Write-Host "• .\Main.ps1 -RenewAll -NonInteractive  # Scheduled task mode"
+    
+    Write-Host "`nTroubleshooting:" -ForegroundColor Yellow
+    Write-Host "• Check log files in %LOCALAPPDATA%\\Posh-ACME\\"
+    Write-Host "• Run system health check (option 8) for diagnostics"
+    Write-Host "• Verify DNS provider credentials and permissions"
+    Write-Host "• Ensure Windows Event Log source is registered"
+    Write-Host "• Test internet connectivity to Let's Encrypt API"
+    
+    Write-Host "`nSupport Information:" -ForegroundColor Gray
+    Write-Host "• Script Version: $script:ScriptVersion"
+    Write-Host "• PowerShell Version: $($PSVersionTable.PSVersion)"
+    Write-Host "• Loaded Modules: $($script:LoadedModules.Count)"
+    Write-Host "• Session Started: $($script:StartTime)"
+    
+    Write-Host "`n" + "="*70 -ForegroundColor Cyan
+    Read-Host "Press Enter to return to the main menu"
 }
 
-# Main script logic
-param(
-    [switch]$RenewAll
-)
-
-if ($RenewAll) {
-    # If run with -RenewAll, jump straight to renewing all orders
-    Update-Certificates
-    exit
-}
-
-while ($true) {
-    Show-Menu
-    # Enhanced input validation and progress feedback
-    $choice = $null
-    while ($null -eq $choice) {
-        $inputRaw = Read-Host "`nEnter your choice (1-9)"
-        if ($inputRaw -match '^[1-9]$') {
-            $choice = [int]$inputRaw
+# Enhanced system health check
+function Test-SystemHealth {
+    Clear-Host
+    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host "    SYSTEM HEALTH CHECK" -ForegroundColor Cyan
+    Write-Host "="*60 -ForegroundColor Cyan
+    
+    $healthIssues = @()
+    $healthWarnings = @()
+    
+    Write-Host "`nRunning comprehensive system health check..." -ForegroundColor Yellow
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking components..." -PercentComplete 10
+    
+    # Check PowerShell version
+    Write-Host "`n1. PowerShell Environment:" -ForegroundColor Cyan
+    $psVersion = $PSVersionTable.PSVersion
+    Write-Host "   Version: $psVersion" -ForegroundColor Green
+    Write-Host "   Edition: $($PSVersionTable.PSEdition)" -ForegroundColor Green
+    Write-Host "   Platform: $($PSVersionTable.Platform)" -ForegroundColor Green
+    
+    if ($psVersion.Major -lt 5) {
+        $healthIssues += "PowerShell version $psVersion is not supported. Minimum version 5.1 required."
+    } elseif ($psVersion.Major -eq 5 -and $psVersion.Minor -eq 0) {
+        $healthWarnings += "PowerShell 5.0 detected. Version 5.1 or later recommended for best compatibility."
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking modules..." -PercentComplete 20
+    
+    # Check Posh-ACME module
+    Write-Host "`n2. Posh-ACME Module:" -ForegroundColor Cyan
+    try {
+        $poshAcmeModule = Get-Module -Name Posh-ACME -ListAvailable | Select-Object -First 1
+        if ($poshAcmeModule) {
+            Write-Host "   Installed: Version $($poshAcmeModule.Version)" -ForegroundColor Green
+            Write-Host "   Path: $($poshAcmeModule.ModuleBase)" -ForegroundColor Gray
+            
+            # Test module import
+            Import-Module Posh-ACME -Force
+            Write-Host "   Status: Loaded successfully" -ForegroundColor Green
+            
+            # Check for newer version
+            try {
+                $latestVersion = (Find-Module -Name Posh-ACME -ErrorAction SilentlyContinue).Version
+                if ($latestVersion -and $latestVersion -gt $poshAcmeModule.Version) {
+                    $healthWarnings += "Newer version of Posh-ACME available: $latestVersion (current: $($poshAcmeModule.Version))"
+                }
+            } catch {
+                Write-Verbose "Could not check for newer Posh-ACME version"
+            }
         } else {
-            Write-Host "Invalid selection. Please enter a number between 1 and 9." -ForegroundColor Yellow
+            $healthIssues += "Posh-ACME module not found"
         }
+    } catch {
+        $healthIssues += "Failed to load Posh-ACME module: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking script modules..." -PercentComplete 30
+    
+    # Check script modules
+    Write-Host "`n3. Script Modules:" -ForegroundColor Cyan
+    Write-Host "   Loaded Modules: $($script:LoadedModules.Count)" -ForegroundColor Green
+    $script:LoadedModules | ForEach-Object { Write-Host "   • $_" -ForegroundColor Gray }
+    
+    if ($script:InitializationErrors.Count -gt 0) {
+        Write-Host "   Initialization Errors: $($script:InitializationErrors.Count)" -ForegroundColor Yellow
+        $script:InitializationErrors | ForEach-Object { $healthWarnings += "Module loading: $_" }
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking ACME connectivity..." -PercentComplete 40
+    
+    # Check ACME server connectivity
+    Write-Host "`n4. ACME Server Connectivity:" -ForegroundColor Cyan
+    try {
+        $server = Get-PAServer
+        if ($server) {
+            Write-Host "   Server: $($server.Name)" -ForegroundColor Green
+            Write-Host "   URL: $($server.location)" -ForegroundColor Green
+            
+            # Test connectivity with timeout
+            $connectivityTest = Invoke-WithRetry -ScriptBlock {
+                $response = Invoke-WebRequest -Uri $server.location -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+                return $response
+            } -MaxAttempts 3 -InitialDelaySeconds 2 -OperationName "ACME server connectivity test"
+            
+            Write-Host "   Connectivity: OK (Status: $($connectivityTest.StatusCode))" -ForegroundColor Green
+            Write-Host "   Response Time: $((Measure-Command { Invoke-WebRequest -Uri $server.location -UseBasicParsing -TimeoutSec 5 }).TotalMilliseconds.ToString('F0')) ms" -ForegroundColor Gray
+        } else {
+            $healthWarnings += "No ACME server configured"
+        }
+    } catch {
+        $healthIssues += "ACME server connectivity failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking certificates..." -PercentComplete 50
+    
+    # Check certificate status
+    Write-Host "`n5. Certificate Status:" -ForegroundColor Cyan
+    try {
+        $orders = Get-PAOrder
+        if ($orders) {
+            $config = Get-RenewalConfig
+            $renewalStatus = Get-CertificateRenewalStatus -Config $config
+            
+            Write-Host "   Total Certificates: $($orders.Count)" -ForegroundColor Green
+            
+            $expiringSoon = $renewalStatus | Where-Object { $_.NeedsRenewal }
+            $criticallyExpiring = $renewalStatus | Where-Object { $_.DaysUntilExpiry -le 7 }
+            
+            if ($criticallyExpiring) {
+                Write-Host "   Critically Expiring: $($criticallyExpiring.Count)" -ForegroundColor Red
+                foreach ($cert in $criticallyExpiring) {
+                    Write-Host "     • $($cert.Domain) (expires in $($cert.DaysUntilExpiry) days)" -ForegroundColor Red
+                    $healthIssues += "Certificate $($cert.Domain) expires in $($cert.DaysUntilExpiry) days"
+                }
+            }
+            
+            if ($expiringSoon -and $expiringSoon.Count -gt $criticallyExpiring.Count) {
+                $soonCount = $expiringSoon.Count - $criticallyExpiring.Count
+                Write-Host "   Expiring Soon: $soonCount" -ForegroundColor Yellow
+                foreach ($cert in ($expiringSoon | Where-Object { $_.DaysUntilExpiry -gt 7 })) {
+                    Write-Host "     • $($cert.Domain) (expires in $($cert.DaysUntilExpiry) days)" -ForegroundColor Yellow
+                }
+                $healthWarnings += "$soonCount certificate(s) need renewal within $($config.RenewalThresholdDays) days"
+            }
+            
+            if (-not $expiringSoon) {
+                Write-Host "   All certificates valid" -ForegroundColor Green
+            }
+            
+            # Check certificate integrity
+            $integrityIssues = 0
+            foreach ($order in $orders) {
+                try {
+                    $cert = Get-CachedPACertificate -MainDomain $order.MainDomain
+                    if (-not $cert.Certificate) {
+                        $integrityIssues++
+                    }
+                } catch {
+                    $integrityIssues++
+                }
+            }
+            
+            if ($integrityIssues -gt 0) {
+                $healthWarnings += "$integrityIssues certificate(s) have integrity issues"
+            }
+            
+        } else {
+            Write-Host "   No certificates configured" -ForegroundColor Gray
+        }
+    } catch {
+        $healthWarnings += "Certificate status check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking file system..." -PercentComplete 60
+    
+    # Check file system permissions and paths
+    Write-Host "`n6. File System:" -ForegroundColor Cyan
+    try {
+        $appDataPath = "$env:LOCALAPPDATA\Posh-ACME"
+        if (Test-Path $appDataPath) {
+            Write-Host "   Data Directory: $appDataPath" -ForegroundColor Green
+            
+            # Check directory size
+            $dirSize = (Get-ChildItem $appDataPath -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+            $dirSizeMB = [math]::Round($dirSize / 1MB, 2)
+            Write-Host "   Directory Size: $dirSizeMB MB" -ForegroundColor Gray
+            
+            # Test write permissions
+            $testFile = Join-Path $appDataPath "health_check_test.tmp"
+            try {
+                "health check test" | Out-File -FilePath $testFile
+                Remove-Item $testFile -Force
+                Write-Host "   Write Permissions: OK" -ForegroundColor Green
+            } catch {
+                $healthIssues += "Cannot write to Posh-ACME data directory"
+            }
+        } else {
+            $healthWarnings += "Posh-ACME data directory does not exist"
+        }
+        
+        # Check certificate stores
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", "LocalMachine")
+        try {
+            $store.Open("ReadOnly")
+            $certCount = $store.Certificates.Count
+            Write-Host "   Certificate Store: $certCount certificates in LocalMachine\\My" -ForegroundColor Green
+            
+            # Test store write access
+            try {
+                $testStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", "LocalMachine")
+                $testStore.Open("ReadWrite")
+                $testStore.Close()
+                Write-Host "   Store Write Access: OK" -ForegroundColor Green
+            } catch {
+                $healthWarnings += "Limited access to certificate store (may affect installation)"
+            }
+        } catch {
+            $healthIssues += "Cannot access certificate store"
+        } finally {
+            $store.Close()
+        }
+        
+    } catch {
+        $healthWarnings += "File system check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking scheduled tasks..." -PercentComplete 70
+    
+    # Check scheduled tasks and automation
+    Write-Host "`n7. Automatic Renewal:" -ForegroundColor Cyan
+    try {
+        $task = Get-ScheduledTask -TaskName "Posh-ACME Certificate Renewal" -ErrorAction SilentlyContinue
+        if ($task) {
+            Write-Host "   Scheduled Task: Configured" -ForegroundColor Green
+            Write-Host "   State: $($task.State)" -ForegroundColor $(if ($task.State -eq "Ready") { "Green" } else { "Yellow" })
+            Write-Host "   Last Run: $($task.LastRunTime)" -ForegroundColor Gray
+            Write-Host "   Next Run: $($task.NextRunTime)" -ForegroundColor Gray
+            Write-Host "   Last Result: $($task.LastTaskResult)" -ForegroundColor $(if ($task.LastTaskResult -eq 0) { "Green" } else { "Red" })
+            
+            if ($task.State -ne "Ready") {
+                $healthWarnings += "Scheduled task is not in Ready state: $($task.State)"
+            }
+            
+            if ($task.LastTaskResult -ne 0 -and $task.LastTaskResult -ne 267009) { # 267009 = never run
+                $healthWarnings += "Scheduled task last execution failed (code: $($task.LastTaskResult))"
+            }
+        } else {
+            Write-Host "   Scheduled Task: Not configured" -ForegroundColor Yellow
+            $healthWarnings += "Automatic renewal not configured"
+        }
+        
+        # Check task schedule validity
+        if ($task) {
+            $config = Get-RenewalConfig
+            if ($config.UseRandomization -and $config.RandomizationWindow -gt 1440) {
+                $healthWarnings += "Renewal randomization window is too large ($($config.RandomizationWindow) minutes)"
+            }
+        }
+    } catch {
+        $healthWarnings += "Scheduled task check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking network and DNS..." -PercentComplete 80
+    
+    # Check network connectivity and DNS
+    Write-Host "`n8. Network and DNS:" -ForegroundColor Cyan
+    try {
+        # Test internet connectivity
+        $internetHosts = @("8.8.8.8", "1.1.1.1", "208.67.222.222")
+        $connectableHosts = 0
+        
+        foreach ($testHost in $internetHosts) {
+            if (Test-Connection -ComputerName $testHost -Count 1 -Quiet -TimeoutSec 3) {
+                $connectableHosts++
+            }
+        }
+        
+        if ($connectableHosts -gt 0) {
+            Write-Host "   Internet Connectivity: OK ($connectableHosts/$($internetHosts.Count) DNS servers reachable)" -ForegroundColor Green
+        } else {
+            $healthIssues += "No internet connectivity detected"
+        }
+        
+        # Test DNS resolution
+        try {
+            Resolve-DnsName -Name "letsencrypt.org" -Type A -ErrorAction Stop | Out-Null
+            Write-Host "   DNS Resolution: OK" -ForegroundColor Green
+        } catch {
+            $healthIssues += "DNS resolution failed: $($_.Exception.Message)"
+        }
+        
+        # Check proxy settings
+        $proxySettings = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings" -ErrorAction SilentlyContinue
+        if ($proxySettings.ProxyEnable -eq 1) {
+            Write-Host "   Proxy: Enabled ($($proxySettings.ProxyServer))" -ForegroundColor Yellow
+            $healthWarnings += "Proxy is enabled, may affect ACME operations"
+        } else {
+            Write-Host "   Proxy: Direct connection" -ForegroundColor Green
+        }
+        
+    } catch {
+        $healthWarnings += "Network check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking event logging..." -PercentComplete 90
+    
+    # Check event logging
+    Write-Host "`n9. Event Logging:" -ForegroundColor Cyan
+    try {
+        # Test event log source registration
+        $eventSources = Get-WinEvent -ListProvider "Certificate Management" -ErrorAction SilentlyContinue
+        if ($eventSources) {
+            Write-Host "   Event Source: Registered" -ForegroundColor Green
+        } else {
+            Write-Host "   Event Source: Not registered" -ForegroundColor Yellow
+            $healthWarnings += "Event log source 'Certificate Management' not registered"
+        }
+        
+        # Test event log writing
+        try {
+            New-EventLog -LogName Application -Source "Certificate Management" -ErrorAction SilentlyContinue
+            Write-EventLog -LogName Application -Source "Certificate Management" -EventId 9999 -Message "Health check test event" -ErrorAction Stop
+            Write-Host "   Event Writing: OK" -ForegroundColor Green
+        } catch {
+            $healthWarnings += "Cannot write to event log: $($_.Exception.Message)"
+        }
+        
+    } catch {
+        $healthWarnings += "Event logging check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Finalizing health check..." -PercentComplete 95
+    
+    # Check system resources
+    Write-Host "`n10. System Resources:" -ForegroundColor Cyan
+    try {
+        $memory = Get-WmiObject -Class Win32_ComputerSystem
+        $totalMemoryGB = [math]::Round($memory.TotalPhysicalMemory / 1GB, 2)
+        Write-Host "   Total Memory: $totalMemoryGB GB" -ForegroundColor Green
+        
+        $os = Get-WmiObject -Class Win32_OperatingSystem
+        $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+        $memoryUsage = [math]::Round((($totalMemoryGB - $freeMemoryGB) / $totalMemoryGB) * 100, 1)
+        Write-Host "   Memory Usage: $memoryUsage%" -ForegroundColor $(if ($memoryUsage -lt 80) { "Green" } else { "Yellow" })
+        
+        if ($memoryUsage -gt 90) {
+            $healthWarnings += "High memory usage detected: $memoryUsage%"
+        }
+        
+        # Check available disk space
+        $systemDrive = Get-WmiObject -Class Win32_LogicalDisk | Where-Object { $_.DeviceID -eq $env:SystemDrive }
+        $freeSpaceGB = [math]::Round($systemDrive.FreeSpace / 1GB, 2)
+        $totalSpaceGB = [math]::Round($systemDrive.Size / 1GB, 2)
+        $diskUsage = [math]::Round((($totalSpaceGB - $freeSpaceGB) / $totalSpaceGB) * 100, 1)
+        
+        Write-Host "   Disk Space: $freeSpaceGB GB free ($diskUsage% used)" -ForegroundColor $(if ($diskUsage -lt 80) { "Green" } else { "Yellow" })
+        
+        if ($freeSpaceGB -lt 1) {
+            $healthIssues += "Low disk space: Only $freeSpaceGB GB free"
+        } elseif ($freeSpaceGB -lt 5) {
+            $healthWarnings += "Limited disk space: $freeSpaceGB GB free"
+        }
+        
+    } catch {
+        $healthWarnings += "System resource check failed: $($_.Exception.Message)"
+    }
+    
+    Write-ProgressHelper -Activity "System Health Check" -Status "Health check complete" -PercentComplete 100
+    Write-Progress -Activity "System Health Check" -Completed
+    
+    # Display comprehensive summary
+    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host "COMPREHENSIVE HEALTH CHECK SUMMARY" -ForegroundColor Cyan
+    Write-Host "="*60 -ForegroundColor Cyan
+    
+    if ($healthIssues.Count -eq 0 -and $healthWarnings.Count -eq 0) {
+        Write-Host "✓ System health: EXCELLENT" -ForegroundColor Green
+        Write-Host "  All components are functioning optimally." -ForegroundColor Green
+        Write-Host "  No issues or warnings detected." -ForegroundColor Green
+    } elseif ($healthIssues.Count -eq 0) {
+        Write-Host "⚠ System health: GOOD (with warnings)" -ForegroundColor Yellow
+        Write-Host "  System is functional but some optimization is recommended." -ForegroundColor Yellow
+        Write-Host "`n  Warnings detected:" -ForegroundColor Yellow
+        $healthWarnings | ForEach-Object { Write-Host "    • $_" -ForegroundColor Yellow }
+    } else {
+        Write-Host "✗ System health: NEEDS ATTENTION" -ForegroundColor Red
+        Write-Host "  Critical issues require immediate attention." -ForegroundColor Red
+        Write-Host "`n  Critical issues:" -ForegroundColor Red
+        $healthIssues | ForEach-Object { Write-Host "    • $_" -ForegroundColor Red }
+        
+        if ($healthWarnings.Count -gt 0) {
+            Write-Host "`n  Additional warnings:" -ForegroundColor Yellow
+            $healthWarnings | ForEach-Object { Write-Host "    • $_" -ForegroundColor Yellow }
+        }
+    }
+    
+    # Health score calculation
+    $issueScore = $healthIssues.Count * 3
+    $warningScore = $healthWarnings.Count * 1
+    $healthScore = [math]::Max(0, 100 - $issueScore - $warningScore)
+    
+    Write-Host "`nHealth Score: $healthScore/100" -ForegroundColor $(if ($healthScore -ge 80) { "Green" } elseif ($healthScore -ge 60) { "Yellow" } else { "Red" })
+    Write-Host "Issues: $($healthIssues.Count) critical, $($healthWarnings.Count) warnings" -ForegroundColor White
+    Write-Host "Check completed: $(Get-Date)" -ForegroundColor Gray
+    Write-Host "Check duration: $((Get-Date) - $script:StartTime)" -ForegroundColor Gray
+    
+    # Recommendations based on health status
+    if ($healthIssues.Count -gt 0 -or $healthWarnings.Count -gt 0) {
+        Write-Host "`nRecommended Actions:" -ForegroundColor Cyan
+        
+        if ($healthIssues.Count -gt 0) {
+            Write-Host "• Address critical issues immediately before proceeding" -ForegroundColor Red
+            Write-Host "• Run configuration test: .\Main.ps1 -ConfigTest" -ForegroundColor Red
+        }
+        
+        if ($healthWarnings.Count -gt 0) {
+            Write-Host "• Review warnings and optimize system configuration" -ForegroundColor Yellow
+            Write-Host "• Consider setting up monitoring for detected issues" -ForegroundColor Yellow
+        }
+        
+        Write-Host "• Check log files for additional details" -ForegroundColor White
+        Write-Host "• Verify network connectivity and DNS resolution" -ForegroundColor White
+        Write-Host "• Ensure sufficient system resources are available" -ForegroundColor White
+    }
+    
+    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+    
+    # Log health check results
+    Write-Log "System health check completed - Score: $healthScore/100, Issues: $($healthIssues.Count), Warnings: $($healthWarnings.Count)" -Level 'Info'
+    
+    Read-Host "Press Enter to return to the main menu"
+}
+
+# Enhanced error handling wrapper for menu operations
+function Invoke-MenuOperation {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Operation,
+        [Parameter(Mandatory = $true)]
+        [string]$OperationName
+    )
+    
+    try {
+        Write-Host "`nStarting $OperationName..." -ForegroundColor Cyan
+        Write-ProgressHelper -Activity "Certificate Management" -Status "Preparing $OperationName..." -PercentComplete 0
+        
+        $startTime = Get-Date
+        & $Operation
+        $duration = (Get-Date) - $startTime
+        
+        Write-Host "`n$OperationName completed successfully in $($duration.TotalSeconds.ToString('F1')) seconds." -ForegroundColor Green
+        Write-Log "$OperationName completed successfully" -Level 'Success'
+        
+    } catch {
+        $errorMsg = "$OperationName failed: $($_.Exception.Message)"
+        Write-Error $errorMsg
+        Write-Log $errorMsg -Level 'Error'
+        
+        # Enhanced error reporting
+        Write-Host "`nError Details:" -ForegroundColor Red
+        Write-Host "  Operation: $OperationName" -ForegroundColor Red
+        Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Location: $($_.InvocationInfo.ScriptName):$($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+        
+        # Provide context-specific troubleshooting
+        Write-Host "`nTroubleshooting suggestions:" -ForegroundColor Yellow
+        switch ($OperationName) {
+            "certificate registration" {
+                Write-Host "• Check DNS provider credentials and permissions" -ForegroundColor Yellow
+                Write-Host "• Verify domain ownership and DNS propagation" -ForegroundColor Yellow
+                Write-Host "• Test internet connectivity to ACME servers" -ForegroundColor Yellow
+            }
+            "certificate installation" {
+                Write-Host "• Ensure script is running as Administrator" -ForegroundColor Yellow
+                Write-Host "• Check certificate store permissions" -ForegroundColor Yellow
+                Write-Host "• Verify certificate file integrity" -ForegroundColor Yellow
+            }
+            default {
+                Write-Host "• Check the log files for detailed error information" -ForegroundColor Yellow
+                Write-Host "• Run system health check to identify configuration issues" -ForegroundColor Yellow
+                Write-Host "• Verify all required modules are loaded correctly" -ForegroundColor Yellow
+            }
+        }
+        
+    } finally {
+        Write-Progress -Activity "Certificate Management" -Completed
+    }
+}
+
+# Main script execution starts here
+try {
+    # Initialize the system
+    $moduleLoadSuccess = Initialize-ScriptModules
+    if (-not $moduleLoadSuccess) {
+        Exit 1
     }
 
-    switch ($choice) {
-        1 {
-            Write-Host "\nStarting certificate registration..." -ForegroundColor Cyan
-            Register-Certificate
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    # Main interactive loop
+    while ($true) {
+        Show-Menu
+        
+        # Enhanced input validation with timeout for automation
+        $choice = $null
+        $attempts = 0
+        $maxAttempts = 3
+        
+        while ($null -eq $choice -and $attempts -lt $maxAttempts) {
+            $inputRaw = Read-Host "`nEnter your choice (0-9)"
+            
+            if ($inputRaw -match '^[0-9]$') {
+                $choice = [int]$inputRaw
+            } else {
+                Write-Warning "Invalid selection. Please enter a number between 0 and 9."
+                $attempts++
+                
+                if ($attempts -eq $maxAttempts) {
+                    Write-Warning "Too many invalid attempts."
+                    $choice = 0  # Default to exit
+                }
+            }
         }
-        2 {
-            Write-Host "\nStarting certificate installation..." -ForegroundColor Cyan
-            Install-Certificate
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        3 {
-            Write-Host "\nConfiguring automatic renewal..." -ForegroundColor Cyan
-            Set-AutomaticRenewal
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        4 {
-            Write-Host "\nRetrieving existing certificates..." -ForegroundColor Cyan
-            Get-ExistingCertificates
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        5 {
-            Write-Host "\nRevoking certificate..." -ForegroundColor Cyan
-            Revoke-Certificate
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        6 {
-            Write-Host "\nDeleting certificate..." -ForegroundColor Cyan
-            Remove-Certificate
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        7 {
-            Write-Host "\nOpening advanced options..." -ForegroundColor Cyan
-            Show-AdvancedOptions
-            Write-Host "\nOperation complete. Press any key to return to the menu..."
-            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-        }
-        8 {
-            Show-Help
-        }
-        9 {
-            Write-Host "`nExiting..."
-            Write-Log "User exited the script."
-            exit
-        }
-        default {
-            Write-Host "`nInvalid selection. Please choose 1-9." -ForegroundColor Yellow
+
+        # Enhanced menu handling with operation wrapping
+        switch ($choice) {
+            1 {
+                Invoke-MenuOperation -Operation { Register-Certificate } -OperationName "certificate registration"
+                Read-Host "`nPress Enter to continue..."
+            }
+            2 {
+                Invoke-MenuOperation -Operation { Install-Certificate } -OperationName "certificate installation"
+                Read-Host "`nPress Enter to continue..."
+            }
+            3 {
+                Invoke-MenuOperation -Operation { Set-AutomaticRenewal } -OperationName "automatic renewal configuration"
+                Read-Host "`nPress Enter to continue..."
+            }
+            4 {
+                Invoke-MenuOperation -Operation { Get-ExistingCertificates } -OperationName "certificate information retrieval"
+                Read-Host "`nPress Enter to continue..."
+            }
+            5 {
+                Invoke-MenuOperation -Operation { Revoke-Certificate } -OperationName "certificate revocation"
+                Read-Host "`nPress Enter to continue..."
+            }
+            6 {
+                Invoke-MenuOperation -Operation { Remove-Certificate } -OperationName "certificate deletion"
+                Read-Host "`nPress Enter to continue..."
+            }
+            7 {
+                Invoke-MenuOperation -Operation { Show-AdvancedOptions } -OperationName "advanced options"
+            }
+            8 {
+                Test-SystemHealth
+            }
+            9 {
+                Show-Help
+            }
+            0 {
+                Write-Host "`nThank you for using the Enhanced Certificate Management System!" -ForegroundColor Green
+                Write-Host "Session duration: $((Get-Date) - $script:StartTime)" -ForegroundColor Gray
+                Write-Log "User exited the application normally (Session duration: $((Get-Date) - $script:StartTime))" -Level 'Info'
+                break
+            }
+            default {
+                Write-Warning "`nInvalid selection. Please choose 0-9."
+                Start-Sleep -Seconds 1
+            }
         }
     }
+    
+} catch {
+    $criticalError = "Critical application error: $($_.Exception.Message)"
+    Write-Error $criticalError
+    
+    if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
+        Write-Log $criticalError -Level 'Error'
+    }
+    
+    Write-Host "`nThe application encountered a critical error and must exit." -ForegroundColor Red
+    Write-Host "Error details have been logged for troubleshooting." -ForegroundColor Yellow
+    
+    # Enhanced error information
+    Write-Host "`nError Information:" -ForegroundColor Red
+    Write-Host "  Message: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  Type: $($_.Exception.GetType().Name)" -ForegroundColor Red
+    Write-Host "  Location: $($_.InvocationInfo.ScriptName):$($_.InvocationInfo.ScriptLineNumber)" -ForegroundColor Red
+    Write-Host "  Time: $(Get-Date)" -ForegroundColor Red
+    
+    Write-Host "`nTroubleshooting Resources:" -ForegroundColor Yellow
+    Write-Host "• Log files: $env:LOCALAPPDATA\Posh-ACME\certificate_script.log" -ForegroundColor Yellow
+    Write-Host "• Run configuration test: .\Main.ps1 -ConfigTest" -ForegroundColor Yellow
+    Write-Host "• Check system health: .\Main.ps1 and select option 8" -ForegroundColor Yellow
+    Write-Host "• Verify all script files are present and accessible" -ForegroundColor Yellow
+    
+    if (-not $NonInteractive) {
+        Read-Host "Press Enter to exit"
+    }
+    Exit 1
+    
+} finally {
+    # Cleanup and final logging
+    $sessionDuration = (Get-Date) - $script:StartTime
+    Write-Log "Application session ended (Duration: $sessionDuration, Version: $script:ScriptVersion)" -Level 'Info'
+    
+    # Clear any sensitive data from memory
+    if (Get-Variable -Name "cert*" -ErrorAction SilentlyContinue) {
+        Remove-Variable -Name "cert*" -Force -ErrorAction SilentlyContinue
+    }
+
+# Clean up progress indicators
+Write-Progress -Activity "Certificate Management" -Completed -ErrorAction SilentlyContinue
 }
