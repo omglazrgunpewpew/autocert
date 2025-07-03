@@ -209,30 +209,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **PowerShell**: MIT License
 - **Windows Management Framework**: Microsoft Software License
 
-## 🙏 Acknowledgments
-
-- **Posh-ACME Team**: For the excellent ACME protocol implementation
-- **Let's Encrypt**: For providing free SSL certificates
-- **PowerShell Community**: For ongoing support and contributions
-- **DNS Provider APIs**: For enabling automated certificate validation
-
-## 📞 Support
-
-### Getting Help
-- **📖 Documentation**: Start with the comprehensive guides above
-- **🐛 Issues**: [GitHub Issues](https://github.com/yourusername/autocert/issues) for bugs and features
-- **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/autocert/discussions) for questions
-- **📚 Resources**: [PowerShell Gallery](https://www.powershellgallery.com/packages/Posh-ACME) | [Let's Encrypt Community](https://community.letsencrypt.org/)
-
-### Enterprise Support
-For enterprise deployments requiring professional support:
-- **Professional Services**: Custom implementation and integration
-- **Training**: On-site training for IT teams
-- **Priority Support**: Dedicated support channels
-
 ---
-
-**Made with ❤️ for the PowerShell and Let's Encrypt communities**
 
 *Enhanced Certificate Management System v2.0.0 | Last Updated: July 2025*
 
