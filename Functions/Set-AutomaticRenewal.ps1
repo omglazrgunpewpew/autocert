@@ -18,10 +18,18 @@ function Set-AutomaticRenewal {
 
     try {
         Register-ScheduledTask -TaskName $taskName -InputObject $task -Force
-        Write-Host "`nAutomatic renewal configured via scheduled task '$taskName'." -ForegroundColor Green
-        Write-Log "Automatic renewal configured via scheduled task '$taskName'."
-    } catch {
+        $registered = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        if ($registered) {
+            Write-Host "`nAutomatic renewal configured via scheduled task '$taskName'." -ForegroundColor Green
+            Write-Log "Automatic renewal configured via scheduled task '$taskName'."
+        }
+        else {
+            throw "Scheduled task was not created"
+        }
+    }
+    catch {
         Write-Host "Failed to configure automatic renewal: $($_)" -ForegroundColor Red
         Write-Log "Failed to configure automatic renewal: $($_)" -Level 'Error'
     }
 }
+

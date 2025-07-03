@@ -29,6 +29,20 @@ if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
     }
 }
 
+# Store a copy of the module inside the repository for offline use
+$modulePath = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).ModuleBase
+$targetPath = Join-Path -Path $PSScriptRoot -ChildPath '..\Modules\Posh-ACME'
+try {
+    if (-not (Test-Path $targetPath)) {
+        New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+    }
+    Copy-Item -Path $modulePath\* -Destination $targetPath -Recurse -Force
+    Write-Log "Posh-ACME module copied to $targetPath"
+} catch {
+    Write-Host "Failed to copy Posh-ACME module: $($_)" -ForegroundColor Yellow
+    Write-Log "Failed to copy Posh-ACME module: $($_)" -Level 'Warning'
+}
+
 Import-Module Posh-ACME -Force
 
 function Initialize-ACMEServer {
@@ -38,3 +52,4 @@ function Initialize-ACMEServer {
         Write-Log "ACME server set to Let's Encrypt Production."
     }
 }
+
