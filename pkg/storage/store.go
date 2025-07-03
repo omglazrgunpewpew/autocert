@@ -102,7 +102,7 @@ func (fs *FileStore) List() ([]string, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
-	files, err := ioutil.ReadDir(fs.dir)
+	files, err := os.ReadDir(fs.dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
