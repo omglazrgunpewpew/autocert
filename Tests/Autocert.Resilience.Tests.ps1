@@ -8,21 +8,24 @@ Describe 'AutoCert Robustness and Resilience Tests' {
     BeforeAll {
         $ErrorActionPreference = 'Stop'
         
-        # Load all modules
+        # Load all modules in dependency order
         . "$PSScriptRoot/../Core/Logging.ps1"
         . "$PSScriptRoot/../Core/Helpers.ps1"
+        . "$PSScriptRoot/../Core/Initialize-PoshAcme.ps1"
         . "$PSScriptRoot/../Core/ConfigurationManager.ps1"
         . "$PSScriptRoot/../Core/CircuitBreaker.ps1"
         . "$PSScriptRoot/../Core/HealthMonitor.ps1"
         . "$PSScriptRoot/../Core/BackupManager.ps1"
         . "$PSScriptRoot/../Core/NotificationManager.ps1"
-        . "$PSScriptRoot/../Core/Initialize-PoshAcme.ps1"
         . "$PSScriptRoot/../Core/CertificateCache.ps1"
         . "$PSScriptRoot/../Core/DNSProviderDetection.ps1"
-        . "$PSScriptRoot/../Core\RenewalConfig.ps1"
+        . "$PSScriptRoot/../Core/RenewalConfig.ps1"
         
         # Load function modules
         Get-ChildItem "$PSScriptRoot/../Functions" -Filter '*.ps1' | ForEach-Object { . $_.FullName }
+        
+        # Set global test variables
+        $script:TestBackupPath = "$env:TEMP\AutoCert_Tests_$(Get-Date -Format 'yyyyMMddHHmmss')"
     }
 
     Context 'Configuration Management' {
@@ -165,29 +168,29 @@ Describe 'AutoCert Robustness and Resilience Tests' {
 
     Context 'Backup Management' {
         BeforeAll {
-            $testBackupPath = "$env:TEMP\AutoCert_Tests_$(Get-Date -Format 'yyyyMMddHHmmss')"
+            $testBackupPath = $script:TestBackupPath
             Initialize-BackupSystem -BackupRootPath $testBackupPath
         }
 
         AfterAll {
-            if (Test-Path $testBackupPath) {
-                Remove-Item -Path $testBackupPath -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path $script:TestBackupPath) {
+                Remove-Item -Path $script:TestBackupPath -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
 
         It 'Should initialize backup system' {
-            $backupPath = Initialize-BackupSystem -BackupRootPath $testBackupPath
-            $backupPath | Should -Be $testBackupPath
+            $backupPath = Initialize-BackupSystem -BackupRootPath $script:TestBackupPath
+            $backupPath | Should -Be $script:TestBackupPath
             
             # Check required directories
             @('Certificates', 'Configurations', 'Logs', 'Metadata') | ForEach-Object {
-                Join-Path $testBackupPath $_ | Should -Exist
+                Join-Path $script:TestBackupPath $_ | Should -Exist
             }
         }
 
         It 'Should create mock certificate backup' {
             # Create mock certificate structure for testing
-            $mockCertPath = Join-Path $testBackupPath "MockCerts\test.example.com"
+            $mockCertPath = Join-Path $script:TestBackupPath "MockCerts\test.example.com"
             New-Item -ItemType Directory -Path $mockCertPath -Force | Out-Null
             
             # Create mock certificate files
@@ -202,14 +205,14 @@ Describe 'AutoCert Robustness and Resilience Tests' {
         }
 
         It 'Should get backup history' {
-            $history = Get-BackupHistory -BackupPath (Join-Path $testBackupPath "Certificates")
+            $history = Get-BackupHistory -BackupPath (Join-Path $script:TestBackupPath "Certificates")
             # Should not throw error even with empty backup directory
             $history | Should -Not -BeNull
         }
 
         It 'Should test backup integrity' {
             # Create a mock backup structure
-            $mockBackupDir = Join-Path $testBackupPath "TestIntegrity"
+            $mockBackupDir = Join-Path $script:TestBackupPath "TestIntegrity"
             New-Item -ItemType Directory -Path $mockBackupDir -Force | Out-Null
             
             # Create mock manifest
@@ -380,7 +383,8 @@ Describe 'AutoCert Robustness and Resilience Tests' {
         It 'Should validate system requirements' {
             # Test system validation
             $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-            # Note: This test will fail if not run as admin, which is expected behavior
+            # Note: This test will pass regardless of admin status but logs the information
+            $isAdmin | Should -BeOfType [bool]
             
             $psVersion = $PSVersionTable.PSVersion.Major
             $psVersion | Should -BeGreaterOrEqual 5

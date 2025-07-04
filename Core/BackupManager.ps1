@@ -119,10 +119,10 @@ function New-CertificateBackup {
         
         # Create PFX export for easy restoration
         if ($IncludePrivateKey) {
+            $pfxPath = Join-Path $backupFolder "certificate.pfx"
             $securePassword = $Password
             
             try {
-                Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword | Out-Null
                 Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $securePassword | Out-Null
                 
                 $manifest.Files += @{
@@ -153,7 +153,7 @@ function New-CertificateBackup {
         return @{
             BackupPath = $backupFolder
             Manifest = $manifest
-            Password = $Password
+            PasswordLength = $Password.Length
         }
         
     } catch {
@@ -214,8 +214,6 @@ function Restore-CertificateFromBackup {
             
             if (-not $Password) {
                 $Password = Read-Host "Enter password for PFX file" -AsSecureString
-            } else {
-                $Password = ConvertTo-SecureString $Password -AsPlainText -Force
             }
             
             if ($InstallToStore) {
