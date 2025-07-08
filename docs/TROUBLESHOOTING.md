@@ -1,8 +1,8 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and resolve common issues with the Enhanced Certificate Management System.
+This guide helps you diagnose and resolve common issues with AutoCert.
 
-## 🚨 Common Issues and Solutions
+## 🚨 Common Issues
 
 ### 1. PowerShell Execution Policy Error
 
@@ -309,11 +309,11 @@ Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 # Then run the AutoCert setup again
 ```
 
-## 🔍 Advanced Diagnostics
+## 🔍 Diagnostics
 
 ### System Health Check
 
-**Comprehensive System Diagnostics**:
+**System Diagnostics**:
 
 ```powershell
 # Run built-in health check

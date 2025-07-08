@@ -1,6 +1,6 @@
 # Usage Guide
 
-This guide covers how to use the Enhanced Certificate Management System for various scenarios.
+This guide covers how to use AutoCert for certificate management.
 
 ## 🎯 Quick Start
 
@@ -59,7 +59,7 @@ This guide covers how to use the Enhanced Certificate Management System for vari
 - Bulk renewal operations
 - Certificate export and backup
 
-**5. Advanced Options**
+**5. Options**
 
 - ACME server configuration
 - DNS plugin management
@@ -75,7 +75,7 @@ This guide covers how to use the Enhanced Certificate Management System for vari
 
 **7. System Health Check**
 
-- Comprehensive diagnostics
+- Diagnostics
 - Network connectivity tests
 - Certificate validation
 - Performance monitoring
@@ -346,7 +346,7 @@ Register-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -
 #### System Health Check
 
 ```powershell
-# Comprehensive health check
+# Run health check
 .\Main.ps1  # Select option 7
 
 # Command line health check
@@ -405,7 +405,7 @@ $config = @{
 }
 ```
 
-## 🔧 Advanced Usage Scenarios
+## 🔧 Enterprise Scenarios
 
 ### Enterprise Deployment
 

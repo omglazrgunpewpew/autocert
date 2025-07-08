@@ -63,7 +63,7 @@ When prompted for credentials in AutoCert:
 
 ### AWS Route53
 
-Route53 provides reliable DNS services with comprehensive API support.
+Route53 provides reliable DNS services with full API support.
 
 #### Step 1: Create IAM User
 
@@ -294,7 +294,7 @@ Test-NetConnection -ComputerName route53.amazonaws.com -Port 443
 ### Diagnostic Commands
 
 ```powershell
-# Comprehensive DNS diagnostics
+# DNS diagnostics
 .\Main.ps1 # Select option 7 for System Health Check
 
 # Manual DNS testing

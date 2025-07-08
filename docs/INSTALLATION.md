@@ -20,13 +20,13 @@
 
 ### Dependencies
 
-- **Posh-ACME Module**: Automatically installed if not present (requires PowerShell Gallery access)
+- **Posh-ACME Module**: Automatically installed if not present (requires PowerShell Gallery)
 - **Windows Management Framework**: 5.1+ (included in modern Windows versions)
-- **TLS 1.2**: Required for secure ACME communications (enabled by default in modern Windows)
+- **TLS 1.2**: Required for secure ACME communications (enabled by default)
 
 ## 📦 Installation Methods
 
-### Method 1: Git Clone (Recommended for Development)
+### Method 1: Git Clone (Recommended)
 
 ```powershell
 # Clone the repository
@@ -63,7 +63,7 @@ Start-AutoCert
 
 When you run `.\Main.ps1` for the first time, the system will:
 
-1. **Check Prerequisites**: Verify PowerShell version, administrator privileges, and system compatibility
+1. **Check Prerequisites**: Verify PowerShell version, admin privileges, and system compatibility
 2. **Install Dependencies**: Automatically install Posh-ACME module from PowerShell Gallery
 3. **Configure ACME Server**: Set up Let's Encrypt production or staging environment
 4. **System Health Check**: Validate configuration and network connectivity

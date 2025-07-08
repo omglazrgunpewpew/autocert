@@ -145,7 +145,7 @@ Multi-channel alerting for certificate events.
 ### Basic Health Check
 
 ```powershell
-# Run comprehensive health check
+# Run health check
 $healthResults = Invoke-HealthCheck
 $report = Get-HealthReport -HealthResults $healthResults
 
@@ -338,5 +338,4 @@ Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $variable
 }
 ```
 
-This framework provides enterprise-grade reliability for certificate management
-operations while maintaining ease of use and monitoring capabilities.
+This framework provides reliable certificate management with monitoring capabilities.
