@@ -66,18 +66,23 @@ function Install-Certificate {
         }
 
         # Display certificate selection menu
-        Write-Host "`nSelect the certificate you want to install:" -ForegroundColor Cyan
+        Write-Information "Select the certificate you want to install:" -InformationAction Continue
         for ($i = 0; $i -lt $certs.Count; $i++) {
             $cert = $certs[$i]
             $expiryInfo = ""
             if ($cert.Certificate) {
                 $daysUntilExpiry = ($cert.Certificate.NotAfter - (Get-Date)).Days
-                $expiryColor = if ($daysUntilExpiry -gt 30) { "Green" } elseif ($daysUntilExpiry -gt 7) { "Yellow" } else { "Red" }
                 $expiryInfo = " (expires in $daysUntilExpiry days)"
+                if ($daysUntilExpiry -le 7) {
+                    Write-Warning "$($i + 1)) $($cert.MainDomain)$expiryInfo"
+                } else {
+                    Write-Information "$($i + 1)) $($cert.MainDomain)$expiryInfo" -InformationAction Continue
+                }
+            } else {
+                Write-Information "$($i + 1)) $($cert.MainDomain)$expiryInfo" -InformationAction Continue
             }
-            Write-Host "$($i + 1)) $($cert.MainDomain)$expiryInfo" -ForegroundColor White
         }
-        Write-Host "0) Back to main menu" -ForegroundColor Gray
+        Write-Information "0) Back to main menu" -InformationAction Continue
         
         $selection = Get-ValidatedInput -Prompt "`nEnter your choice (0-$($certs.Count))" -ValidOptions (0..$certs.Count)
         if ($selection -eq 0) {
@@ -998,8 +1003,8 @@ try {
                 $reportPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "certificate_installation_report_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
                 
                 # Gather system information
-                $osInfo = Get-WmiObject -Class Win32_OperatingSystem
-                $computerInfo = Get-WmiObject -Class Win32_ComputerSystem
+                $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
+                $computerInfo = Get-CimInstance -ClassName Win32_ComputerSystem
                 
                 $report = @"
 COMPREHENSIVE CERTIFICATE INSTALLATION REPORT

@@ -84,7 +84,7 @@ function Initialize-ScriptModules {
     
     try {
         if (-not $NonInteractive) {
-            Write-Host "Loading certificate management system..." -ForegroundColor Cyan
+            Write-Information "Loading certificate management system..." -InformationAction Continue
             Write-ProgressHelper -Activity "System Initialization" -Status "Loading core modules..." -PercentComplete 10
         }
         
@@ -1155,11 +1155,11 @@ function Test-SystemHealth {
     # Check system resources
     Write-Host "`n10. System Resources:" -ForegroundColor Cyan
     try {
-        $memory = Get-WmiObject -Class Win32_ComputerSystem
+        $memory = Get-CimInstance -ClassName Win32_ComputerSystem
         $totalMemoryGB = [math]::Round($memory.TotalPhysicalMemory / 1GB, 2)
         Write-Host "   Total Memory: $totalMemoryGB GB" -ForegroundColor Green
         
-        $os = Get-WmiObject -Class Win32_OperatingSystem
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem
         $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
         $memoryUsage = [math]::Round((($totalMemoryGB - $freeMemoryGB) / $totalMemoryGB) * 100, 1)
         Write-Host "   Memory Usage: $memoryUsage%" -ForegroundColor $(if ($memoryUsage -lt 80) { "Green" } else { "Yellow" })
@@ -1169,7 +1169,7 @@ function Test-SystemHealth {
         }
         
         # Check available disk space
-        $systemDrive = Get-WmiObject -Class Win32_LogicalDisk | Where-Object { $_.DeviceID -eq $env:SystemDrive }
+        $systemDrive = Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DeviceID -eq $env:SystemDrive }
         $freeSpaceGB = [math]::Round($systemDrive.FreeSpace / 1GB, 2)
         $totalSpaceGB = [math]::Round($systemDrive.Size / 1GB, 2)
         $diskUsage = [math]::Round((($totalSpaceGB - $freeSpaceGB) / $totalSpaceGB) * 100, 1)

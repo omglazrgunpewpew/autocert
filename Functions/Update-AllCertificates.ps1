@@ -4,7 +4,8 @@
 #>
 
 function Update-AllCertificates {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([System.Boolean])]
     param(
         [switch]$Force
     )

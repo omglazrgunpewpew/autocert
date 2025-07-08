@@ -8,6 +8,7 @@
 
 function Get-ExistingCertificates {
     [CmdletBinding()]
+    [OutputType([System.Object[]])]
     param(
         [switch]$ShowMenu
     )

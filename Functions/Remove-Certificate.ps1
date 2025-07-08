@@ -4,6 +4,9 @@
 #>
 
 function Remove-Certificate {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    
     Initialize-ACMEServer
     $revokedCerts = Get-RevokedCertificates
     $orders       = Get-PAOrder
@@ -45,20 +48,22 @@ function Remove-Certificate {
                 $certFilePath = $cert.CertFile
                 $keyFilePath  = $cert.KeyFile
                 if ((Test-Path $certFilePath) -and (Test-Path $keyFilePath)) {
-                    try {
-                        Revoke-PACertificate -CertFile $certFilePath -KeyFile $keyFilePath -Reason keyCompromise -Force -Verbose
-                        $revokedCerts += $mainDomain
-                        Save-RevokedCertificates $revokedCerts
-                        Write-Host "`nCertificate for $mainDomain revoked." -ForegroundColor Green
-                    } catch {
-                        if ($_.Exception.Message -match 'already revoked') {
+                    if ($PSCmdlet.ShouldProcess($mainDomain, "Revoke certificate")) {
+                        try {
+                            Revoke-PACertificate -CertFile $certFilePath -KeyFile $keyFilePath -Reason keyCompromise -Force -Verbose
                             $revokedCerts += $mainDomain
                             Save-RevokedCertificates $revokedCerts
-                            Write-Host "`nCertificate was already revoked. Updated status." -ForegroundColor Yellow
-                        } else {
-                            Write-Host "Failed to revoke certificate for ${mainDomain}: $($_)" -ForegroundColor Red
-                            Write-Log "Failed to revoke certificate for ${mainDomain}: $($_)" -Level 'Error'
-                            return
+                            Write-Information "Certificate for $mainDomain revoked." -InformationAction Continue
+                        } catch {
+                            if ($_.Exception.Message -match 'already revoked') {
+                                $revokedCerts += $mainDomain
+                                Save-RevokedCertificates $revokedCerts
+                                Write-Warning "Certificate was already revoked. Updated status."
+                            } else {
+                                Write-Host "Failed to revoke certificate for ${mainDomain}: $($_)" -ForegroundColor Red
+                                Write-Log "Failed to revoke certificate for ${mainDomain}: $($_)" -Level 'Error'
+                                return
+                            }
                         }
                     }
                 } else {

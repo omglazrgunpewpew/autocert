@@ -196,9 +196,17 @@ cd autocert
 # Install development dependencies
 .\Tests\Install-DevDependencies.ps1
 
+# Optional: Disable Posh-ACME auto-updates during development
+$env:POSHACME_SKIP_UPGRADE_CHECK = $true
+
 # Run tests
 .\Tests\RunTests.ps1
 ```
+
+**Development Tips:**
+- Set `$env:POSHACME_SKIP_UPGRADE_CHECK = $true` to prevent Posh-ACME from auto-updating during testing
+- Use `.\Quick-Validation.ps1` for fast syntax and basic validation checks
+- The CI/CD pipeline automatically disables Posh-ACME updates for consistent builds
 
 ## 📄 License
 

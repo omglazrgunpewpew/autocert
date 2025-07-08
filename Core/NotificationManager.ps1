@@ -218,6 +218,7 @@ Please address these issues promptly to ensure continued certificate management 
 
 function Send-Notification {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$TemplateName,
@@ -292,6 +293,7 @@ function Send-Notification {
 
 function Send-EmailNotification {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$Subject,
@@ -363,6 +365,7 @@ function Send-EmailNotification {
 
 function Send-EventLogNotification {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$Subject,
@@ -416,6 +419,7 @@ function Send-EventLogNotification {
 
 function Send-FileNotification {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$Subject,
@@ -450,6 +454,7 @@ $('-' * 80)
 
 function Send-WebhookNotification {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$Subject,
@@ -492,8 +497,218 @@ function Send-WebhookNotification {
     }
 }
 
+function Send-TeamsNotification {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Subject,
+        [Parameter(Mandatory)]
+        [string]$Body,
+        [NotificationLevel]$Level = [NotificationLevel]::Info,
+        [hashtable]$Variables = @{
+        }
+    )
+    
+    try {
+        $config = Get-RenewalConfig
+        $teamsWebhookUrl = $config.TeamsWebhookUrl
+        
+        if (-not $teamsWebhookUrl) {
+            return @{ Success = $false; Error = "Teams webhook URL not configured" }
+        }
+        
+        # Map notification level to Teams theme color
+        $themeColor = switch ($Level) {
+            ([NotificationLevel]::Critical) { "FF0000" }  # Red
+            ([NotificationLevel]::Error) { "FF6600" }     # Orange
+            ([NotificationLevel]::Warning) { "FFD700" }   # Gold
+            ([NotificationLevel]::Success) { "00FF00" }   # Green
+            default { "0078D4" }                          # Blue
+        }
+        
+        # Create Teams adaptive card payload
+        $teamsPayload = @{
+            "@type" = "MessageCard"
+            "@context" = "https://schema.org/extensions"
+            summary = $Subject
+            themeColor = $themeColor
+            sections = @(
+                @{
+                    activityTitle = $Subject
+                    activitySubtitle = "AutoCert Certificate Management"
+                    activityImage = "https://docs.microsoft.com/en-us/azure/media/index/azure-security.svg"
+                    facts = @(
+                        @{
+                            name = "Server"
+                            value = $env:COMPUTERNAME
+                        },
+                        @{
+                            name = "Timestamp" 
+                            value = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss UTC')
+                        },
+                        @{
+                            name = "Level"
+                            value = $Level.ToString()
+                        }
+                    )
+                    markdown = $true
+                    text = $Body
+                }
+            )
+        }
+        
+        # Add domain-specific facts if available
+        if ($Variables.Domain) {
+            $teamsPayload.sections[0].facts += @{
+                name = "Domain"
+                value = $Variables.Domain
+            }
+        }
+        
+        if ($Variables.ExpirationDate) {
+            $teamsPayload.sections[0].facts += @{
+                name = "Expiration"
+                value = $Variables.ExpirationDate
+            }
+        }
+        
+        $jsonPayload = $teamsPayload | ConvertTo-Json -Depth 10
+        
+        $headers = @{
+            'Content-Type' = 'application/json'
+            'User-Agent' = 'AutoCert/2.0.0'
+        }
+        
+        Invoke-RestMethod -Uri $teamsWebhookUrl -Method Post -Body $jsonPayload -Headers $headers -TimeoutSec 30
+        
+        Write-Log "Teams notification sent: $Subject" -Level 'Info'
+        return @{ Success = $true; TeamsWebhookUrl = $teamsWebhookUrl }
+        
+    } catch {
+        Write-Log "Failed to send Teams notification: $($_.Exception.Message)" -Level 'Error'
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
+function Send-SlackNotification {
+    [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Subject,
+        [Parameter(Mandatory)]
+        [string]$Body,
+        [NotificationLevel]$Level = [NotificationLevel]::Info,
+        [hashtable]$Variables = @{
+        }
+    )
+    
+    try {
+        $config = Get-RenewalConfig
+        $slackWebhookUrl = $config.SlackWebhookUrl
+        
+        if (-not $slackWebhookUrl) {
+            return @{ Success = $false; Error = "Slack webhook URL not configured" }
+        }
+        
+        # Map notification level to Slack color and emoji
+        $color = switch ($Level) {
+            ([NotificationLevel]::Critical) { "danger"; $emoji = ":rotating_light:" }
+            ([NotificationLevel]::Error) { "danger"; $emoji = ":x:" }
+            ([NotificationLevel]::Warning) { "warning"; $emoji = ":warning:" }
+            ([NotificationLevel]::Success) { "good"; $emoji = ":white_check_mark:" }
+            default { "#0078D4"; $emoji = ":information_source:" }
+        }
+        
+        # Create Slack message payload
+        $slackPayload = @{
+            username = "AutoCert"
+            icon_emoji = ":shield:"
+            attachments = @(
+                @{
+                    color = $color
+                    title = "$emoji $Subject"
+                    text = $Body
+                    fields = @(
+                        @{
+                            title = "Server"
+                            value = $env:COMPUTERNAME
+                            short = $true
+                        },
+                        @{
+                            title = "Level"
+                            value = $Level.ToString()
+                            short = $true
+                        },
+                        @{
+                            title = "Timestamp"
+                            value = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss UTC')
+                            short = $false
+                        }
+                    )
+                    footer = "AutoCert Certificate Management"
+                    footer_icon = "https://docs.microsoft.com/en-us/azure/media/index/azure-security.svg"
+                    ts = [int][double]::Parse((Get-Date -UFormat %s))
+                }
+            )
+        }
+        
+        # Add domain-specific fields if available
+        if ($Variables.Domain) {
+            $slackPayload.attachments[0].fields += @{
+                title = "Domain"
+                value = $Variables.Domain
+                short = $true
+            }
+        }
+        
+        if ($Variables.ExpirationDate) {
+            $slackPayload.attachments[0].fields += @{
+                title = "Expiration"
+                value = $Variables.ExpirationDate
+                short = $true
+            }
+        }
+        
+        # Add action buttons for critical/error notifications
+        if ($Level -eq [NotificationLevel]::Critical -or $Level -eq [NotificationLevel]::Error) {
+            $slackPayload.attachments[0].actions = @(
+                @{
+                    type = "button"
+                    text = "View Logs"
+                    url = "https://$($env:COMPUTERNAME)/autocert/logs"
+                    style = "primary"
+                },
+                @{
+                    type = "button" 
+                    text = "Troubleshoot"
+                    url = "https://github.com/your-org/autocert/blob/main/docs/TROUBLESHOOTING.md"
+                }
+            )
+        }
+        
+        $jsonPayload = $slackPayload | ConvertTo-Json -Depth 10
+        
+        $headers = @{
+            'Content-Type' = 'application/json'
+            'User-Agent' = 'AutoCert/2.0.0'
+        }
+        
+        Invoke-RestMethod -Uri $slackWebhookUrl -Method Post -Body $jsonPayload -Headers $headers -TimeoutSec 30
+        
+        Write-Log "Slack notification sent: $Subject" -Level 'Info'
+        return @{ Success = $true; SlackWebhookUrl = $slackWebhookUrl }
+        
+    } catch {
+        Write-Log "Failed to send Slack notification: $($_.Exception.Message)" -Level 'Error'
+        return @{ Success = $false; Error = $_.Exception.Message }
+    }
+}
+
 function Get-SMTPSettings {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param()
     
     try {
@@ -520,6 +735,7 @@ function Get-SMTPSettings {
 
 function Test-NotificationSystem {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [NotificationChannel[]]$Channels = @([NotificationChannel]::Email, [NotificationChannel]::EventLog),
         [string]$TestRecipient
@@ -534,18 +750,17 @@ function Test-NotificationSystem {
         NextRenewalDate = (Get-Date).AddDays(60)
     }
     
-    Write-Host "Testing notification system..." -ForegroundColor Cyan
+    Write-Information "Testing notification system..." -InformationAction Continue
     
     $results = Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $testVariables -Channels $Channels -OverrideRecipient $TestRecipient
     
     foreach ($channel in $results.Keys) {
         $result = $results[$channel]
         $status = if ($result.Success) { "✓ PASS" } else { "✗ FAIL" }
-        $color = if ($result.Success) { "Green" } else { "Red" }
         
-        Write-Host "$status $channel" -ForegroundColor $color
+        Write-Information "$status $channel" -InformationAction Continue
         if (-not $result.Success) {
-            Write-Host "  Error: $($result.Error)" -ForegroundColor Red
+            Write-Error "  Error: $($result.Error)"
         }
     }
     

@@ -15,17 +15,21 @@ if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
         Exit
     }
 } else {
-    # Check for updates
-    $currentVersion = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).Version
-    try {
-        $latestVersion = (Find-Module -Name Posh-ACME).Version
-        if ($currentVersion -lt $latestVersion) {
-            Write-Host "`nA newer version of Posh-ACME is available. Updating..."
-            Update-Module -Name Posh-ACME -Force -ErrorAction Stop
-            Write-Host "Posh-ACME module updated to version $latestVersion."
+    # Check for updates only if not explicitly disabled (useful for CI/CD)
+    if (-not $env:POSHACME_SKIP_UPGRADE_CHECK) {
+        $currentVersion = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).Version
+        try {
+            $latestVersion = (Find-Module -Name Posh-ACME).Version
+            if ($currentVersion -lt $latestVersion) {
+                Write-Host "`nA newer version of Posh-ACME is available. Updating..."
+                Update-Module -Name Posh-ACME -Force -ErrorAction Stop
+                Write-Host "Posh-ACME module updated to version $latestVersion."
+            }
+        } catch {
+            Write-Host "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
         }
-    } catch {
-        Write-Host "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
+    } else {
+        Write-Verbose "Posh-ACME update check skipped (POSHACME_SKIP_UPGRADE_CHECK is set)"
     }
 }
 

@@ -62,8 +62,9 @@ class HealthCheck {
     }
 }
 
-function Initialize-HealthChecks {
+function Initialize-HealthCheck {
     [CmdletBinding()]
+    [OutputType([void])]
     param()
     
     $script:HealthChecks = @{
@@ -162,7 +163,7 @@ function Initialize-HealthChecks {
         'DiskSpace' = [HealthCheck]::new(
             'DiskSpace',
             {
-                $drive = Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'"
+                $drive = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
                 $freeSpaceGB = [math]::Round($drive.FreeSpace / 1GB, 2)
                 if ($freeSpaceGB -lt 1) {
                     throw "Insufficient disk space: $freeSpaceGB GB free"
@@ -234,6 +235,7 @@ function Initialize-HealthChecks {
                                     }
                                 }
                             } catch {
+                                Write-Log "Failed to load certificate for $($order.MainDomain): $($_.Exception.Message)" -Level 'Warning'
                                 # Skip certificates that can't be loaded
                             }
                         }
@@ -260,6 +262,7 @@ function Initialize-HealthChecks {
 
 function Invoke-HealthCheck {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable[]])]
     param(
         [string[]]$CheckNames = @(),
         [string[]]$Categories = @(),
@@ -268,7 +271,7 @@ function Invoke-HealthCheck {
     )
     
     if (-not $script:HealthChecks) {
-        Initialize-HealthChecks
+        Initialize-HealthCheck
     }
     
     $checksToRun = @()
@@ -300,8 +303,12 @@ function Invoke-HealthCheck {
         
         if ($Detailed) {
             $status = if ($result.Status -eq 'Pass') { '✓' } else { '✗' }
-            $color = if ($result.Status -eq 'Pass') { 'Green' } else { 'Red' }
-            Write-Host "$status $($result.Name): $($result.Message)" -ForegroundColor $color
+            $message = "$status $($result.Name): $($result.Message)"
+            if ($result.Status -eq 'Pass') {
+                Write-Information $message -InformationAction Continue
+            } else {
+                Write-Warning $message
+            }
         }
     }
     
@@ -314,6 +321,7 @@ function Invoke-HealthCheck {
 
 function Get-HealthReport {
     [CmdletBinding()]
+    [OutputType([System.Collections.Hashtable])]
     param(
         [hashtable[]]$HealthResults
     )
