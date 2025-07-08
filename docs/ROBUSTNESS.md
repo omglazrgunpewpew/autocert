@@ -5,36 +5,43 @@ This document outlines the advanced robustness and resilience features added to 
 ## 🛡️ Core Resilience Components
 
 ### 1. Configuration Management System
+
 - **Schema Validation**: Ensures all configuration values are within acceptable ranges
 - **Automatic Backup**: Creates timestamped backups before configuration changes
 - **Recovery Mechanism**: Allows restoration from previous working configurations
 - **Default Initialization**: Provides sensible defaults for new installations
 
 **Features:**
+
 - Configuration validation with detailed error reporting
 - Automatic backup rotation with retention policies
 - Schema versioning for future compatibility
 - Environment-specific configuration templates
 
 ### 2. Circuit Breaker Pattern
+
 Prevents cascade failures by temporarily stopping operations that are likely to fail.
 
 **Implemented Circuit Breakers:**
+
 - **DNS Validation**: Protects against DNS provider failures
 - **Certificate Renewal**: Prevents repeated ACME server failures
 - **Certificate Installation**: Guards against certificate store issues
 - **Email Notifications**: Prevents notification spam during outages
 
 **Configuration:**
+
 - Configurable failure thresholds
 - Exponential backoff timing
 - Automatic recovery mechanisms
 - Fallback operation support
 
 ### 3. Comprehensive Health Monitoring
+
 Real-time monitoring of system health with proactive alerting.
 
 **Health Checks:**
+
 - **System Checks**: PowerShell version, admin privileges, disk space
 - **Dependency Checks**: Posh-ACME module, certificate store access
 - **Network Checks**: ACME server connectivity, DNS resolution
@@ -42,15 +49,18 @@ Real-time monitoring of system health with proactive alerting.
 - **Security Checks**: Credential validation, permission verification
 
 **Features:**
+
 - Categorized health checks (Critical, High, Medium, Low)
 - Automated health reports
 - Integration with notification system
 - Performance tracking and trending
 
 ### 4. Advanced Backup and Recovery
+
 Comprehensive backup system for certificates, configurations, and metadata.
 
 **Backup Features:**
+
 - **Automated Scheduling**: Daily, weekly, and monthly backup cycles
 - **Compression**: Reduces storage space requirements
 - **Encryption**: Protects sensitive certificate data
@@ -58,15 +68,18 @@ Comprehensive backup system for certificates, configurations, and metadata.
 - **Retention Policies**: Automatic cleanup of old backups
 
 **Recovery Features:**
+
 - **Point-in-time Recovery**: Restore from specific backup dates
 - **Partial Recovery**: Restore individual certificates or configurations
 - **Integrity Testing**: Verify backup validity before restoration
 - **Rollback Capability**: Quick recovery from failed updates
 
 ### 5. Multi-Channel Notification System
+
 Robust alerting system with multiple communication channels.
 
 **Notification Channels:**
+
 - **Email**: SMTP with SSL/TLS support and templates
 - **Event Log**: Windows Event Log integration
 - **File Logging**: Structured log files with rotation
@@ -75,6 +88,7 @@ Robust alerting system with multiple communication channels.
 - **Slack**: Slack API integration for instant messaging
 
 **Notification Templates:**
+
 - **Certificate Renewal Success**: Detailed success reporting
 - **Certificate Renewal Failure**: Urgent failure alerts with troubleshooting
 - **Certificate Expiry Warning**: Proactive expiration notifications
@@ -83,18 +97,21 @@ Robust alerting system with multiple communication channels.
 ## 🔧 Implementation Details
 
 ### Error Handling Strategy
+
 1. **Layered Error Handling**: Multiple levels of error catching and recovery
 2. **Graceful Degradation**: System continues operating with reduced functionality
 3. **Detailed Logging**: Comprehensive error tracking and debugging information
 4. **User-Friendly Messages**: Clear, actionable error messages for administrators
 
 ### Retry Logic
+
 - **Exponential Backoff**: Intelligent retry timing to prevent overwhelming services
 - **Maximum Attempts**: Configurable retry limits to prevent infinite loops
 - **Success Conditions**: Custom validation for operation success
 - **Circuit Breaker Integration**: Automatic retry suspension during outages
 
 ### Security Enhancements
+
 - **Credential Protection**: Secure storage using Windows Credential Manager
 - **Data Encryption**: Backup encryption for sensitive information
 - **Access Control**: Administrator privilege validation
@@ -103,18 +120,21 @@ Robust alerting system with multiple communication channels.
 ## 📊 Monitoring and Alerting
 
 ### Performance Metrics
+
 - **Operation Duration**: Timing for all major operations
 - **Success Rates**: Track renewal and installation success percentages
 - **Error Patterns**: Identify recurring issues and trends
 - **Resource Usage**: Monitor disk space, memory, and network usage
 
 ### Alert Thresholds
+
 - **Certificate Expiry**: 30, 14, 7, and 1 day warnings
 - **Renewal Failures**: Immediate alerts with escalation
 - **System Health**: Proactive monitoring of system components
 - **Performance Degradation**: Alerts for slow operations
 
 ### Reporting
+
 - **Daily Health Reports**: Automated system status summaries
 - **Weekly Performance Reports**: Trend analysis and capacity planning
 - **Monthly Compliance Reports**: Certificate inventory and compliance status
@@ -123,6 +143,7 @@ Robust alerting system with multiple communication channels.
 ## 🚀 Usage Examples
 
 ### Basic Health Check
+
 ```powershell
 # Run comprehensive health check
 $healthResults = Invoke-HealthCheck
@@ -139,6 +160,7 @@ Write-Host "Overall Status: $($report.OverallStatus)" -ForegroundColor $(
 ```
 
 ### Configuration Backup and Restore
+
 ```powershell
 # Backup current configuration
 $backupFile = Backup-Configuration
@@ -155,6 +177,7 @@ try {
 ```
 
 ### Circuit Breaker Monitoring
+
 ```powershell
 # Check circuit breaker status
 $status = Get-CircuitBreakerStatus
@@ -170,6 +193,7 @@ Reset-CircuitBreaker -OperationName 'DNSValidation'
 ```
 
 ### Certificate Backup
+
 ```powershell
 # Create comprehensive certificate backup
 $backup = New-CertificateBackup -Domain "example.com" -IncludePrivateKey -Compress
@@ -184,6 +208,7 @@ if ($integrity.IsValid) {
 ```
 
 ### Advanced Notifications
+
 ```powershell
 # Send custom notification
 $variables = @{
@@ -242,6 +267,7 @@ Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $variable
 ## 📋 Configuration Reference
 
 ### Health Monitor Settings
+
 ```json
 {
   "HealthChecks": {
@@ -257,6 +283,7 @@ Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $variable
 ```
 
 ### Circuit Breaker Settings
+
 ```json
 {
   "CircuitBreakers": {
@@ -275,6 +302,7 @@ Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $variable
 ```
 
 ### Backup Settings
+
 ```json
 {
   "BackupSettings": {
@@ -291,6 +319,7 @@ Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $variable
 ```
 
 ### Notification Settings
+
 ```json
 {
   "NotificationSettings": {

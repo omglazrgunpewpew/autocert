@@ -5,6 +5,7 @@ This guide covers setting up DNS provider credentials for automated certificate 
 ## 🌐 Supported DNS Providers
 
 ### Fully Automated Providers (API Integration)
+
 | Provider | Authentication | Wildcard Support | Setup Difficulty |
 |----------|---------------|------------------|------------------|
 | **Cloudflare** | API Token | ✅ | Easy |
@@ -26,9 +27,11 @@ This guide covers setting up DNS provider credentials for automated certificate 
 ## 🔧 Provider-Specific Setup Instructions
 
 ### Cloudflare (Recommended)
+
 Cloudflare offers the simplest setup process with excellent API documentation.
 
 #### Step 1: Create API Token
+
 1. Log into [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
 2. Click "Create Token"
 3. Use "Custom token" template
@@ -41,6 +44,7 @@ Cloudflare offers the simplest setup process with excellent API documentation.
 6. Copy the token immediately (shown only once)
 
 #### Step 2: Test the Token
+
 ```powershell
 # Test API access
 $token = "your_cloudflare_token_here"
@@ -49,16 +53,20 @@ Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/user/tokens/verify"
 ```
 
 #### Step 3: Store in AutoCert
+
 When prompted for credentials in AutoCert:
+
 - **Provider**: Cloudflare
 - **Token**: Your API token
 
 ---
 
 ### AWS Route53
+
 Route53 provides reliable DNS services with comprehensive API support.
 
 #### Step 1: Create IAM User
+
 1. Open [AWS IAM Console](https://console.aws.amazon.com/iam/)
 2. Create new user with programmatic access
 3. Attach policy with these permissions:
@@ -82,12 +90,15 @@ Route53 provides reliable DNS services with comprehensive API support.
 ```
 
 #### Step 2: Note Credentials
+
 - **Access Key ID**: Note this value
 - **Secret Access Key**: Note this value (shown only once)
 - **Region**: Default is `us-east-1`
 
 #### Step 3: Store in AutoCert
+
 When prompted for credentials in AutoCert:
+
 - **Provider**: Route53
 - **Access Key**: Your Access Key ID
 - **Secret Key**: Your Secret Access Key
@@ -95,9 +106,11 @@ When prompted for credentials in AutoCert:
 ---
 
 ### Azure DNS
+
 Azure DNS integrates well with Azure environments and supports service principals.
 
 #### Step 1: Create Service Principal
+
 ```powershell
 # Connect to Azure
 Connect-AzAccount
@@ -112,6 +125,7 @@ Write-Host "Client Secret: $($sp.PasswordCredentials.SecretText)"
 ```
 
 #### Step 2: Grant DNS Zone Contributor Role
+
 ```powershell
 # Get your DNS zone
 $dnsZone = Get-AzDnsZone -Name "yourdomain.com"
@@ -121,7 +135,9 @@ New-AzRoleAssignment -ObjectId $sp.Id -RoleDefinitionName "DNS Zone Contributor"
 ```
 
 #### Step 3: Store in AutoCert
+
 When prompted for credentials in AutoCert:
+
 - **Provider**: Azure
 - **Tenant ID**: Your Azure AD tenant ID
 - **Client ID**: Service principal application ID
@@ -130,21 +146,26 @@ When prompted for credentials in AutoCert:
 ---
 
 ### Google Cloud DNS
+
 Google Cloud DNS offers global DNS resolution with excellent performance.
 
 #### Step 1: Create Service Account
+
 1. Open [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts)
 2. Create new service account
 3. Grant "DNS Administrator" role
 4. Create and download JSON key file
 
 #### Step 2: Enable Cloud DNS API
+
 ```bash
 gcloud services enable dns.googleapis.com
 ```
 
 #### Step 3: Store in AutoCert
+
 When prompted for credentials in AutoCert:
+
 - **Provider**: Google Cloud DNS
 - **Service Account JSON**: Path to downloaded JSON file
 - **Project ID**: Your Google Cloud project ID
@@ -152,30 +173,37 @@ When prompted for credentials in AutoCert:
 ---
 
 ### DigitalOcean
+
 DigitalOcean provides simple API access for DNS management.
 
 #### Step 1: Generate API Token
+
 1. Log into [DigitalOcean Control Panel](https://cloud.digitalocean.com/account/api/tokens)
 2. Generate new token with "Write" scope
 3. Copy the token
 
 #### Step 2: Store in AutoCert
+
 When prompted for credentials in AutoCert:
+
 - **Provider**: DigitalOcean
 - **API Token**: Your DigitalOcean token
 
 ---
 
 ### Manual DNS Mode
+
 Use this method when your DNS provider doesn't have API integration or you prefer manual control.
 
 #### How It Works
+
 1. AutoCert generates a TXT record name and value
 2. You manually add the TXT record to your DNS
 3. AutoCert monitors DNS propagation
 4. Certificate is issued after validation
 
 #### Step-by-Step Process
+
 1. Start certificate registration in AutoCert
 2. Select "Manual DNS" as provider
 3. Note the TXT record details:
@@ -186,6 +214,7 @@ Use this method when your DNS provider doesn't have API integration or you prefe
 6. Return to AutoCert and continue the process
 
 #### DNS Propagation Check
+
 ```powershell
 # Check if TXT record is propagated
 nslookup -type=TXT _acme-challenge.yourdomain.com
@@ -198,17 +227,20 @@ nslookup -type=TXT _acme-challenge.yourdomain.com
 ## 🔒 Security Best Practices
 
 ### API Token Security
+
 1. **Minimal Permissions**: Grant only necessary permissions
 2. **Token Rotation**: Rotate tokens every 90 days
 3. **Secure Storage**: Store tokens in Windows Credential Manager
 4. **Monitor Usage**: Review API access logs regularly
 
 ### Network Security
+
 1. **IP Restrictions**: Limit API access to specific IP addresses where possible
 2. **Rate Limiting**: Be aware of provider rate limits
 3. **Audit Logs**: Monitor DNS changes in provider dashboards
 
 ### Credential Management
+
 ```powershell
 # AutoCert stores credentials securely using Windows Credential Manager
 # Credentials are encrypted and tied to the current user account
@@ -225,6 +257,7 @@ cmdkey /delete:AutoCert-DNSProvider-Cloudflare
 ### Common Problems
 
 #### Authentication Failures
+
 ```powershell
 # Test DNS provider credentials manually
 Test-DnsProvider -Provider Cloudflare -Token $yourToken
@@ -234,6 +267,7 @@ Get-StoredCredential -Target "AutoCert-DNSProvider-Cloudflare"
 ```
 
 #### DNS Propagation Delays
+
 ```powershell
 # Check DNS propagation status
 Test-DNSPropagation -RecordName "_acme-challenge.yourdomain.com" -RecordValue $txtValue
@@ -244,11 +278,13 @@ Clear-DnsClientCache
 ```
 
 #### Rate Limiting
+
 - **Let's Encrypt**: 50 certificates per domain per week
 - **DNS Providers**: Vary by provider (check documentation)
 - **Solution**: Use staging environment for testing
 
 #### Firewall Issues
+
 ```powershell
 # Test HTTPS connectivity to DNS provider APIs
 Test-NetConnection -ComputerName api.cloudflare.com -Port 443
@@ -256,6 +292,7 @@ Test-NetConnection -ComputerName route53.amazonaws.com -Port 443
 ```
 
 ### Diagnostic Commands
+
 ```powershell
 # Comprehensive DNS diagnostics
 .\Main.ps1 # Select option 7 for System Health Check
@@ -273,6 +310,7 @@ Invoke-WebRequest -Uri "https://www.cloudflarestatus.com/" -UseBasicParsing
 To change DNS providers:
 
 1. **Add New Provider Credentials**:
+
    ```powershell
    .\Main.ps1 # Select option 6 for Credential Management
    ```
@@ -281,6 +319,7 @@ To change DNS providers:
    Edit `dns-config.json` to set new default provider
 
 3. **Test New Provider**:
+
    ```powershell
    .\Main.ps1 -ConfigTest
    ```
@@ -291,17 +330,20 @@ To change DNS providers:
 ## 📚 Additional Resources
 
 ### Provider Documentation
+
 - [Cloudflare API Docs](https://developers.cloudflare.com/api/)
 - [AWS Route53 API Reference](https://docs.aws.amazon.com/route53/latest/APIReference/)
 - [Azure DNS REST API](https://docs.microsoft.com/en-us/rest/api/dns/)
 - [Google Cloud DNS API](https://cloud.google.com/dns/docs/reference)
 
 ### DNS Tools
+
 - [DNS Propagation Checker](https://whatsmydns.net/)
 - [DNS Lookup Tool](https://dnschecker.org/)
 - [MX Toolbox](https://mxtoolbox.com/SuperTool.aspx)
 
 ### Support
+
 - Check provider status pages for API issues
 - Review provider documentation for rate limits
 - Test credentials using provider's own tools before using with AutoCert

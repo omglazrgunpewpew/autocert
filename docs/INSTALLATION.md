@@ -3,6 +3,7 @@
 ## 🔧 System Requirements
 
 ### Minimum Requirements
+
 - **Operating System**: Windows 10 (1809+) or Windows Server 2016+
 - **PowerShell**: Version 5.1 or later
 - **Administrator Privileges**: Required for certificate store operations and IIS management
@@ -10,6 +11,7 @@
 - **.NET Framework**: 4.7.2 or later (usually pre-installed)
 
 ### Recommended Requirements
+
 - **Operating System**: Windows 11 or Windows Server 2019+
 - **PowerShell**: Version 7.3+ for optimal performance and compatibility
 - **Memory**: 4GB RAM minimum, 8GB+ recommended for multiple certificates
@@ -17,6 +19,7 @@
 - **Network**: Stable internet connection with minimal latency
 
 ### Dependencies
+
 - **Posh-ACME Module**: Automatically installed if not present (requires PowerShell Gallery access)
 - **Windows Management Framework**: 5.1+ (included in modern Windows versions)
 - **TLS 1.2**: Required for secure ACME communications (enabled by default in modern Windows)
@@ -24,6 +27,7 @@
 ## 📦 Installation Methods
 
 ### Method 1: Git Clone (Recommended for Development)
+
 ```powershell
 # Clone the repository
 git clone https://github.com/yourusername/autocert.git
@@ -37,6 +41,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ### Method 2: Download ZIP
+
 1. Download the latest release from [GitHub Releases](https://github.com/yourusername/autocert/releases)
 2. Extract to a folder (e.g., `C:\Tools\AutoCert`)
 3. Open PowerShell as Administrator
@@ -44,6 +49,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 5. Run `.\Main.ps1`
 
 ### Method 3: PowerShell Gallery (Coming Soon)
+
 ```powershell
 # Install from PowerShell Gallery
 Install-Module -Name AutoCert -Scope AllUsers
@@ -69,6 +75,7 @@ When you run `.\Main.ps1` for the first time, the system will:
 After installation, you can customize the system by creating configuration files in the main directory:
 
 ### Main Configuration (config.json)
+
 ```json
 {
   "ACMEServer": "https://acme-v02.api.letsencrypt.org/directory",
@@ -86,6 +93,7 @@ After installation, you can customize the system by creating configuration files
 ```
 
 ### DNS Provider Configuration (dns-config.json)
+
 ```json
 {
   "DefaultProvider": "Cloudflare",
@@ -105,6 +113,7 @@ After installation, you can customize the system by creating configuration files
 ```
 
 ### Email Notification Configuration (email-config.json)
+
 ```json
 {
   "Enabled": true,

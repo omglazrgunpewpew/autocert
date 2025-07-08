@@ -11,6 +11,7 @@ This guide helps you diagnose and resolve common issues with the Enhanced Certif
 **Cause**: PowerShell execution policy prevents script execution
 
 **Solution**:
+
 ```powershell
 # Check current execution policy
 Get-ExecutionPolicy
@@ -32,6 +33,7 @@ PowerShell.exe -ExecutionPolicy Bypass -File ".\Main.ps1"
 **Cause**: PowerShell Gallery access issues or permission problems
 
 **Solution**:
+
 ```powershell
 # Check PowerShell Gallery connectivity
 Test-NetConnection -ComputerName "www.powershellgallery.com" -Port 443
@@ -54,6 +56,7 @@ Import-Module Posh-ACME -Force
 **Error**: `"DNS provider authentication failed"`
 
 **Diagnostic Steps**:
+
 ```powershell
 # Check stored credentials
 cmdkey /list:AutoCert*
@@ -66,6 +69,7 @@ Test-NetConnection -ComputerName "route53.amazonaws.com" -Port 443
 **Provider-Specific Solutions**:
 
 #### Cloudflare Issues
+
 ```powershell
 # Test API token manually
 $token = "your_token_here"
@@ -83,6 +87,7 @@ if ($response.success) {
 ```
 
 #### AWS Route53 Issues
+
 ```powershell
 # Test AWS credentials
 $accessKey = "your_access_key"
@@ -97,6 +102,7 @@ Get-R53HostedZone -Credential $credential -Region us-east-1
 ```
 
 #### Azure DNS Issues
+
 ```powershell
 # Test service principal authentication
 $tenantId = "your_tenant_id"
@@ -116,6 +122,7 @@ Get-AzDnsZone
 **Error**: `"Certificate renewal failed"`
 
 **Diagnostic Steps**:
+
 ```powershell
 # Check certificate status
 Get-PACertificate -MainDomain "example.com"
@@ -134,6 +141,7 @@ Test-NetConnection -ComputerName "acme-v02.api.letsencrypt.org" -Port 443
 **Common Causes and Solutions**:
 
 #### DNS Propagation Issues
+
 ```powershell
 # Check DNS propagation globally
 # Use online tools: https://whatsmydns.net/
@@ -146,6 +154,7 @@ foreach ($server in $dnsServers) {
 ```
 
 #### Rate Limiting
+
 ```powershell
 # Check Let's Encrypt rate limits
 # https://letsencrypt.org/docs/rate-limits/
@@ -158,6 +167,7 @@ Get-PAOrder | Group-Object Subject | Select-Object Count, Name
 ```
 
 #### Certificate Store Issues
+
 ```powershell
 # Check certificate store access
 $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", "LocalMachine")
@@ -176,6 +186,7 @@ try {
 **Error**: `"Cannot install certificate to store"`
 
 **Diagnostic Steps**:
+
 ```powershell
 # Verify administrator privileges
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -203,6 +214,7 @@ foreach ($storeLocation in $stores) {
 **Error**: `"Failed to configure IIS binding"`
 
 **Diagnostic Steps**:
+
 ```powershell
 # Check if IIS is installed
 $iisFeature = Get-WindowsFeature -Name IIS-WebServerRole
@@ -230,6 +242,7 @@ if ($websites.Count -eq 0) {
 ```
 
 **Solutions**:
+
 ```powershell
 # Create test website
 New-Website -Name "TestSite" -Port 80 -PhysicalPath "C:\inetpub\wwwroot"
@@ -249,6 +262,7 @@ New-WebBinding -Name "Default Web Site" -Protocol https -Port 443 -HostHeader "e
 **Error**: `"Automatic renewal task not executing"`
 
 **Diagnostic Steps**:
+
 ```powershell
 # Check task existence
 $taskName = "AutoCert Certificate Renewal"
@@ -279,6 +293,7 @@ if ($events) {
 ```
 
 **Solutions**:
+
 ```powershell
 # Test task manually
 Start-ScheduledTask -TaskName $taskName
@@ -299,6 +314,7 @@ Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 ### System Health Check
 
 **Comprehensive System Diagnostics**:
+
 ```powershell
 # Run built-in health check
 .\Main.ps1 -ConfigTest
@@ -345,6 +361,7 @@ Test-AutoCertSystem
 ### Performance Diagnostics
 
 **Monitor Certificate Operations**:
+
 ```powershell
 # Monitor renewal performance
 function Measure-CertificateRenewal {
@@ -383,6 +400,7 @@ function Monitor-SystemResources {
 ### Network Connectivity Testing
 
 **Test ACME Server Connectivity**:
+
 ```powershell
 function Test-ACMEConnectivity {
     $acmeServers = @(
@@ -420,6 +438,7 @@ Test-ACMEConnectivity
 ### DNS Diagnostics
 
 **Test DNS Resolution**:
+
 ```powershell
 function Test-DNSResolution {
     param([string]$Domain)
@@ -465,6 +484,7 @@ Test-DNSResolution -Domain "example.com"
 ### PowerShell Log Analysis
 
 **Analyze Renewal Success Rate**:
+
 ```powershell
 function Get-RenewalStatistics {
     $logPath = "$env:LOCALAPPDATA\Posh-ACME\logs\autocert-renewal.log"
@@ -505,6 +525,7 @@ Get-RenewalStatistics
 ### Windows Event Log Analysis
 
 **Analyze Certificate Management Events**:
+
 ```powershell
 function Get-CertificateEvents {
     try {
@@ -554,6 +575,7 @@ Get-CertificateEvents
 ### Certificate Recovery
 
 **Recover from Backup**:
+
 ```powershell
 function Restore-CertificateFromBackup {
     param(
@@ -587,6 +609,7 @@ function Restore-CertificateFromBackup {
 ### System Recovery
 
 **Reset AutoCert Configuration**:
+
 ```powershell
 function Reset-AutoCertConfiguration {
     param([switch]$KeepCertificates)
@@ -673,6 +696,7 @@ Get-AutoCertSupportInfo | Out-File "AutoCert-SupportInfo.json"
 ### Emergency Contact
 
 For critical certificate issues:
+
 1. **Immediate**: Use manual DNS mode for urgent certificates
 2. **Recovery**: Restore from backups if available
 3. **Escalation**: Contact your DNS provider support
