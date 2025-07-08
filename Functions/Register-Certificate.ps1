@@ -1,7 +1,7 @@
-# Enhanced Functions/Register-Certificate.ps1
+# Functions/Register-Certificate.ps1
 <#
     .SYNOPSIS
-        Enhanced certificate registration with comprehensive DNS provider support,
+        Certificate registration with DNS provider support,
         robust error handling, and advanced validation.
 #>
 
@@ -45,7 +45,7 @@ function Register-Certificate {
     $mainDomain = $domain
     $domains = @()
 
-    # Ask for certificate type with enhanced options
+    # Ask for certificate type
     while ($true) {
         Write-Host "`nSelect the type of certificate you want to create:"
         Write-Host "1) Server-specific certificate for $domain"
@@ -216,7 +216,7 @@ function Register-Certificate {
             } -MaxAttempts 3 -InitialDelaySeconds 5 `
               -OperationName "ACME account creation"
 
-            Write-Host "`nACME account created successfully." -ForegroundColor Green
+            Write-Host "`nACME account created." -ForegroundColor Green
             Write-Log "ACME account created with email: $email"
             
             # Save email for future use
@@ -235,7 +235,7 @@ function Register-Certificate {
     # Initialize plugin arguments
     $pluginArgs = @{}
 
-    # Handle plugin-specific authentication with enhanced error handling
+    # Handle plugin-specific authentication
     switch ($plugin) {
         'Cloudflare' {
             $cred = Get-SecureCredential -ProviderName 'Cloudflare'
@@ -332,7 +332,7 @@ function Register-Certificate {
         }
         
         default {
-            # Handle other plugins with enhanced parameter collection
+            # Handle other plugins
             Write-Host "`nYou selected the $plugin plugin."
             
             # Prompt to view plugin's guide
@@ -385,7 +385,7 @@ function Register-Certificate {
 
     try {
         if ($plugin -eq 'Manual') {
-            # Enhanced manual challenge handling
+            # Manual challenge handling
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Preparing manual challenge..." -PercentComplete 75
             
             $cert = New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
@@ -410,7 +410,7 @@ function Register-Certificate {
             }
             Write-Host "=" * 80 -ForegroundColor Yellow
 
-            # Enhanced DNS propagation checking
+            # DNS propagation checking
             while ($true) {
                 $continue = Read-Host "`nPress Enter when you have created the DNS records and they have propagated, or type '0' to cancel"
                 if ($continue -eq '0') {
@@ -420,7 +420,7 @@ function Register-Certificate {
 
                 Write-ProgressHelper -Activity "Certificate Registration" -Status "Verifying DNS propagation..." -PercentComplete 80
 
-                # Test DNS record propagation with enhanced checking
+                # Test DNS record propagation
                 $allRecordsPresent = $true
                 $propagationResults = @()
                 
@@ -445,7 +445,7 @@ function Register-Certificate {
                 }
 
                 if ($allRecordsPresent) {
-                    # Proceed with validation using enhanced retry logic
+                    # Proceed with validation using retry logic
                     Write-ProgressHelper -Activity "Certificate Registration" -Status "Validating domain ownership..." -PercentComplete 85
                     
                     try {
@@ -468,8 +468,8 @@ function Register-Certificate {
                           -SuccessCondition { $_ -eq $true }
 
                         if ($validationResult) {
-                            Write-Host "`nAll domain validations completed successfully!" -ForegroundColor Green
-                            Write-Log "All domain validations completed successfully."
+                            Write-Host "`nAll domain validations completed!" -ForegroundColor Green
+                            Write-Log "All domain validations completed."
                             break
                         }
                     } catch {
@@ -506,20 +506,20 @@ function Register-Certificate {
                   -SuccessCondition { $null -ne $_.Certificate }
 
                 if (-not $cert.Certificate) {
-                    Write-Error "`nCertificate was not issued successfully. Please check the Let's Encrypt logs."
+                    Write-Error "`nCertificate was not issued. Please check the Let's Encrypt logs."
                     Write-Log "Certificate was not issued for $mainDomain" -Level 'Error'
                     Read-Host "`nPress Enter to return to the main menu"
                     return
                 }
 
                 # Display certificate details
-                Write-Host "`nCertificate issued successfully!" -ForegroundColor Green
+                Write-Host "`nCertificate issued!" -ForegroundColor Green
                 Write-Host "Subject: $($cert.Certificate.Subject)" -ForegroundColor Cyan
                 Write-Host "Issuer: $($cert.Certificate.Issuer)" -ForegroundColor Cyan
                 Write-Host "Valid Until: $($cert.Certificate.NotAfter)" -ForegroundColor Cyan
                 Write-Host "Thumbprint: $($cert.Certificate.Thumbprint)" -ForegroundColor Cyan
                 
-                Write-Log "Certificate issued successfully for $mainDomain, valid until $($cert.Certificate.NotAfter)"
+                Write-Log "Certificate issued for $mainDomain, valid until $($cert.Certificate.NotAfter)"
                 
             } catch {
                 Write-Error "`nFailed to retrieve issued certificate: $($_)"
@@ -528,7 +528,7 @@ function Register-Certificate {
                 return
             }
         } else {
-            # Automated challenge handling with enhanced error handling
+            # Automated challenge handling
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Processing automated challenge..." -PercentComplete 75
             
             $cert = Invoke-WithRetry -ScriptBlock {
@@ -548,8 +548,8 @@ function Register-Certificate {
                 return
             }
 
-            Write-Host "`nCertificate obtained successfully!" -ForegroundColor Green
-            Write-Log "Certificate obtained successfully for $mainDomain"
+            Write-Host "`nCertificate obtained!" -ForegroundColor Green
+            Write-Log "Certificate obtained for $mainDomain"
         }
 
         Write-ProgressHelper -Activity "Certificate Registration" -Status "Certificate ready for installation" -PercentComplete 95

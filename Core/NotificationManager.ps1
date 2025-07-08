@@ -75,7 +75,7 @@ Expiration Date: {{ExpirationDate}}
 Certificate Thumbprint: {{Thumbprint}}
 Renewal Duration: {{Duration}}
 
-The certificate for {{Domain}} has been successfully renewed and is valid until {{ExpirationDate}}.
+The certificate for {{Domain}} has been renewed and is valid until {{ExpirationDate}}.
 
 Next renewal scheduled for: {{NextRenewalDate}}
 

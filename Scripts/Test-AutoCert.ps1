@@ -4,7 +4,7 @@
         Test runner for AutoCert robustness and resilience features.
     
     .DESCRIPTION
-        This script runs comprehensive tests for the enhanced AutoCert features.
+        This script runs tests for the AutoCert features.
         It validates configuration management, circuit breakers, health monitoring,
         backup systems, and notification functionality.
     

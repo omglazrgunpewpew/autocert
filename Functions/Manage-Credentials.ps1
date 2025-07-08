@@ -32,7 +32,7 @@ function Test-SecretManagementPrerequisites {
         if ($choice -eq 'y') {
             try {
                 Install-Module -Name $missingModules -Repository PSGallery -Force -Scope CurrentUser
-                Write-Host "Modules installed successfully." -ForegroundColor Green
+                Write-Host "Modules installed." -ForegroundColor Green
             } catch {
                 Write-Error "Failed to install modules: $($_.Exception.Message)"
                 return $false
@@ -49,7 +49,7 @@ function Test-SecretManagementPrerequisites {
         if ($choice -eq 'y') {
             try {
                 Register-SecretVault -Name 'PoshACME_SecretStore' -ModuleName 'Microsoft.PowerShell.SecretStore' -DefaultVault
-                Write-Host "Default vault registered successfully." -ForegroundColor Green
+                Write-Host "Default vault registered." -ForegroundColor Green
             } catch {
                 Write-Error "Failed to register vault: $($_.Exception.Message)"
                 return $false
@@ -67,7 +67,7 @@ function Test-SecretManagementPrerequisites {
             Write-Warning "The secret vault is locked. Please unlock it to continue."
             try {
                 Unlock-SecretStore -Vault (Get-SecretVault).Name
-                Write-Host "Vault unlocked successfully." -ForegroundColor Green
+                Write-Host "Vault unlocked." -ForegroundColor Green
             } catch {
                 Write-Error "Failed to unlock the vault: $($_.Exception.Message)"
                 return $false
@@ -162,7 +162,7 @@ function Remove-StoredCredential {
     
     try {
         Remove-Secret -Name $Target -ErrorAction Stop
-        Write-Host "Credential '$Target' removed successfully." -ForegroundColor Green
+        Write-Host "Credential '$Target' removed." -ForegroundColor Green
         return $true
     } catch {
         Write-Error "Failed to remove credential '$Target': $($_.Exception.Message)"
@@ -182,7 +182,7 @@ function Set-StoredCredential {
     try {
         # Store password as a secret
         Set-Secret -Name $Target -Secret $Credential.Password -ErrorAction Stop
-        Write-Host "Credential '$Target' stored successfully." -ForegroundColor Green
+        Write-Host "Credential '$Target' stored." -ForegroundColor Green
         return $true
     } catch {
         Write-Error "Failed to store credential '$Target': $($_.Exception.Message)"

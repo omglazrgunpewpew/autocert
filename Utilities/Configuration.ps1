@@ -6,7 +6,7 @@
     Validates the system configuration for AutoCert certificate management.
 
 .DESCRIPTION
-    Performs comprehensive configuration validation including PowerShell version,
+    Performs configuration validation including PowerShell version,
     required modules, file permissions, and network connectivity.
 
 .PARAMETER Detailed
@@ -99,7 +99,7 @@ function Test-SystemConfiguration {
         }
         
         if ($Detailed) {
-            # Additional detailed checks
+            # Additional checks
             
             # Check DNS resolution
             try {

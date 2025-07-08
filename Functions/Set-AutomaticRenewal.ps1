@@ -282,7 +282,7 @@ function Set-AutomaticRenewal {
                     if (New-RenewalScheduledTask -Config $config -ScriptPath $mainScriptPath) {
                         Write-ProgressHelper -Activity "Automatic Renewal Setup" -Status "Setup complete!" -PercentComplete 100
                         
-                        Write-Host "`nAutomatic renewal configured successfully!" -ForegroundColor Green
+                        Write-Host "`nAutomatic renewal configured!" -ForegroundColor Green
                         Write-Host "`nConfiguration Summary:" -ForegroundColor Cyan
                         Write-Host "  Schedule: Daily at $($config.RenewalHour):$($config.RenewalMinute.ToString('00'))"
                         if ($config.UseRandomization) {
@@ -294,7 +294,7 @@ function Set-AutomaticRenewal {
                         
                         Write-Host "`nNext automatic renewal check: $(Get-Date -Hour $config.RenewalHour -Minute $config.RenewalMinute -Second 0)" -ForegroundColor Yellow
                         
-                        Write-Log "Automatic renewal configured successfully"
+                        Write-Log "Automatic renewal configured"
                         Write-Progress -Activity "Automatic Renewal Setup" -Completed
                         return
                     } else {
@@ -347,7 +347,7 @@ function Set-AutomaticRenewal {
                     $mainScriptPath = Join-Path (Split-Path $PSScriptRoot -Parent) "Main.ps1"
                     
                     if (New-RenewalScheduledTask -Config $config -ScriptPath $mainScriptPath) {
-                        Write-Host "`nQuick setup completed successfully!" -ForegroundColor Green
+                        Write-Host "`nQuick setup completed!" -ForegroundColor Green
                         Write-Log "Quick setup automatic renewal configured"
                         return
                     }

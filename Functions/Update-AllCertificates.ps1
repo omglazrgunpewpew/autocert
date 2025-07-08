@@ -50,7 +50,7 @@ function Update-AllCertificates {
                     if ($existingCert) {
                         Write-Host "Reinstalling renewed certificate..." -ForegroundColor Cyan
                         Install-PACertificate -PACertificate $renewed -StoreLocation LocalMachine
-                        Write-Host "Certificate reinstalled successfully." -ForegroundColor Green
+                        Write-Host "Certificate reinstalled." -ForegroundColor Green
                     }
                 } catch {
                     Write-Warning "Certificate renewed but reinstallation failed: $($_.Exception.Message)"

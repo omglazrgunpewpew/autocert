@@ -67,7 +67,7 @@ function Initialize-AutoCertModules {
             @{ Path = "$PSScriptRoot\..\Functions\Remove-Certificate.ps1"; Name = "Certificate Removal"; Critical = $false },
             @{ Path = "$PSScriptRoot\..\Functions\Get-ExistingCertificates.ps1"; Name = "Certificate Listing"; Critical = $false },
             @{ Path = "$PSScriptRoot\..\Functions\Set-AutomaticRenewal.ps1"; Name = "Automatic Renewal"; Critical = $false },
-            @{ Path = "$PSScriptRoot\..\Functions\Show-AdvancedOptions.ps1"; Name = "Options"; Critical = $false },
+            @{ Path = "$PSScriptRoot\..\Functions\Show-Options.ps1"; Name = "Options"; Critical = $false },
             @{ Path = "$PSScriptRoot\..\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false },
             @{ Path = "$PSScriptRoot\..\Functions\Manage-Credentials.ps1"; Name = "Credential Management"; Critical = $false }
         )
@@ -88,7 +88,7 @@ function Initialize-AutoCertModules {
                         Write-ProgressHelper -Activity "System Initialization" -Status "Loaded: $($module.Name)" -PercentComplete $percentComplete
                     }
                     
-                    Write-Verbose "Successfully loaded module: $($module.Name)"
+                    Write-Verbose "Loaded module: $($module.Name)"
                 } else {
                     $errorMsg = "Module file not found: $($module.Path)"
                     $script:InitializationErrors += $errorMsg
@@ -144,7 +144,7 @@ function Initialize-AutoCertModules {
 
         # Log successful initialization
         if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
-            Write-Log "AutoCert system loaded successfully (Modules: $($script:LoadedModules.Count))" -Level 'Info'
+            Write-Log "AutoCert system loaded (Modules: $($script:LoadedModules.Count))" -Level 'Info'
             Write-Log "Loaded modules: $($script:LoadedModules -join ', ')" -Level 'Debug'
             
             if ($script:InitializationErrors.Count -gt 0) {

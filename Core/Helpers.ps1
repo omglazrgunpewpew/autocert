@@ -1,4 +1,4 @@
-# Enhanced Core/Helpers.ps1
+# Core/Helpers.ps1
 <#
     .SYNOPSIS
         Helper functions shared across the utility.
@@ -86,7 +86,7 @@ function Write-ProgressHelper {
 #endregion
 
 #region Validation Functions
-# Enhanced input validation
+# Input validation
 function Get-ValidatedInput {
     [CmdletBinding()]
     param (
@@ -325,7 +325,7 @@ function Save-ScriptSettings {
 #endregion
 
 #region Credential Management
-# Function to securely store credentials
+# Function to store credentials
 function Set-SecureCredential {
     [CmdletBinding()]
     param (
@@ -346,7 +346,7 @@ function Set-SecureCredential {
     }
 }
 
-# Function to retrieve secure credentials
+# Function to retrieve credentials
 function Get-SecureCredential {
     [CmdletBinding()]
     param (
@@ -379,7 +379,7 @@ function Confirm-Action {
     return $response -match '^[Yy]$'
 }
 
-# Enhanced base domain detection using public suffix list
+# Base domain detection using public suffix list
 function Get-BaseDomain {
     [CmdletBinding()]
     param (

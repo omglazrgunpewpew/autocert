@@ -39,7 +39,7 @@ function Invoke-MenuOperation {
         Write-Error $errorMsg
         Write-Log $errorMsg -Level 'Error'
         
-        # Enhanced error reporting
+        # Error reporting
         Write-Host "`nError Details:" -ForegroundColor Red
         Write-Host "  Operation: $OperationName" -ForegroundColor Red
         Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red

@@ -107,7 +107,7 @@ function Initialize-ScriptModules {
             @{ Path = "$PSScriptRoot\Functions\Remove-Certificate.ps1"; Name = "Certificate Removal"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"; Name = "Certificate Listing"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"; Name = "Automatic Renewal"; Critical = $false },
-            @{ Path = "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"; Name = "Options"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Show-Options.ps1"; Name = "Options"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Manage-Credentials.ps1"; Name = "Credential Management"; Critical = $false }
         )
@@ -127,7 +127,7 @@ function Initialize-ScriptModules {
                         Write-ProgressHelper -Activity "System Initialization" -Status "Loaded: $($module.Name)" -PercentComplete $percentComplete
                     }
                     
-                    Write-Verbose "Successfully loaded module: $($module.Name)"
+                    Write-Verbose "Loaded module: $($module.Name)"
                 } else {
                     $errorMsg = "Module file not found: $($module.Path)"
                     $script:InitializationErrors += $errorMsg
@@ -167,7 +167,7 @@ function Initialize-ScriptModules {
             Write-Progress -Activity "System Initialization" -Completed
         }
 
-        Write-Log "Certificate management system loaded successfully (Version: $script:ScriptVersion)" -Level 'Info'
+        Write-Log "Certificate management system loaded (Version: $script:ScriptVersion)" -Level 'Info'
         Write-Log "Loaded modules: $($script:LoadedModules -join ', ')" -Level 'Debug'
         
         if ($script:InitializationErrors.Count -gt 0) {
@@ -354,8 +354,8 @@ if ($RenewAll) {
 
                 if ($newCert) {
                     $duration = (Get-Date) - $startTime
-                    Write-Host "Certificate for $mainDomain renewed successfully in $($duration.TotalMinutes.ToString('F1')) minutes." -ForegroundColor Green
-                    Write-Log "Certificate for $mainDomain renewed successfully" -Level 'Success'
+                    Write-Host "Certificate for $mainDomain renewed in $($duration.TotalMinutes.ToString('F1')) minutes." -ForegroundColor Green
+                    Write-Log "Certificate for $mainDomain renewed" -Level 'Success'
                     
                     $renewalCount++
 
@@ -372,7 +372,7 @@ if ($RenewAll) {
                         if ($existingCert) {
                             Write-Host "Reinstalling renewed certificate to certificate store..." -ForegroundColor Cyan
                             Install-PACertificate -PACertificate $newCert -StoreLocation LocalMachine
-                            Write-Host "Certificate reinstalled successfully." -ForegroundColor Green
+                            Write-Host "Certificate reinstalled." -ForegroundColor Green
                         }
                     } catch {
                         Write-Warning "Certificate renewed but reinstallation failed: $($_.Exception.Message)"
@@ -520,7 +520,7 @@ if ($ConfigTest) {
     $configValid = Test-SystemConfiguration
     
     if ($configValid) {
-        Write-Host "`nConfiguration test passed successfully." -ForegroundColor Green
+        Write-Host "`nConfiguration test passed." -ForegroundColor Green
         Exit 0
     } else {
         Write-Host "`nConfiguration test failed." -ForegroundColor Red
@@ -642,7 +642,7 @@ function Show-CredentialManagementMenu {
             try {
                 $cred = New-Object System.Management.Automation.PSCredential ($username, $password)
                 $null = $cred | Export-Clixml -Path "$env:LOCALAPPDATA\Posh-ACME\credentials.xml" -Force
-                Write-Host "Credential added successfully." -ForegroundColor Green
+                Write-Host "Credential added." -ForegroundColor Green
             } catch {
                 Write-Error "Failed to add credential: $($_.Exception.Message)"
             }
@@ -657,7 +657,7 @@ function Show-CredentialManagementMenu {
                 $cred = Get-StoredCredential -Target $target
                 if ($cred) {
                     Remove-StoredCredential -Target $target
-                    Write-Host "Credential removed successfully." -ForegroundColor Green
+                    Write-Host "Credential removed." -ForegroundColor Green
                 } else {
                     Write-Warning "Credential not found."
                 }
@@ -740,7 +740,7 @@ function Invoke-SingleCertificateManagement {
                 try {
                     $renewed = New-PACertificate -MainDomain $mainDomain -Force
                     if ($renewed) {
-                        Write-Host "Certificate for $mainDomain renewed successfully." -ForegroundColor Green
+                        Write-Host "Certificate for $mainDomain renewed." -ForegroundColor Green
                     } else {
                         Write-Warning "Renewal failed. Check logs for details."
                     }
@@ -794,30 +794,30 @@ function Show-Help {
     Write-Host "`nKey Features:" -ForegroundColor Yellow
     Write-Host "• Automatic DNS provider detection with 10+ supported providers" -ForegroundColor Green
     Write-Host "• Error handling with exponential backoff retry logic" -ForegroundColor Green
-    Write-Host "• Certificate caching for improved performance and reliability" -ForegroundColor Green
+    Write-Host "• Certificate caching" -ForegroundColor Green
     Write-Host "• Renewal scheduling with randomization" -ForegroundColor Green
-    Write-Host "• Multiple certificate installation targets (IIS, stores, files)" -ForegroundColor Green
-    Write-Host "• Logging and monitoring with event logs" -ForegroundColor Green
-    Write-Host "• Email notifications for renewal events and failures" -ForegroundColor Green
-    Write-Host "• System health checks and configuration validation" -ForegroundColor Green
-    Write-Host "• Multi-format certificate export (PFX, PEM, full-chain)" -ForegroundColor Green
+    Write-Host "• Certificate installation targets (IIS, stores, files)" -ForegroundColor Green
+    Write-Host "• Logging and monitoring" -ForegroundColor Green
+    Write-Host "• Email notifications" -ForegroundColor Green
+    Write-Host "• System health checks" -ForegroundColor Green
+    Write-Host "• Certificate export (PFX, PEM, full-chain)" -ForegroundColor Green
     
     Write-Host "`nMenu Options:" -ForegroundColor Yellow
-    Write-Host " 1) Register: Obtain new certificates with automated DNS validation"
-    Write-Host " 2) Install: Deploy certificates to various targets with verification"
-    Write-Host " 3) Renewal: Set up automated renewal with scheduling"
+    Write-Host " 1) Register: Obtain certificates with DNS validation"
+    Write-Host " 2) Install: Deploy certificates to targets"
+    Write-Host " 3) Renewal: Set up renewal scheduling"
     Write-Host " 4) Manage: Certificate management submenu including:"
-    Write-Host "    • View all certificates with status information"
-    Write-Host "    • Individual certificate management (renew, reinstall, view details)"
-    Write-Host "    • Bulk renewal operations and status checks"
-    Write-Host "    • Certificate export in multiple formats"
-    Write-Host "    • Safe certificate revocation with confirmation"
-    Write-Host "    • Certificate deletion with data cleanup"
-    Write-Host " 5) Options: ACME server settings, plugins, and configurations"
+    Write-Host "    • View certificates with status"
+    Write-Host "    • Certificate management (renew, reinstall, view details)"
+    Write-Host "    • Bulk renewal operations"
+    Write-Host "    • Certificate export"
+    Write-Host "    • Certificate revocation"
+    Write-Host "    • Certificate deletion"
+    Write-Host " 5) Options: ACME server settings and configurations"
     Write-Host " 6) Credentials: DNS provider credential management"
-    Write-Host " 7) Health: System status, certificate validation, and diagnostics"
+    Write-Host " 7) Health: System status and diagnostics"
     Write-Host " S) Help: This information screen"
-    Write-Host " 0) Exit: Safely close the application with cleanup"
+    Write-Host " 0) Exit: Close application"
     
     Write-Host "`nSupported DNS Providers:" -ForegroundColor Yellow
     Write-Host "• Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS"
@@ -827,19 +827,19 @@ function Show-Help {
     
     Write-Host "`nInstallation Targets:" -ForegroundColor Yellow
     Write-Host "• Windows Certificate Store (LocalMachine/CurrentUser)"
-    Write-Host "• IIS websites with automatic binding configuration"
+    Write-Host "• IIS websites with binding configuration"
     Write-Host "• PEM files for Linux/Apache/Nginx servers"
-    Write-Host "• PFX files with custom password protection"
-    Write-Host "• Multi-format export for maximum compatibility"
+    Write-Host "• PFX files with password protection"
+    Write-Host "• Certificate export for compatibility"
     
     Write-Host "`nBest Practices:" -ForegroundColor Yellow
-    Write-Host "• Always run as Administrator for certificate store operations"
+    Write-Host "• Run as Administrator for certificate store operations"
     Write-Host "• Test certificates in Let's Encrypt staging before production"
-    Write-Host "• Set up automatic renewal at least 30 days before expiry"
-    Write-Host "• Keep secure backups of important certificates"
+    Write-Host "• Set up renewal at least 30 days before expiry"
+    Write-Host "• Keep backups of certificates"
     Write-Host "• Monitor renewal logs and configure email notifications"
     Write-Host "• Use system health checks to validate configuration"
-    Write-Host "• Document your certificate deployment procedures"
+    Write-Host "• Document certificate deployment procedures"
     
     Write-Host "`nCommand Line Usage:" -ForegroundColor Yellow
     Write-Host "• .\Main.ps1                    # Interactive mode"
@@ -902,7 +902,7 @@ function Test-SystemHealth {
             
             # Test module import
             Import-Module Posh-ACME -Force
-            Write-Host "   Status: Loaded successfully" -ForegroundColor Green
+            Write-Host "   Status: Loaded" -ForegroundColor Green
             
             # Check for newer version
             try {
@@ -1295,15 +1295,15 @@ function Invoke-MenuOperation {
         & $Operation
         $duration = (Get-Date) - $startTime
         
-        Write-Host "`n$OperationName completed successfully in $($duration.TotalSeconds.ToString('F1')) seconds." -ForegroundColor Green
-        Write-Log "$OperationName completed successfully" -Level 'Success'
+        Write-Host "`n$OperationName completed in $($duration.TotalSeconds.ToString('F1')) seconds." -ForegroundColor Green
+        Write-Log "$OperationName completed" -Level 'Success'
         
     } catch {
         $errorMsg = "$OperationName failed: $($_.Exception.Message)"
         Write-Error $errorMsg
         Write-Log $errorMsg -Level 'Error'
         
-        # Enhanced error reporting
+        # Error reporting
         Write-Host "`nError Details:" -ForegroundColor Red
         Write-Host "  Operation: $OperationName" -ForegroundColor Red
         Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
@@ -1380,7 +1380,7 @@ try {
     Write-Host "`nThe application encountered a critical error and must exit." -ForegroundColor Red
     Write-Host "Error details have been logged for troubleshooting." -ForegroundColor Yellow
     
-    # Enhanced error information
+    # Error information
     Write-Host "`nError Information:" -ForegroundColor Red
     Write-Host "  Message: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "  Type: $($_.Exception.GetType().Name)" -ForegroundColor Red
@@ -1412,7 +1412,7 @@ try {
 Write-Progress -Activity "Certificate Management" -Completed -ErrorAction SilentlyContinue
 }
 
-# Enhanced certificate management menu
+# Certificate management menu
 function Show-CertificateManagementMenu {
     while ($true) {
         Clear-Host
@@ -1613,7 +1613,7 @@ function Show-CertificateManagementMenu {
                                     Copy-Item -Path $cert.PfxFile -Destination (Join-Path $domainPath "cert.pfx")
                                 }
                                 
-                                Write-Host "Certificate exported successfully to: $domainPath" -ForegroundColor Green
+                                Write-Host "Certificate exported to: $domainPath" -ForegroundColor Green
                             } catch {
                                 Write-Error "Failed to export certificate: $($_.Exception.Message)"
                             }

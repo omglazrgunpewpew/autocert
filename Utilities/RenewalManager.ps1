@@ -17,8 +17,8 @@ function Invoke-AutomatedRenewal {
         [switch]$NonInteractive = $true
     )
     
-    Write-Host "Running in automatic renewal mode..." -ForegroundColor Cyan
-    Write-Log "Starting automatic renewal process (Version: $script:ScriptVersion)" -Level 'Info'
+    Write-Host "Running in renewal mode..." -ForegroundColor Cyan
+    Write-Log "Starting renewal process (Version: $script:ScriptVersion)" -Level 'Info'
 
     try {
         # Load renewal configuration
@@ -87,8 +87,8 @@ function Invoke-AutomatedRenewal {
                 } -MaxAttempts $config.RetryAttempts -InitialDelaySeconds $config.RetryDelay -OperationName "Certificate renewal for $($cert.Domain)"
                 
                 if ($renewalResult) {
-                    Write-Host "✓ Successfully renewed: $($cert.Domain)" -ForegroundColor Green
-                    Write-Log "Certificate renewed successfully: $($cert.Domain)" -Level 'Success'
+                    Write-Host "✓ Renewed: $($cert.Domain)" -ForegroundColor Green
+                    Write-Log "Certificate renewed: $($cert.Domain)" -Level 'Success'
                     $renewalCount++
                     
                     $results += @{
@@ -103,7 +103,7 @@ function Invoke-AutomatedRenewal {
                         try {
                             Write-Host "Auto-installing renewed certificate..." -ForegroundColor Cyan
                             Install-Certificate -MainDomain $cert.Domain -AutoMode
-                            Write-Host "✓ Certificate installed successfully" -ForegroundColor Green
+                            Write-Host "✓ Certificate installed" -ForegroundColor Green
                             Write-Log "Certificate auto-installed: $($cert.Domain)" -Level 'Success'
                         } catch {
                             Write-Warning "Certificate renewed but installation failed: $($_.Exception.Message)"
@@ -137,7 +137,7 @@ function Invoke-AutomatedRenewal {
         Write-Host "RENEWAL SUMMARY" -ForegroundColor Cyan
         Write-Host "="*60 -ForegroundColor Cyan
         Write-Host "Certificates processed: $($orders.Count)" -ForegroundColor White
-        Write-Host "Successfully renewed: $renewalCount" -ForegroundColor Green
+        Write-Host "Renewed: $renewalCount" -ForegroundColor Green
         Write-Host "Failed renewals: $errorCount" -ForegroundColor Red
         Write-Host "Skipped (not due): $skippedCount" -ForegroundColor Yellow
         Write-Host "Completion time: $(Get-Date)" -ForegroundColor Gray
@@ -195,7 +195,7 @@ function Send-RenewalNotificationSummary {
             $subject = "AutoCert: Certificate Renewal Issues Detected"
             $priority = "High"
         } elseif ($RenewedCount -gt 0) {
-            $subject = "AutoCert: Certificates Successfully Renewed"
+            $subject = "AutoCert: Certificates Renewed"
             $priority = "Normal"
         } else {
             $subject = "AutoCert: Renewal Check Completed"
@@ -245,7 +245,7 @@ function Send-RenewalNotificationSummary {
     <div class="summary">
         <p><strong>Renewal Status:</strong></p>
         <ul>
-            <li class="success">Successfully Renewed: $RenewedCount</li>
+            <li class="success">Renewed: $RenewedCount</li>
             <li class="error">Failed Renewals: $ErrorCount</li>
             <li class="warning">Skipped (not due): $SkippedCount</li>
         </ul>

@@ -1,7 +1,7 @@
 # Core/RenewalConfig.ps1
 <#
     .SYNOPSIS
-        Renewal configuration management with randomization and flexible scheduling.
+        Renewal configuration management with randomization and scheduling.
 #>
 
 #region Renewal Configuration Management
@@ -67,7 +67,7 @@ function Save-RenewalConfig {
     }
 }
 
-# Function to create scheduled task with advanced options
+# Function to create scheduled task
 function New-RenewalScheduledTask {
     [CmdletBinding()]
     param (
@@ -102,7 +102,7 @@ function New-RenewalScheduledTask {
             $trigger.RandomDelay = [TimeSpan]::FromMinutes($Config.RandomizationWindow)
         }
 
-        # Enhanced task settings
+        # Task settings
         $settings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries `
             -DontStopIfGoingOnBatteries `
@@ -122,7 +122,7 @@ function New-RenewalScheduledTask {
         # Verify task creation
         $registeredTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($registeredTask) {
-            Write-Host "Scheduled task '$taskName' created successfully." -ForegroundColor Green
+            Write-Host "Scheduled task '$taskName' created." -ForegroundColor Green
             Write-Host "Base run time: $($baseTime.ToString('HH:mm'))" -ForegroundColor Cyan
             
             if ($Config.UseRandomization) {
@@ -132,7 +132,7 @@ function New-RenewalScheduledTask {
             Write-Log "Scheduled task '$taskName' created with base time $($baseTime.ToString('HH:mm'))"
             return $true
         } else {
-            throw "Task was not created successfully"
+            throw "Task was not created"
         }
 
     } catch {

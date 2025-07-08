@@ -1,4 +1,4 @@
-# Enhanced Core/Logging.ps1
+# Core/Logging.ps1
 <#
     .SYNOPSIS
         Logging utilities with filtering.
@@ -23,7 +23,7 @@ function Write-Log {
         return
     }
 
-    # Filter out routine informational messages to reduce log noise
+    # Filter out routine info messages
     if ($Level -eq 'Info') {
         $routinePatterns = @(
             'ACME server set to',

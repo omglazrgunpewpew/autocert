@@ -1,4 +1,4 @@
-# Enhanced Tests/Autocert.Tests.ps1
+# Tests/Autocert.Tests.ps1
 <#
     .SYNOPSIS
         Comprehensive test suite for AutoCert robustness and resilience features.
