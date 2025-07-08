@@ -1,0 +1,250 @@
+# AutoCert
+
+[![PowerShell Version](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://github.com/microsoft/windows)
+
+A PowerShell-based certificate management system for Let's Encrypt certificates
+on Windows. Provides automation for certificate acquisition, renewal, deployment,
+and monitoring with error handling, logging, and deployment options.
+
+## 📚 Documentation
+
+- **[Installation Guide](docs/INSTALLATION.md)** - Setup instructions and system requirements
+- **[DNS Provider Setup](docs/DNS-PROVIDERS.md)** - Configuration for 15+ DNS providers
+- **[Usage Guide](docs/USAGE.md)** - Usage instructions and workflows
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and diagnostics
+
+## 🚀 Key Features
+
+### Certificate Management
+
+- **Automated Certificate Lifecycle**: From acquisition to renewal to deployment
+- **Multi-Domain Support**: Single certificates with multiple SANs (Subject Alternative Names)
+- **Wildcard Certificate Support**: Domain-wide certificate coverage
+- **Certificate Validation**: Built-in certificate integrity checks and validation
+
+### DNS Provider Integration
+
+- **15+ DNS Providers Supported**: Including Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS
+- **DNS Provider Detection**: Detection of your DNS provider
+- **Manual DNS Mode**: Compatible with any DNS provider through manual TXT record validation
+- **Credential Management**: Windows Credential Manager integration
+
+### Production Features
+
+- **Windows Certificate Store Integration**: Automatic deployment to certificate stores
+- **IIS Website Integration**: Automatic SSL binding configuration and management
+- **Renewal Scheduling**: Scheduling with randomization and load distribution
+- **Logging**: Multi-level logging with Windows Event Log integration
+- **Email Notifications**: Notifications for renewals, failures, and warnings
+
+### Security & Reliability
+
+- **Error Handling**: Exponential backoff retry logic with failure recovery
+- **Certificate Backup**: Automatic backup of certificates before renewal
+- **Credential Storage**: Windows Credential Manager integration
+- **Audit Trail**: Audit trail of all certificate operations
+
+## ⚡ Quick Start
+
+### Interactive Mode
+
+```powershell
+# Clone and run
+git clone https://github.com/yourusername/autocert.git
+cd autocert
+.\Main.ps1
+```
+
+### Automated Renewal
+
+```powershell
+# Set up automatic renewal (run as Administrator)
+.\Main.ps1 -RenewAll -NonInteractive
+```
+
+### System Validation
+
+```powershell
+# Test configuration
+.\Main.ps1 -ConfigTest
+```
+
+## 📋 System Requirements
+
+- **Operating System**: Windows 10 (1809+) or Windows Server 2016+
+- **PowerShell**: Version 5.1 or later (7.3+ recommended)
+- **Administrator Privileges**: Required for certificate store operations
+- **Internet Connectivity**: Required for Let's Encrypt ACME API and DNS
+  provider APIs
+
+## 🌐 Supported DNS Providers
+
+| Provider | Setup Difficulty | Wildcard Support | Notes |
+|----------|-----------------|------------------|-------|
+| **Cloudflare** | Easy | ✅ | Recommended for beginners |
+| **AWS Route53** | Medium | ✅ | DNS Service |
+| **Azure DNS** | Medium | ✅ | Microsoft cloud integration |
+| **Google Cloud DNS** | Medium | ✅ | Google cloud platform |
+| **DigitalOcean** | Easy | ✅ | Simple API setup |
+| **Manual DNS** | Easy | ✅ | Works with any provider |
+
+[View all 15+ supported providers →](docs/DNS-PROVIDERS.md)
+
+## 🔧 Installation
+
+### Method 1: Git Clone (Recommended)
+
+```powershell
+git clone https://github.com/yourusername/autocert.git
+cd autocert
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\Main.ps1
+```
+
+### Method 2: Download Release
+
+1. Download from [GitHub Releases](https://github.com/yourusername/autocert/releases)
+2. Extract to `C:\Tools\AutoCert`
+3. Run PowerShell as Administrator
+4. Execute `.\Main.ps1`
+
+**[Installation Guide →](docs/INSTALLATION.md)**
+
+## 📖 Usage Examples
+
+### Register a New Certificate
+
+```powershell
+# Interactive mode with guided setup
+.\Main.ps1
+# Select option 1: Register a new certificate
+
+# For domain: example.com
+# Choose DNS provider: Cloudflare
+# Enter API token: your_cloudflare_token
+```
+
+### Automatic Renewal Setup
+
+```powershell
+# Set up scheduled renewal
+.\Main.ps1
+# Select option 3: Configure automatic renewal
+```
+
+### Certificate Operations
+
+```powershell
+# View all certificates
+.\Main.ps1
+# Select option 4: View and manage existing certificates
+
+# Command line renewal check
+.\Main.ps1 -RenewAll
+
+# Force renewal of all certificates
+.\Main.ps1 -RenewAll -Force
+```
+
+**[Usage Guide →](docs/USAGE.md)**
+
+## 🛡️ Security Features
+
+- **Credential Storage**: DNS provider credentials stored in Windows
+  Credential Manager
+- **Certificate Backup**: Automatic backup before renewal operations
+- **Audit Logging**: Audit trail in Windows Event Log
+- **Minimal Permissions**: Follows principle of least privilege
+- **TLS 1.2+**: Current encryption for all communications
+
+## 📊 Monitoring & Logging
+
+### Built-in Monitoring
+
+- **System Health Checks**: Diagnostic capabilities
+- **Certificate Expiration Monitoring**: Proactive expiration warnings
+- **Renewal Success Tracking**: Success/failure statistics
+- **Performance Metrics**: Operation timing and system resource usage
+
+### Log Locations
+
+- **Application Logs**: `%LOCALAPPDATA%\Posh-ACME\logs\`
+- **Windows Event Log**: Application log, source "AutoCert Certificate
+  Management"
+- **Performance Data**: Built-in metrics collection
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+- **PowerShell Execution Policy**: `Set-ExecutionPolicy RemoteSigned`
+- **Module Installation**: Automatic Posh-ACME installation
+- **DNS Authentication**: Provider-specific credential setup
+- **Certificate Store Access**: Administrator privileges required
+
+**[Troubleshooting Guide →](docs/TROUBLESHOOTING.md)**
+
+### Quick Diagnostics
+
+```powershell
+# Run system health check
+.\Main.ps1 -ConfigTest
+
+# Check certificate status
+Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Issuer -like "*Let's Encrypt*"}
+
+# View recent logs
+Get-Content "$env:LOCALAPPDATA\Posh-ACME\logs\autocert-application.log" -Tail 20
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get started:
+
+1. **Fork the Repository**: Create your own fork on GitHub
+2. **Create Feature Branch**: `git checkout -b feature/your-feature-name`
+3. **Follow Standards**: Use PowerShell best practices and include tests
+4. **Submit Pull Request**: Description of changes
+
+### Development Setup
+
+```powershell
+# Clone your fork
+git clone https://github.com/yourusername/autocert.git
+cd autocert
+
+# Install development dependencies
+.\Tests\Install-DevDependencies.ps1
+
+# Optional: Disable Posh-ACME auto-updates during development
+$env:POSHACME_SKIP_UPGRADE_CHECK = $true
+
+# Run tests
+.\Tests\RunTests.ps1
+```
+
+**Development Tips:**
+
+- Set `$env:POSHACME_SKIP_UPGRADE_CHECK = $true` to prevent Posh-ACME from
+  auto-updating during testing
+- Use `.\Scripts\Build-Validation.ps1` for code quality and validation
+  checks
+- The CI/CD pipeline automatically disables Posh-ACME updates for consistent
+  builds
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+file for details.
+
+### Third-Party Components
+
+- **Posh-ACME**: Apache 2.0 License
+- **PowerShell**: MIT License
+- **Windows Management Framework**: Microsoft Software License
+
+---
+
+AutoCert v2.0.0 | Last Updated: July 2025

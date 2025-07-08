@@ -198,13 +198,13 @@ function Test-NetworkConnectivity {
     
     $results = @{}
     
-    foreach ($host in $TestHosts) {
+    foreach ($testHost in $TestHosts) {
         try {
-            $response = Invoke-WebRequest -Uri "https://$host" -UseBasicParsing -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-            $results[$host] = @{
+            $response = Invoke-WebRequest -Uri "https://$testHost" -UseBasicParsing -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+            $results[$testHost] = @{
                 Success = $true
                 StatusCode = $response.StatusCode
-                ResponseTime = (Measure-Command { Invoke-WebRequest -Uri "https://$host" -UseBasicParsing -TimeoutSec $TimeoutSeconds }).TotalMilliseconds
+                ResponseTime = (Measure-Command { Invoke-WebRequest -Uri "https://$testHost" -UseBasicParsing -TimeoutSec $TimeoutSeconds }).TotalMilliseconds
             }
         } catch {
             $results[$host] = @{

@@ -14,7 +14,7 @@ function Invoke-AutomatedRenewal {
     [CmdletBinding()]
     param(
         [switch]$Force,
-        [switch]$NonInteractive = $true
+        [switch]$NonInteractive
     )
     
     Write-Host "Running in renewal mode..." -ForegroundColor Cyan
