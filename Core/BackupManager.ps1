@@ -1,7 +1,7 @@
 # Core/BackupManager.ps1
 <#
     .SYNOPSIS
-        Comprehensive backup and recovery system for certificates and configurations.
+        Backup and recovery system for certificates and configurations.
 #>
 
 function Initialize-BackupSystem {

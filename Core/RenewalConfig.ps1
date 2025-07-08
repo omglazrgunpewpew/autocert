@@ -1,7 +1,7 @@
 # Core/RenewalConfig.ps1
 <#
     .SYNOPSIS
-        Enhanced renewal configuration management with randomization and flexible scheduling.
+        Renewal configuration management with randomization and flexible scheduling.
 #>
 
 #region Renewal Configuration Management

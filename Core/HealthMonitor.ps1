@@ -1,7 +1,7 @@
 # Core/HealthMonitor.ps1
 <#
     .SYNOPSIS
-        Comprehensive health monitoring and alerting system.
+        Health monitoring and alerting system.
 #>
 
 class HealthCheck {

@@ -1,12 +1,12 @@
-# Enhanced Main.ps1
+# Main.ps1
 <#
     .SYNOPSIS
-        Enhanced main script with comprehensive certificate management capabilities.
+        Main script for certificate management capabilities.
 
     .DESCRIPTION
-        This script provides a comprehensive interface for Let's Encrypt certificate management
-        using Posh-ACME with enhanced features including robust error handling, caching,
-        DNS provider auto-detection, and advanced renewal scheduling.
+        This script provides an interface for Let's Encrypt certificate management
+        using Posh-ACME with error handling, caching, DNS provider auto-detection, 
+        and renewal scheduling.
 
     .PARAMETER RenewAll
         Runs in non-interactive mode to renew all certificates that need renewal.
@@ -52,7 +52,7 @@ param(
 
 # Script metadata
 $script:ScriptVersion = "2.0.0"
-$script:ScriptName = "Enhanced Certificate Management System"
+$script:ScriptName = "AutoCert Certificate Management System"
 $script:StartTime = Get-Date
 
 # Ensure the script runs with administrative privileges for certificate operations
@@ -167,7 +167,7 @@ function Initialize-ScriptModules {
             Write-Progress -Activity "System Initialization" -Completed
         }
 
-        Write-Log "Enhanced certificate management system loaded successfully (Version: $script:ScriptVersion)" -Level 'Info'
+        Write-Log "Certificate management system loaded successfully (Version: $script:ScriptVersion)" -Level 'Info'
         Write-Log "Loaded modules: $($script:LoadedModules -join ', ')" -Level 'Debug'
         
         if ($script:InitializationErrors.Count -gt 0) {
@@ -489,7 +489,7 @@ Runtime: $((Get-Date) - $script:StartTime)
 
 # Configuration test mode
 if ($ConfigTest) {
-    Write-Host "Enhanced Certificate Management System - Configuration Test" -ForegroundColor Cyan
+    Write-Host "AutoCert Certificate Management System - Configuration Test" -ForegroundColor Cyan
     Write-Host "Version: $script:ScriptVersion" -ForegroundColor Gray
     
     $configValid = Test-SystemConfiguration
@@ -514,7 +514,7 @@ function Show-Menu {
     
     # Display enhanced header with system information
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
-    Write-Host "    ENHANCED LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
+    Write-Host "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
     Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
     Write-Host "="*70 -ForegroundColor Cyan
     
@@ -572,7 +572,7 @@ function Show-Menu {
     Write-Host "2. Install existing certificate" -ForegroundColor Cyan
     Write-Host "3. Configure automatic renewal" -ForegroundColor Yellow
     Write-Host "4. View and Manage existing certificates" -ForegroundColor Magenta
-    Write-Host "5. Advanced options" -ForegroundColor Blue
+    Write-Host "5. Options" -ForegroundColor Blue
     Write-Host "6. Manage Credentials" -ForegroundColor DarkCyan
     Write-Host "7. System health check" -ForegroundColor DarkGreen
     Write-Host "S. Help / About" -ForegroundColor Gray
@@ -763,16 +763,16 @@ function Show-Help {
     Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
     Write-Host "="*70 -ForegroundColor Cyan
     
-    Write-Host "`nThis enhanced tool manages Let's Encrypt certificates using Posh-ACME." -ForegroundColor Gray
-    Write-Host "Developed for enterprise environments with robust automation capabilities." -ForegroundColor Gray
+    Write-Host "`nThis tool manages Let's Encrypt certificates using Posh-ACME." -ForegroundColor Gray
+    Write-Host "Developed for enterprise environments with automation capabilities." -ForegroundColor Gray
     
     Write-Host "`nKey Features:" -ForegroundColor Yellow
     Write-Host "• Automatic DNS provider detection with 10+ supported providers" -ForegroundColor Green
-    Write-Host "• Robust error handling with exponential backoff retry logic" -ForegroundColor Green
+    Write-Host "• Error handling with exponential backoff retry logic" -ForegroundColor Green
     Write-Host "• Certificate caching for improved performance and reliability" -ForegroundColor Green
-    Write-Host "• Advanced renewal scheduling with randomization" -ForegroundColor Green
+    Write-Host "• Renewal scheduling with randomization" -ForegroundColor Green
     Write-Host "• Multiple certificate installation targets (IIS, stores, files)" -ForegroundColor Green
-    Write-Host "• Comprehensive logging and monitoring with event logs" -ForegroundColor Green
+    Write-Host "• Logging and monitoring with event logs" -ForegroundColor Green
     Write-Host "• Email notifications for renewal events and failures" -ForegroundColor Green
     Write-Host "• System health checks and configuration validation" -ForegroundColor Green
     Write-Host "• Multi-format certificate export (PFX, PEM, full-chain)" -ForegroundColor Green

@@ -1,7 +1,7 @@
 # Core/CircuitBreaker.ps1
 <#
     .SYNOPSIS
-        Circuit breaker pattern implementation for enhanced resilience.
+        Circuit breaker pattern implementation for resilience.
 #>
 
 class CircuitBreaker {

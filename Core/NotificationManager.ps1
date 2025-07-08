@@ -1,7 +1,7 @@
 # Core/NotificationManager.ps1
 <#
     .SYNOPSIS
-        Advanced notification and alerting system with multiple channels and templates.
+        Notification and alerting system with multiple channels and templates.
 #>
 
 enum NotificationLevel {

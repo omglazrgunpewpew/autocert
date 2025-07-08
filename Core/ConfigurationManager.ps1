@@ -1,7 +1,7 @@
 # Core/ConfigurationManager.ps1
 <#
     .SYNOPSIS
-        Advanced configuration management with validation, backup, and recovery capabilities.
+        Configuration management with validation, backup, and recovery capabilities.
 #>
 
 function Get-ConfigurationSchema {

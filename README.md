@@ -1,66 +1,47 @@
-# Enhanced Certificate Management System
+# AutoCert
 
 [![PowerShell Version](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://github.com/microsoft/windows)
 
-A comprehensive enterprise-grade PowerShell-based certificate management system
-for Let's Encrypt certificates on Windows environments. This tool provides
-robust automation for certificate acquisition, renewal, deployment, and
-monitoring with advanced error handling, comprehensive logging, and flexible
-deployment options.
+A PowerShell-based certificate management system for Let's Encrypt certificates
+on Windows. Provides automation for certificate acquisition, renewal, deployment,
+and monitoring with error handling, logging, and flexible deployment options.
 
 ## 📚 Documentation
 
-- **[Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions
-  and system requirements
-- **[DNS Provider Setup](docs/DNS-PROVIDERS.md)** - Detailed configuration for
-  15+ DNS providers
-- **[Usage Guide](docs/USAGE.md)** - Comprehensive usage instructions and
-  workflows
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and diagnostic
-  procedures
+- **[Installation Guide](docs/INSTALLATION.md)** - Setup instructions and system requirements
+- **[DNS Provider Setup](docs/DNS-PROVIDERS.md)** - Configuration for 15+ DNS providers
+- **[Usage Guide](docs/USAGE.md)** - Usage instructions and workflows
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and diagnostics
 
 ## 🚀 Key Features
 
 ### Certificate Management
 
-- **Fully Automated Certificate Lifecycle**: From acquisition to renewal to
-  deployment
-- **Multi-Domain Support**: Single certificates with multiple SANs (Subject
-  Alternative Names)
-- **Wildcard Certificate Support**: Secure entire domains with wildcard
-  certificates
-- **Certificate Validation**: Built-in certificate integrity checks and
-  validation
+- **Automated Certificate Lifecycle**: From acquisition to renewal to deployment
+- **Multi-Domain Support**: Single certificates with multiple SANs (Subject Alternative Names)
+- **Wildcard Certificate Support**: Secure entire domains with wildcard certificates
+- **Certificate Validation**: Built-in certificate integrity checks and validation
 
 ### DNS Provider Integration
 
-- **15+ DNS Providers Supported**: Including Cloudflare, AWS Route53, Azure
-  DNS, Google Cloud DNS
-- **Automatic DNS Provider Detection**: Intelligent detection of your DNS
-  provider
-- **Manual DNS Mode**: Compatible with any DNS provider through manual TXT
-  record validation
+- **15+ DNS Providers Supported**: Including Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS
+- **DNS Provider Detection**: Detection of your DNS provider
+- **Manual DNS Mode**: Compatible with any DNS provider through manual TXT record validation
 - **Secure Credential Management**: Windows Credential Manager integration
 
 ### Enterprise Features
 
-- **Windows Certificate Store Integration**: Automatic deployment to certificate
-  stores
-- **IIS Website Integration**: Automatic SSL binding configuration and
-  management
-- **Advanced Renewal Scheduling**: Flexible scheduling with randomization and
-  load distribution
-- **Comprehensive Logging**: Multi-level logging with Windows Event Log
-  integration
-- **Email Notifications**: Detailed notifications for renewals, failures, and
-  warnings
+- **Windows Certificate Store Integration**: Automatic deployment to certificate stores
+- **IIS Website Integration**: Automatic SSL binding configuration and management
+- **Renewal Scheduling**: Flexible scheduling with randomization and load distribution
+- **Logging**: Multi-level logging with Windows Event Log integration
+- **Email Notifications**: Detailed notifications for renewals, failures, and warnings
 
 ### Security & Reliability
 
-- **Robust Error Handling**: Exponential backoff retry logic with intelligent
-  failure recovery
+- **Error Handling**: Exponential backoff retry logic with failure recovery
 - **Certificate Backup**: Automatic backup of certificates before renewal
 - **Secure Credential Storage**: Windows Credential Manager integration
 - **Audit Trail**: Complete audit trail of all certificate operations
@@ -103,7 +84,7 @@ cd autocert
 | Provider | Setup Difficulty | Wildcard Support | Notes |
 |----------|-----------------|------------------|-------|
 | **Cloudflare** | Easy | ✅ | Recommended for beginners |
-| **AWS Route53** | Medium | ✅ | Enterprise-grade DNS |
+| **AWS Route53** | Medium | ✅ | Enterprise DNS |
 | **Azure DNS** | Medium | ✅ | Microsoft cloud integration |
 | **Google Cloud DNS** | Medium | ✅ | Google cloud platform |
 | **DigitalOcean** | Easy | ✅ | Simple API setup |
@@ -182,7 +163,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### Built-in Monitoring
 
-- **System Health Checks**: Comprehensive diagnostic capabilities
+- **System Health Checks**: Diagnostic capabilities
 - **Certificate Expiration Monitoring**: Proactive expiration warnings
 - **Renewal Success Tracking**: Success/failure statistics
 - **Performance Metrics**: Operation timing and system resource usage
@@ -248,7 +229,7 @@ $env:POSHACME_SKIP_UPGRADE_CHECK = $true
 
 - Set `$env:POSHACME_SKIP_UPGRADE_CHECK = $true` to prevent Posh-ACME from
   auto-updating during testing
-- Use `.\Build-Validation.ps1` for comprehensive code quality and validation
+- Use `.\Scripts\Build-Validation.ps1` for code quality and validation
   checks
 - The CI/CD pipeline automatically disables Posh-ACME updates for consistent
   builds
@@ -266,4 +247,4 @@ file for details.
 
 ---
 
-Enhanced Certificate Management System v2.0.0 | Last Updated: July 2025
+AutoCert v2.0.0 | Last Updated: July 2025

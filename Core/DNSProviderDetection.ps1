@@ -1,7 +1,7 @@
 # Core/DNSProviderDetection.ps1
 <#
     .SYNOPSIS
-        Enhanced DNS provider detection and public suffix list management.
+        DNS provider detection and public suffix list management.
 #>
 
 #region Public Suffix List Functions
