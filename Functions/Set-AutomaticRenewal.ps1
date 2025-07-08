@@ -1,7 +1,7 @@
-# Enhanced Functions/Set-AutomaticRenewal.ps1
+# Functions/Set-AutomaticRenewal.ps1
 <#
     .SYNOPSIS
-        Enhanced automatic renewal configuration with advanced scheduling,
+        Automatic renewal configuration with scheduling,
         randomization, retry logic, and monitoring capabilities.
 #>
 
@@ -42,7 +42,7 @@ function Set-AutomaticRenewal {
         Write-Host "3) Set renewal threshold"
         Write-Host "4) Configure retry settings"
         Write-Host "5) Set up email notifications"
-        Write-Host "6) Advanced logging options"
+        Write-Host "6) Logging options"
         Write-Host "7) Test current configuration"
         Write-Host "8) Apply configuration and create scheduled task"
         Write-Host "9) Quick setup (recommended defaults)"
@@ -193,7 +193,7 @@ function Set-AutomaticRenewal {
             }
             
             6 {
-                # Advanced logging options
+                # Logging options
                 Write-Host "`nLogging Configuration:" -ForegroundColor Yellow
                 Write-Host "  Log Retention: $($config.LogRetention) days"
                 Write-Host "  Health Check: $($config.HealthCheckEnabled)"
@@ -272,7 +272,7 @@ function Set-AutomaticRenewal {
 
                     Write-ProgressHelper -Activity "Automatic Renewal Setup" -Status "Creating scheduled task..." -PercentComplete 80
 
-                    # Get the main script path
+                    # Get main script path
                     $mainScriptPath = Join-Path (Split-Path $PSScriptRoot -Parent) "Main.ps1"
                     if (-not (Test-Path $mainScriptPath)) {
                         Write-Error "Cannot find Main.ps1 script at: $mainScriptPath"

@@ -12,7 +12,7 @@ function Register-Certificate {
         [switch]$Force
     )
 
-    # Ensure the ACME server is set
+    # Ensure ACME server is set
     Initialize-ACMEServer
 
     # Load public suffix list for accurate domain parsing
@@ -69,7 +69,7 @@ function Register-Certificate {
             }
             3 {
                 # Multi-domain certificate
-                $domains = @($domain)  # Start with the main domain
+                $domains = @($domain)  # Start with main domain
                 
                 while ($true) {
                     $additionalDomain = Read-Host "`nEnter additional domain (or press Enter to finish, 0 to cancel)"
@@ -90,7 +90,7 @@ function Register-Certificate {
                         Write-Warning "Invalid domain format: $additionalDomain"
                     }
                 }
-                $mainDomain = $domains[0]  # First domain is the main domain
+                $mainDomain = $domains[0]  # First domain is main domain
                 break
             }
         }
@@ -335,7 +335,7 @@ function Register-Certificate {
             # Handle other plugins with enhanced parameter collection
             Write-Host "`nYou selected the $plugin plugin."
             
-            # Prompt to view the plugin's guide
+            # Prompt to view plugin's guide
             $viewGuide = Read-Host "`nWould you like to view the $plugin plugin guide? (Y/N)"
             if ($viewGuide -match '^[Yy]$') {
                 $guideUrl = "https://poshac.me/docs/v4/Plugins/$plugin/"
@@ -379,7 +379,7 @@ function Register-Certificate {
 
     Write-ProgressHelper -Activity "Certificate Registration" -Status "Requesting certificate..." -PercentComplete 70
 
-    # Submit the certificate order
+    # Submit certificate order
     Write-Host "`nRequesting certificate for domain(s): $($domains -join ', ')" -ForegroundColor Cyan
     Write-Log "Requesting certificate for domain(s): $($domains -join ', ')"
 
@@ -554,7 +554,7 @@ function Register-Certificate {
 
         Write-ProgressHelper -Activity "Certificate Registration" -Status "Certificate ready for installation" -PercentComplete 95
 
-        # Call the Install-Certificate function to handle installation options
+        # Call Install-Certificate function to handle installation options
         Write-Host "`nProceeding to certificate installation..." -ForegroundColor Cyan
         Install-Certificate -PACertificate $cert
 

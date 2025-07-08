@@ -1138,7 +1138,7 @@ For questions or issues, refer to the troubleshooting section above.
                 
                 switch ($bindingChoice) {
                     1 {
-                        # IIS Website Binding (continued from the advanced section)
+                        # IIS Website Binding (continued from advanced section)
                         if (Get-Module -ListAvailable -Name WebAdministration) {
                             Import-Module WebAdministration
                             $sites = Get-Website
@@ -1178,7 +1178,7 @@ For questions or issues, refer to the troubleshooting section above.
                                     Write-Host "  Binding: HTTPS on port 443" -ForegroundColor Cyan
                                     Write-Host "  Certificate: $($PACertificate.Certificate.Thumbprint)" -ForegroundColor Cyan
                                     
-                                    # Test the binding
+                                    # Test binding
                                     $testBinding = Read-Host "`nTest HTTPS binding? (Y/N)"
                                     if ($testBinding -match '^[Yy]') {
                                         try {

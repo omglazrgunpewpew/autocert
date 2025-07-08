@@ -14,7 +14,7 @@ function Get-PublicSuffixList {
     $cacheDir = "$env:LOCALAPPDATA\PoshACME"
     $cachePath = "$cacheDir\public_suffix_list.dat"
 
-    # Ensure the cache directory exists
+    # Ensure cache directory exists
     if (-not (Test-Path $cacheDir)) {
         New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
     }

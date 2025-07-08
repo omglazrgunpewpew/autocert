@@ -31,7 +31,7 @@ function Revoke-Certificate {
 
     $certToRevoke = $certs[$selection - 1]
 
-    # Get the certificate file path
+    # Get certificate file path
     $certFilePath = $certToRevoke.CertFile
     if (-not (Test-Path $certFilePath)) {
         Write-Host "Certificate file not found at $certFilePath. Cannot revoke." -ForegroundColor Red
@@ -39,7 +39,7 @@ function Revoke-Certificate {
         return
     }
 
-    # Get the private key file path
+    # Get private key file path
     $keyFilePath = $certToRevoke.KeyFile
     if (-not (Test-Path $keyFilePath)) {
         Write-Host "Private key file not found at $keyFilePath. Cannot revoke." -ForegroundColor Red

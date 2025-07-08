@@ -73,7 +73,7 @@ function New-CertificateBackup {
         $securePassword.ToCharArray() | ForEach-Object { $Password.AppendChar($_) }
         $Password.MakeReadOnly()
         
-        # Store password hash for backup verification (not the password itself)
+        # Store password hash for backup verification (not password itself)
         $passwordHash = [System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($securePassword))
         $passwordHashString = [System.Convert]::ToBase64String($passwordHash)
         Write-Log "Backup password hash: $passwordHashString" -Level 'Info'

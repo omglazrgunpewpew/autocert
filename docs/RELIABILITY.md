@@ -13,7 +13,7 @@ This document outlines the reliability and error handling features in AutoCert.
 
 **Features:**
 
-- Configuration validation with detailed error reporting
+- Configuration validation with error reporting
 - Automatic backup rotation with retention policies
 - Schema versioning for future compatibility
 - Environment-specific configuration templates
@@ -89,7 +89,7 @@ Multi-channel alerting for certificate events.
 
 **Notification Templates:**
 
-- **Certificate Renewal Success**: Detailed success reporting
+- **Certificate Renewal Success**: Success reporting
 - **Certificate Renewal Failure**: Urgent failure alerts with troubleshooting
 - **Certificate Expiry Warning**: Proactive expiration notifications
 - **System Health Alerts**: Infrastructure health monitoring
@@ -100,12 +100,12 @@ Multi-channel alerting for certificate events.
 
 1. **Layered Error Handling**: Multiple levels of error catching and recovery
 2. **Graceful Degradation**: System continues with reduced functionality
-3. **Detailed Logging**: Error tracking and debugging information
+3. **Logging**: Error tracking and debugging information
 4. **Clear Messages**: Actionable error messages for administrators
 
 ### Retry Logic
 
-- **Exponential Backoff**: Smart retry timing to prevent service overload
+- **Exponential Backoff**: Retry timing to prevent service overload
 - **Maximum Attempts**: Configurable retry limits
 - **Success Conditions**: Custom validation for operations
 - **Circuit Breaker Integration**: Automatic retry suspension during outages

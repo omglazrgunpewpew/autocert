@@ -71,7 +71,7 @@ This guide covers how to use AutoCert for certificate management.
 - DNS provider credential storage
 - Credential testing and validation
 - Multi-provider management
-- Secure credential backup
+- Credential backup
 
 **7. System Health Check**
 
@@ -102,7 +102,7 @@ This guide covers how to use AutoCert for certificate management.
 
 4. **Provide Credentials**:
    - Enter DNS provider API credentials
-   - Credentials stored securely
+   - Credentials stored
 
 5. **Domain Validation**:
    - System creates TXT record automatically
@@ -111,7 +111,7 @@ This guide covers how to use AutoCert for certificate management.
 
 6. **Certificate Generation**:
    - Let's Encrypt generates certificate
-   - Private key created securely
+   - Private key created
    - Certificate chain assembled
 
 7. **Installation Options**:
@@ -405,9 +405,9 @@ $config = @{
 }
 ```
 
-## 🔧 Enterprise Scenarios
+## 🔧 Production Scenarios
 
-### Enterprise Deployment
+### Production Deployment
 
 #### Multi-Server Management
 
@@ -480,7 +480,7 @@ Import-CertificateFromBackup -Path "C:\CertificateBackups\2025-07-01\example.com
 ### Disaster Recovery
 
 ```powershell
-# Complete system restoration
+# System restoration
 .\Scripts\Restore-AutoCertSystem.ps1 -BackupPath "C:\AutoCertBackup\2025-07-01"
 
 # Certificate migration to new server

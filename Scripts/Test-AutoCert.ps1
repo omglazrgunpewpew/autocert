@@ -39,7 +39,7 @@ param(
     [string]$OutputFormat = 'Normal'
 )
 
-# Ensure we're in the correct directory
+# Ensure we're in correct directory
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not (Test-Path (Join-Path $scriptRoot "Core\Logging.ps1"))) {
     throw "AutoCert files not found. Please run this script from the AutoCert root directory."
@@ -98,7 +98,7 @@ if ($OutputFormat -eq 'JUnit') {
     }
 }
 
-# Run the tests
+# Run tests
 try {
     Write-Host "`nStarting test execution..." -ForegroundColor Green
     $startTime = Get-Date

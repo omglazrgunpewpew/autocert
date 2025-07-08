@@ -59,7 +59,7 @@ function Test-SecretManagementPrerequisites {
         }
     }
     
-    # Check if the vault is locked
+    # Check if vault is locked
     try {
         Get-SecretInfo -Vault (Get-SecretVault).Name -ErrorAction Stop
     } catch {
@@ -180,7 +180,7 @@ function Set-StoredCredential {
     )
     
     try {
-        # Store the password as a secret
+        # Store password as a secret
         Set-Secret -Name $Target -Secret $Credential.Password -ErrorAction Stop
         Write-Host "Credential '$Target' stored successfully." -ForegroundColor Green
         return $true

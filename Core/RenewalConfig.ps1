@@ -83,7 +83,7 @@ function New-RenewalScheduledTask {
         # Calculate trigger time with randomization
         $baseTime = [DateTime]::Today.AddHours($Config.RenewalHour).AddMinutes($Config.RenewalMinute)
 
-        # Create the scheduled task action with enhanced parameters
+        # Create scheduled task action with parameters
         $actionArgs = @(
             "-NoProfile",
             "-WindowStyle Hidden",
@@ -95,7 +95,7 @@ function New-RenewalScheduledTask {
         
         $action = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument ($actionArgs -join ' ')
 
-        # Create the trigger with randomization if enabled
+        # Create trigger with randomization if enabled
         $trigger = New-ScheduledTaskTrigger -Daily -At $baseTime
         
         if ($Config.UseRandomization -and $Config.RandomizationWindow -gt 0) {
@@ -115,7 +115,7 @@ function New-RenewalScheduledTask {
         # Use SYSTEM account for reliability
         $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
-        # Create and register the task
+        # Create and register task
         $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings
         Register-ScheduledTask -TaskName $taskName -InputObject $task -Force
 

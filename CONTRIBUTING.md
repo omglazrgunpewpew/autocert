@@ -8,4 +8,3 @@ Thank you for considering contributing to Autocert! To propose a change:
 4. Submit a pull request describing your changes.
 
 Issues and feature requests are welcome. Please provide as much detail as possible.
-

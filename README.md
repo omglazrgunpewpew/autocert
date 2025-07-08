@@ -6,7 +6,7 @@
 
 A PowerShell-based certificate management system for Let's Encrypt certificates
 on Windows. Provides automation for certificate acquisition, renewal, deployment,
-and monitoring with error handling, logging, and flexible deployment options.
+and monitoring with error handling, logging, and deployment options.
 
 ## 📚 Documentation
 
@@ -21,7 +21,7 @@ and monitoring with error handling, logging, and flexible deployment options.
 
 - **Automated Certificate Lifecycle**: From acquisition to renewal to deployment
 - **Multi-Domain Support**: Single certificates with multiple SANs (Subject Alternative Names)
-- **Wildcard Certificate Support**: Secure entire domains with wildcard certificates
+- **Wildcard Certificate Support**: Domain-wide certificate coverage
 - **Certificate Validation**: Built-in certificate integrity checks and validation
 
 ### DNS Provider Integration
@@ -29,22 +29,22 @@ and monitoring with error handling, logging, and flexible deployment options.
 - **15+ DNS Providers Supported**: Including Cloudflare, AWS Route53, Azure DNS, Google Cloud DNS
 - **DNS Provider Detection**: Detection of your DNS provider
 - **Manual DNS Mode**: Compatible with any DNS provider through manual TXT record validation
-- **Secure Credential Management**: Windows Credential Manager integration
+- **Credential Management**: Windows Credential Manager integration
 
-### Enterprise Features
+### Production Features
 
 - **Windows Certificate Store Integration**: Automatic deployment to certificate stores
 - **IIS Website Integration**: Automatic SSL binding configuration and management
-- **Renewal Scheduling**: Flexible scheduling with randomization and load distribution
+- **Renewal Scheduling**: Scheduling with randomization and load distribution
 - **Logging**: Multi-level logging with Windows Event Log integration
-- **Email Notifications**: Detailed notifications for renewals, failures, and warnings
+- **Email Notifications**: Notifications for renewals, failures, and warnings
 
 ### Security & Reliability
 
 - **Error Handling**: Exponential backoff retry logic with failure recovery
 - **Certificate Backup**: Automatic backup of certificates before renewal
-- **Secure Credential Storage**: Windows Credential Manager integration
-- **Audit Trail**: Complete audit trail of all certificate operations
+- **Credential Storage**: Windows Credential Manager integration
+- **Audit Trail**: Audit trail of all certificate operations
 
 ## ⚡ Quick Start
 
@@ -84,7 +84,7 @@ cd autocert
 | Provider | Setup Difficulty | Wildcard Support | Notes |
 |----------|-----------------|------------------|-------|
 | **Cloudflare** | Easy | ✅ | Recommended for beginners |
-| **AWS Route53** | Medium | ✅ | Enterprise DNS |
+| **AWS Route53** | Medium | ✅ | DNS Service |
 | **Azure DNS** | Medium | ✅ | Microsoft cloud integration |
 | **Google Cloud DNS** | Medium | ✅ | Google cloud platform |
 | **DigitalOcean** | Easy | ✅ | Simple API setup |
@@ -110,7 +110,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 3. Run PowerShell as Administrator
 4. Execute `.\Main.ps1`
 
-**[Complete Installation Guide →](docs/INSTALLATION.md)**
+**[Installation Guide →](docs/INSTALLATION.md)**
 
 ## 📖 Usage Examples
 
@@ -148,16 +148,16 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\Main.ps1 -RenewAll -Force
 ```
 
-**[Complete Usage Guide →](docs/USAGE.md)**
+**[Usage Guide →](docs/USAGE.md)**
 
 ## 🛡️ Security Features
 
-- **Secure Credential Storage**: DNS provider credentials stored in Windows
+- **Credential Storage**: DNS provider credentials stored in Windows
   Credential Manager
 - **Certificate Backup**: Automatic backup before renewal operations
-- **Audit Logging**: Complete audit trail in Windows Event Log
+- **Audit Logging**: Audit trail in Windows Event Log
 - **Minimal Permissions**: Follows principle of least privilege
-- **TLS 1.2+**: Modern encryption for all communications
+- **TLS 1.2+**: Current encryption for all communications
 
 ## 📊 Monitoring & Logging
 
@@ -184,7 +184,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - **DNS Authentication**: Provider-specific credential setup
 - **Certificate Store Access**: Administrator privileges required
 
-**[Complete Troubleshooting Guide →](docs/TROUBLESHOOTING.md)**
+**[Troubleshooting Guide →](docs/TROUBLESHOOTING.md)**
 
 ### Quick Diagnostics
 
@@ -206,7 +206,7 @@ We welcome contributions! Here's how to get started:
 1. **Fork the Repository**: Create your own fork on GitHub
 2. **Create Feature Branch**: `git checkout -b feature/your-feature-name`
 3. **Follow Standards**: Use PowerShell best practices and include tests
-4. **Submit Pull Request**: Detailed description of changes
+4. **Submit Pull Request**: Description of changes
 
 ### Development Setup
 

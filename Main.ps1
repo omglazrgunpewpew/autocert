@@ -55,7 +55,7 @@ $script:ScriptVersion = "2.0.0"
 $script:ScriptName = "AutoCert Certificate Management System"
 $script:StartTime = Get-Date
 
-# Ensure the script runs with administrative privileges for certificate operations
+# Ensure script runs with administrative privileges for certificate operations
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -77,7 +77,7 @@ $VerbosePreference = if ($LogLevel -eq 'Debug') { 'Continue' } else { 'SilentlyC
 $script:LoadedModules = @()
 $script:InitializationErrors = @()
 
-# Enhanced module loading with dependency tracking
+# Module loading with dependency tracking
 function Initialize-ScriptModules {
     [CmdletBinding()]
     param()
@@ -107,7 +107,7 @@ function Initialize-ScriptModules {
             @{ Path = "$PSScriptRoot\Functions\Remove-Certificate.ps1"; Name = "Certificate Removal"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Get-ExistingCertificates.ps1"; Name = "Certificate Listing"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Set-AutomaticRenewal.ps1"; Name = "Automatic Renewal"; Critical = $false },
-            @{ Path = "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"; Name = "Advanced Options"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Functions\Show-AdvancedOptions.ps1"; Name = "Options"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Update-AllCertificates.ps1"; Name = "Certificate Updates"; Critical = $false },
             @{ Path = "$PSScriptRoot\Functions\Manage-Credentials.ps1"; Name = "Credential Management"; Critical = $false }
         )
@@ -273,7 +273,7 @@ function Test-SystemConfiguration {
     }
 }
 
-# Enhanced renewal mode for scheduled tasks
+# Renewal mode for scheduled tasks
 if ($RenewAll) {
     # Initialize modules for renewal mode
     $moduleLoadSuccess = Initialize-ScriptModules
@@ -334,7 +334,7 @@ if ($RenewAll) {
 
                 $startTime = Get-Date
 
-                # Use enhanced retry logic for renewal
+                # Use retry logic for renewal
                 $newCert = Invoke-WithRetry -ScriptBlock {
                     # Clear cache to force fresh retrieval
                     Clear-CertificateCache
@@ -342,7 +342,7 @@ if ($RenewAll) {
                     # Trigger renewal using New-PACertificate with -Force
                     $renewed = New-PACertificate -MainDomain $mainDomain -Force -Verbose
                     
-                    # Verify the renewal was successful
+                    # Verify renewal was successful
                     if (-not $renewed -or -not $renewed.CertFile) {
                         throw "Certificate renewal did not produce a valid certificate"
                     }
@@ -359,7 +359,7 @@ if ($RenewAll) {
                     
                     $renewalCount++
 
-                    # Attempt to reinstall the certificate if it was previously installed
+                    # Attempt to reinstall certificate if it was previously installed
                     try {
                         # Check if certificate exists in local machine store
                         $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("My", "LocalMachine")
@@ -409,7 +409,7 @@ if ($RenewAll) {
             }
         }
 
-        # Generate comprehensive renewal summary
+        # Generate renewal summary
         Write-Host "`n" + "="*60 -ForegroundColor Cyan
         Write-Host "AUTOMATIC RENEWAL SUMMARY" -ForegroundColor Cyan
         Write-Host "="*60 -ForegroundColor Cyan
@@ -420,9 +420,9 @@ if ($RenewAll) {
         Write-Host "Completion time: $(Get-Date)" -ForegroundColor White
         Write-Host "Total runtime: $((Get-Date) - $script:StartTime)" -ForegroundColor White
 
-        # Detailed results
+        # Results
         if ($results.Count -gt 0) {
-            Write-Host "`nDetailed Results:" -ForegroundColor Cyan
+            Write-Host "`nResults:" -ForegroundColor Cyan
             foreach ($result in $results) {
                 $color = switch ($result.Status) {
                     "Renewed" { "Green" }
@@ -454,7 +454,7 @@ Renewed: $renewalCount
 Skipped: $skippedCount  
 Failed: $errorCount
 
-Detailed Results:
+Results:
 $($results | ForEach-Object { "$($_.Domain): $($_.Status)" } | Out-String)
 
 Completion Time: $(Get-Date)
@@ -503,7 +503,7 @@ if ($ConfigTest) {
     }
 }
 
-# Enhanced interactive mode functions
+# Interactive mode functions
 function Show-Menu {
     Clear-Host
     
@@ -512,7 +512,7 @@ function Show-Menu {
         Initialize-ACMEServer
     }
     
-    # Display enhanced header with system information
+    # Display header with system information
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
     Write-Host "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
     Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
@@ -526,7 +526,7 @@ function Show-Menu {
         Write-Host "ACME Server: Not configured" -ForegroundColor Red
     }
     
-    # Show certificate summary with enhanced status
+    # Show certificate summary with status
     try {
         $orders = Get-PAOrder
         if ($orders) {
@@ -580,7 +580,7 @@ function Show-Menu {
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
 }
 
-# Enhanced credential management menu
+# Credential management menu
 function Show-CredentialManagementMenu {
     Clear-Host
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
@@ -649,11 +649,11 @@ function Show-CredentialManagementMenu {
             try {
                 $cred = Get-StoredCredential -Target $target
                 if ($cred) {
-                    # Attempt to use the credential (e.g., test DNS resolution)
+                    # Attempt to use credential (e.g., test DNS resolution)
                     $username = $cred.UserName
                     $password = $cred.GetNetworkCredential().Password
                     
-                    # For demonstration, just display the credential (do not do this in production)
+                    # For demonstration, just display credential (do not do this in production)
                     Write-Host "Credential for ${target}:" -ForegroundColor Green
                     Write-Host "  Username: $username" -ForegroundColor White
                     Write-Host "  Password: $password" -ForegroundColor White
@@ -725,7 +725,7 @@ function Invoke-SingleCertificateManagement {
                 Read-Host "Press Enter to continue"
             }
             '2' {
-                # Call the existing Install-Certificate function
+                # Call existing Install-Certificate function
                 try {
                     $cert = Get-PACertificate -MainDomain $mainDomain
                     if ($cert) {
@@ -739,7 +739,7 @@ function Invoke-SingleCertificateManagement {
                 Read-Host "Press Enter to continue"
             }
             '3' {
-                # Call the existing Revoke-Certificate function
+                # Call existing Revoke-Certificate function
                 Write-Host "Note: This will show all certificates available for revocation." -ForegroundColor Yellow
                 Revoke-Certificate
                 Read-Host "Press Enter to continue"
@@ -755,7 +755,7 @@ function Invoke-SingleCertificateManagement {
     }
 }
 
-# Enhanced help function
+# Help function
 function Show-Help {
     Clear-Host
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
@@ -764,7 +764,7 @@ function Show-Help {
     Write-Host "="*70 -ForegroundColor Cyan
     
     Write-Host "`nThis tool manages Let's Encrypt certificates using Posh-ACME." -ForegroundColor Gray
-    Write-Host "Developed for enterprise environments with automation capabilities." -ForegroundColor Gray
+    Write-Host "Developed for production environments with automation capabilities." -ForegroundColor Gray
     
     Write-Host "`nKey Features:" -ForegroundColor Yellow
     Write-Host "• Automatic DNS provider detection with 10+ supported providers" -ForegroundColor Green
@@ -780,18 +780,18 @@ function Show-Help {
     Write-Host "`nMenu Options:" -ForegroundColor Yellow
     Write-Host " 1) Register: Obtain new certificates with automated DNS validation"
     Write-Host " 2) Install: Deploy certificates to various targets with verification"
-    Write-Host " 3) Renewal: Set up automated renewal with flexible scheduling"
-    Write-Host " 4) Manage: Comprehensive certificate management submenu including:"
-    Write-Host "    • View all certificates with detailed status information"
+    Write-Host " 3) Renewal: Set up automated renewal with scheduling"
+    Write-Host " 4) Manage: Certificate management submenu including:"
+    Write-Host "    • View all certificates with status information"
     Write-Host "    • Individual certificate management (renew, reinstall, view details)"
     Write-Host "    • Bulk renewal operations and status checks"
     Write-Host "    • Certificate export in multiple formats"
     Write-Host "    • Safe certificate revocation with confirmation"
     Write-Host "    • Certificate deletion with data cleanup"
-    Write-Host " 5) Advanced: ACME server settings, plugins, and configurations"
-    Write-Host " 6) Credentials: Secure DNS provider credential management"
+    Write-Host " 5) Options: ACME server settings, plugins, and configurations"
+    Write-Host " 6) Credentials: DNS provider credential management"
     Write-Host " 7) Health: System status, certificate validation, and diagnostics"
-    Write-Host " S) Help: This comprehensive information screen"
+    Write-Host " S) Help: This information screen"
     Write-Host " 0) Exit: Safely close the application with cleanup"
     
     Write-Host "`nSupported DNS Providers:" -ForegroundColor Yellow
@@ -839,7 +839,7 @@ function Show-Help {
     Read-Host "Press Enter to return to the main menu"
 }
 
-# Enhanced system health check
+# System health check
 function Test-SystemHealth {
     Clear-Host
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
@@ -849,7 +849,7 @@ function Test-SystemHealth {
     $healthIssues = @()
     $healthWarnings = @()
     
-    Write-Host "`nRunning comprehensive system health check..." -ForegroundColor Yellow
+    Write-Host "`nRunning system health check..." -ForegroundColor Yellow
     Write-ProgressHelper -Activity "System Health Check" -Status "Checking components..." -PercentComplete 10
     
     # Check PowerShell version
@@ -1191,7 +1191,7 @@ function Test-SystemHealth {
     
     # Display comprehensive summary
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host "COMPREHENSIVE HEALTH CHECK SUMMARY" -ForegroundColor Cyan
+    Write-Host "HEALTH CHECK SUMMARY" -ForegroundColor Cyan
     Write-Host "="*60 -ForegroundColor Cyan
     
     if ($healthIssues.Count -eq 0 -and $healthWarnings.Count -eq 0) {
@@ -1252,7 +1252,7 @@ function Test-SystemHealth {
     Read-Host "Press Enter to return to the main menu"
 }
 
-# Enhanced error handling wrapper for menu operations
+# Error handling wrapper for menu operations
 function Invoke-MenuOperation {
     [CmdletBinding()]
     param(
@@ -1311,7 +1311,7 @@ function Invoke-MenuOperation {
 
 # Main script execution starts here
 try {
-    # Initialize the system
+    # Initialize system
     $moduleLoadSuccess = Initialize-ScriptModules
     if (-not $moduleLoadSuccess) {
         Exit 1
@@ -1329,7 +1329,7 @@ try {
             '4' { 
                 Show-CertificateManagementMenu
             }
-            '5' { Show-AdvancedOptions }
+            '5' { Show-Options }
             '6' { Show-CredentialManagementMenu }
             '7' { Test-SystemHealth }
             'S' { Show-Help }

@@ -1,25 +1,25 @@
 <#
     .SYNOPSIS
-        A small sub-menu for advanced options (e.g., changing ACME servers).
+        A small sub-menu for options (e.g., changing ACME servers).
 #>
 
-function Show-AdvancedOptions {
+function Show-Options {
     while ($true) {
         Clear-Host
         $currentServer = (Get-PAServer).Name
-        Write-Host "=== Advanced Options ===`n"
+        Write-Host "=== Options ===`n"
         Write-Host "1) Change ACME server (current: $currentServer)"
         Write-Host "0) Back"
 
-        $advancedChoice = Read-Host "`nEnter your choice (0-1)"
-        switch ($advancedChoice) {
+        $choice = Read-Host "`nEnter your choice (0-1)"
+        switch ($choice) {
             '0' { return }
             '1' { Set-ACMEServer }
             default {
                 Write-Host "`nInvalid selection. Please choose 0-1." -ForegroundColor Yellow
             }
         }
-        Read-Host "`nPress Enter to return to the advanced options"
+        Read-Host "`nPress Enter to return to options"
     }
 }
 
@@ -50,5 +50,5 @@ function Set-ACMEServer {
             }
         }
     }
-    Read-Host "`nPress Enter to return to the advanced options"
+    Read-Host "`nPress Enter to return to options"
 }

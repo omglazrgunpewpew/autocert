@@ -110,7 +110,7 @@ Describe 'AutoCert Robustness and Resilience Tests' {
             # Reset circuit breaker
             Reset-CircuitBreaker -OperationName 'DNSValidation'
             
-            # Cause failures to trip the breaker
+            # Cause failures to trip breaker
             for ($i = 1; $i -le 4; $i++) {
                 try {
                     Invoke-WithCircuitBreaker -OperationName 'DNSValidation' -Operation {
@@ -200,7 +200,7 @@ Describe 'AutoCert Robustness and Resilience Tests' {
             "MOCK PRIVATE KEY" | Set-Content -Path (Join-Path $mockCertPath "cert.key")
             
             # Test backup creation would require actual Posh-ACME certificate
-            # This test verifies the backup structure creation
+            # This test verifies backup structure creation
             $mockCertPath | Should -Exist
         }
 
@@ -313,7 +313,7 @@ Describe 'AutoCert Robustness and Resilience Tests' {
         It 'Should validate input parameters' {
             Get-ValidatedInput -Prompt "Test" -ValidOptions @(1, 2, 3)
             # This test would require user interaction in real scenario
-            # Here we just verify the function exists and can be called
+            # Here we just verify function exists and can be called
             Get-Command Get-ValidatedInput | Should -Not -BeNullOrEmpty
         }
     }

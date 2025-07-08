@@ -649,7 +649,7 @@ function Reset-AutoCertConfiguration {
         }
     }
     
-    Write-Host "AutoCert configuration reset complete" -ForegroundColor Green
+    Write-Host "AutoCert configuration reset" -ForegroundColor Green
     Write-Host "Run .\Main.ps1 to reconfigure the system" -ForegroundColor Cyan
 }
 ```

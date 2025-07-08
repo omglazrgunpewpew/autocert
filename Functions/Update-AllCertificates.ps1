@@ -36,7 +36,7 @@ function Update-AllCertificates {
             Write-Host "`nRenewed certificate for $($order.MainDomain)" -ForegroundColor Green
             Write-Log "Renewed certificate for $($order.MainDomain)"
 
-            # Automatically install the renewed certificate if it was previously installed
+            # Automatically install renewed certificate if it was previously installed
             if ($renewed) {
                 try {
                     # Check if certificate exists in local machine store
