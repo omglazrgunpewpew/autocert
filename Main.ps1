@@ -445,22 +445,47 @@ if ($RenewAll) {
         # Send summary email if configured
         if ($config.EmailNotifications -and $config.NotificationEmail -and ($renewalCount -gt 0 -or $errorCount -gt 0)) {
             $subject = "Certificate Renewal Summary - $renewalCount renewed, $errorCount failed"
+            
+            # Generate detailed HTML results for email
+            $htmlResults = ConvertTo-HtmlFragment -InputObject $results
+
             $body = @"
-Certificate Renewal Summary
-==========================
-
-Processed: $($orders.Count) certificates
-Renewed: $renewalCount
-Skipped: $skippedCount  
-Failed: $errorCount
-
-Results:
-$($results | ForEach-Object { "$($_.Domain): $($_.Status)" } | Out-String)
-
-Completion Time: $(Get-Date)
-Runtime: $((Get-Date) - $script:StartTime)
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h2 { color: #333; }
+        .summary { margin-bottom: 20px; }
+        .summary-table { border-collapse: collapse; width: 400px; }
+        .summary-table td { padding: 5px; border: 1px solid #ddd; }
+        .summary-label { font-weight: bold; }
+        .results-table { border-collapse: collapse; width: 100%; }
+        .results-table th, .results-table td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+        .results-table th { background-color: #f2f2f2; }
+        .status-renewed { color: green; }
+        .status-skipped { color: orange; }
+        .status-failed { color: red; }
+    </style>
+</head>
+<body>
+    <h2>Certificate Renewal Summary</h2>
+    <div class="summary">
+        <table class="summary-table">
+            <tr><td class="summary-label">Processed</td><td>$($orders.Count) certificates</td></tr>
+            <tr><td class="summary-label">Renewed</td><td>$renewalCount</td></tr>
+            <tr><td class="summary-label">Skipped</td><td>$skippedCount</td></tr>
+            <tr><td class="summary-label">Failed</td><td>$errorCount</td></tr>
+        </table>
+    </div>
+    <h3>Results:</h3>
+    $htmlResults
+    <p>Completion Time: $(Get-Date -Format 'u')</p>
+    <p>Runtime: $((Get-Date) - $script:StartTime)</p>
+</body>
+</html>
 "@
-            Send-RenewalNotification -Subject $subject -Body $body -ToEmail $config.NotificationEmail
+            Send-RenewalNotification -Subject $subject -Body $body -ToEmail $config.NotificationEmail -BodyAsHtml
         }
 
         Write-Log "Automatic renewal completed - Renewed: $renewalCount, Failed: $errorCount, Skipped: $skippedCount" -Level 'Info'
