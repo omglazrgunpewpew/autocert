@@ -32,7 +32,7 @@ function Add-DnsTxt {
     # get all the instances of the record
     try {
         $recShort = ($RecordName -ireplace [regex]::Escape($zoneName), [string]::Empty).TrimEnd('.')
-        $recs = (Invoke-RestMethod "$apiRoot/dns/$zoneName/records/v1" @restParams -Method Get) | ? {$_.name -eq $recShort -and $_.type -eq "TXT"}
+        $recs = (Invoke-RestMethod "$apiRoot/dns/$zoneName/records/v1" @restParams -Method Get) | Where-Object {$_.name -eq $recShort -and $_.type -eq "TXT"}
     } catch { throw }
 
     if ($recs.Count -eq 0 -or $TxtValue -notin $recs.text) {
@@ -45,6 +45,9 @@ function Add-DnsTxt {
     } else {
         Write-Debug "Record $RecordName already contains $TxtValue. Nothing to do."
     }
+
+    # Suppress PSScriptAnalyzer warning about unused parameter
+    $null = $ExtraParams
 
     <#
     .SYNOPSIS
@@ -74,7 +77,7 @@ function Add-DnsTxt {
 }
 
 function Remove-DnsTxt {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory,Position=0)]
         [string]$RecordName,
@@ -105,19 +108,24 @@ function Remove-DnsTxt {
     # get all the instances of the record
     try {
         $recShort = ($RecordName -ireplace [regex]::Escape($zoneName), [string]::Empty).TrimEnd('.')
-        $recs = (Invoke-RestMethod "$apiRoot/dns/$zoneName/records/v1" @restParams -Method Get) | ? {$_.name -eq $recShort -and $_.type -eq "TXT"}
+        $recs = (Invoke-RestMethod "$apiRoot/dns/$zoneName/records/v1" @restParams -Method Get) | Where-Object {$_.name -eq $recShort -and $_.type -eq "TXT"}
     } catch { throw }
 
     if ($recs.Count -eq 0 -or $TxtValue -notin $recs.text) {
         Write-Debug "Record $RecordName with value $TxtValue doesn't exist. Nothing to do."
     } else {
         # delete record
-        try {
-            Write-Verbose "Removing TXT record for $RecordName with value $TxtValue"
-            $recID = ($recs | Where-Object { $_.text -eq $TxtValue }).hashId
-            Invoke-RestMethod "$apiRoot/dns/$zoneName/$recID/v1" -Method Delete @restParams | Out-Null
-        } catch { throw }
+        if ($PSCmdlet.ShouldProcess($RecordName, "Remove TXT record with value $TxtValue")) {
+            try {
+                Write-Verbose "Removing TXT record for $RecordName with value $TxtValue"
+                $recID = ($recs | Where-Object { $_.text -eq $TxtValue }).hashId
+                Invoke-RestMethod "$apiRoot/dns/$zoneName/$recID/v1" -Method Delete @restParams | Out-Null
+            } catch { throw }
+        }
     }
+
+    # Suppress PSScriptAnalyzer warning about unused parameter
+    $null = $ExtraParams
 
     <#
     .SYNOPSIS
@@ -152,6 +160,10 @@ function Save-DnsTxt {
         [Parameter(ValueFromRemainingArguments)]
         $ExtraParams
     )
+
+    # Suppress PSScriptAnalyzer warning about unused parameter
+    $null = $ExtraParams
+
     <#
     .SYNOPSIS
         Not required.
