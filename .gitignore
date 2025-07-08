@@ -46,6 +46,12 @@ cache/
 temp/
 var/
 
+# Build and output directories
+bin/
+obj/
+out/
+dist/
+
 # Backup files
 backup/
 *.backup
