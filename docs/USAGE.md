@@ -122,7 +122,7 @@ This guide covers how to use the Enhanced Certificate Management System for vari
 
 #### Example Output
 
-```
+```text
 Domain Validation Progress:
 ✓ Creating TXT record: _acme-challenge.example.com
 ✓ DNS propagation detected (45 seconds)
@@ -171,7 +171,7 @@ Domain Validation Progress:
 
 #### Example Configuration
 
-```
+```text
 Wildcard Domain: *.example.com
 Covers: api.example.com, www.example.com, mail.example.com, etc.
 Also includes: example.com (parent domain)
