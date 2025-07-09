@@ -1,10 +1,10 @@
-# Tests/Autocert.Tests.ps1
+# Tests/Autocert.Resilience.Tests.ps1
 <#
     .SYNOPSIS
-        Test suite for AutoCert robustness and resilience features.
+        Test suite for AutoCert resilience features.
 #>
 
-Describe 'AutoCert Robustness and Resilience Tests' {
+Describe 'AutoCert Resilience Tests' {
     BeforeAll {
         $ErrorActionPreference = 'Stop'
         
@@ -368,7 +368,7 @@ Describe 'AutoCert Robustness and Resilience Tests' {
         It 'Should load all required functions' {
             @( 'Register-Certificate', 'Install-Certificate', 'Revoke-Certificate', 
                'Remove-Certificate', 'Get-ExistingCertificates', 'Set-AutomaticRenewal', 
-               'Show-AdvancedOptions', 'Update-AllCertificates', 'Manage-Credentials' ) | ForEach-Object {
+               'Show-Options', 'Update-AllCertificates', 'Manage-Credentials' ) | ForEach-Object {
                 Get-Command $_ | Should -Not -BeNullOrEmpty
             }
         }

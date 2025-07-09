@@ -468,4 +468,5 @@ function Invoke-SingleCertificateManagement {
 }
 
 # Export functions
-Export-ModuleMember -Function Show-CertificateManagementMenu, Invoke-SingleCertificateManagement
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Show-CertificateManagementMenu, Invoke-SingleCertificateManagement

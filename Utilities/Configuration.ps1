@@ -218,4 +218,5 @@ function Test-NetworkConnectivity {
 }
 
 # Export functions for module use
-Export-ModuleMember -Function Test-SystemConfiguration, Get-ConfigurationPath, Test-RequiredModules, Test-NetworkConnectivity
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Test-SystemConfiguration, Get-ConfigurationPath, Test-RequiredModules, Test-NetworkConnectivity

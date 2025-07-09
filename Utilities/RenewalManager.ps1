@@ -348,4 +348,5 @@ function Get-RenewalScheduleRecommendation {
 }
 
 # Export functions for module use
-Export-ModuleMember -Function Invoke-AutomatedRenewal, Send-RenewalNotificationSummary, Get-RenewalScheduleRecommendation
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Invoke-AutomatedRenewal, Send-RenewalNotificationSummary, Get-RenewalScheduleRecommendation

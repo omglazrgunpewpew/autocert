@@ -244,4 +244,5 @@ function Invoke-TestCredentialMenu {
 }
 
 # Export functions
-Export-ModuleMember -Function Show-CredentialManagementMenu
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Show-CredentialManagementMenu

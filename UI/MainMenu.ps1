@@ -88,4 +88,5 @@ function Show-Menu {
 }
 
 # Export functions
-Export-ModuleMember -Function Show-Menu
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Show-Menu

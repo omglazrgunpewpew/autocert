@@ -101,6 +101,18 @@ function Initialize-ScriptModules {
             @{ Path = "$PSScriptRoot\Core\CertificateCache.ps1"; Name = "Certificate Cache"; Critical = $false },
             @{ Path = "$PSScriptRoot\Core\DNSProviderDetection.ps1"; Name = "DNS Provider Detection"; Critical = $false },
             @{ Path = "$PSScriptRoot\Core\RenewalConfig.ps1"; Name = "Renewal Configuration"; Critical = $false },
+            # UI modules
+            @{ Path = "$PSScriptRoot\UI\MainMenu.ps1"; Name = "Main Menu"; Critical = $true },
+            @{ Path = "$PSScriptRoot\UI\CertificateMenu.ps1"; Name = "Certificate Menu"; Critical = $true },
+            @{ Path = "$PSScriptRoot\UI\CredentialMenu.ps1"; Name = "Credential Menu"; Critical = $true },
+            @{ Path = "$PSScriptRoot\UI\HelpSystem.ps1"; Name = "Help System"; Critical = $false },
+            # Utilities modules
+            @{ Path = "$PSScriptRoot\Utilities\ErrorHandling.ps1"; Name = "Error Handling"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Utilities\HealthCheck.ps1"; Name = "Health Check"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Utilities\Configuration.ps1"; Name = "Configuration Validation"; Critical = $true },
+            @{ Path = "$PSScriptRoot\Utilities\RenewalManager.ps1"; Name = "Renewal Manager"; Critical = $false },
+            @{ Path = "$PSScriptRoot\Utilities\ModuleManager.ps1"; Name = "Module Manager"; Critical = $false },
+            # Function modules
             @{ Path = "$PSScriptRoot\Functions\Register-Certificate.ps1"; Name = "Certificate Registration"; Critical = $true },
             @{ Path = "$PSScriptRoot\Functions\Install-Certificate.ps1"; Name = "Certificate Installation"; Critical = $true },
             @{ Path = "$PSScriptRoot\Functions\Revoke-Certificate.ps1"; Name = "Certificate Revocation"; Critical = $false },
@@ -155,7 +167,7 @@ function Initialize-ScriptModules {
         }
 
         # Verify critical functions are available
-        $criticalFunctions = @('Register-Certificate', 'Install-Certificate', 'Write-Log')
+        $criticalFunctions = @('Register-Certificate', 'Install-Certificate', 'Write-Log', 'Show-Menu', 'Show-CertificateManagementMenu', 'Show-CredentialManagementMenu', 'Show-Help', 'Test-SystemHealth')
         foreach ($func in $criticalFunctions) {
             if (-not (Get-Command $func -ErrorAction SilentlyContinue)) {
                 throw "Critical function '$func' is not available"

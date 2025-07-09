@@ -437,4 +437,5 @@ function Test-SystemHealth {
 }
 
 # Export functions
-Export-ModuleMember -Function Test-SystemHealth
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Test-SystemHealth

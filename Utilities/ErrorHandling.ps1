@@ -222,4 +222,5 @@ function Write-Log {
 }
 
 # Export functions
-Export-ModuleMember -Function Invoke-MenuOperation, Invoke-WithRetry, Write-ProgressHelper, Write-Log
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Invoke-MenuOperation, Invoke-WithRetry, Write-ProgressHelper, Write-Log

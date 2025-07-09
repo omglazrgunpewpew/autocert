@@ -123,6 +123,6 @@
     
     # Custom rule paths for AutoCert style guide enforcement
     CustomRulePath = @(
-        '.\CustomRules\AutoCertStyleRules.psm1'
+        '.\tools\CustomRules\AutoCertStyleRules.psm1'
     )
 }

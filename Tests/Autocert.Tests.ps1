@@ -1,3 +1,9 @@
+# Tests/Autocert.Tests.ps1
+<#
+    .SYNOPSIS
+        Basic test suite for AutoCert core functions.
+#>
+
 Describe 'Autocert Functions' {
     BeforeAll {
         $ErrorActionPreference = 'Stop'
@@ -9,7 +15,7 @@ Describe 'Autocert Functions' {
 
     It 'All functions should be defined' {
         @( 'Register-Certificate', 'Install-Certificate', 'Revoke-Certificate', 'Remove-Certificate',
-           'Get-ExistingCertificates', 'Set-AutomaticRenewal', 'Show-AdvancedOptions', 'Update-AllCertificates' ) | ForEach-Object {
+           'Get-ExistingCertificates', 'Set-AutomaticRenewal', 'Show-Options', 'Update-AllCertificates' ) | ForEach-Object {
             Get-Command $_ | Should -Not -BeNullOrEmpty
         }
     }

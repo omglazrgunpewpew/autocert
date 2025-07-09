@@ -251,4 +251,5 @@ function Reset-ModuleState {
 }
 
 # Export functions for module use
-Export-ModuleMember -Function Initialize-AutoCertModules, Get-LoadedModuleInfo, Test-ModuleDependencies, Reset-ModuleState
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Initialize-AutoCertModules, Get-LoadedModuleInfo, Test-ModuleDependencies, Reset-ModuleState
