@@ -8,7 +8,8 @@ param(
 )
 
 $scriptPath = $PSScriptRoot
-$originalFile = Join-Path $scriptPath "Main.ps1"
+$parentPath = Split-Path $scriptPath -Parent
+$originalFile = Join-Path $parentPath "Main.ps1"
 $newFile = Join-Path $scriptPath "Main.ps1.new"
 $backupFile = Join-Path $scriptPath "Main.ps1.original"
 

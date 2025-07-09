@@ -5,24 +5,25 @@ Write-Host "Testing AutoCert Refactoring..." -ForegroundColor Cyan
 Write-Host "----------------------------------" -ForegroundColor Cyan
 
 # Define paths to test
+$parentPath = Split-Path $PSScriptRoot -Parent
 $corePaths = @(
-    "$PSScriptRoot\Core\Logging.ps1",
-    "$PSScriptRoot\Core\Helpers.ps1"
+    "$parentPath\Core\Logging.ps1",
+    "$parentPath\Core\Helpers.ps1"
 )
 
 $uiPaths = @(
-    "$PSScriptRoot\UI\MainMenu.ps1",
-    "$PSScriptRoot\UI\CertificateMenu.ps1",
-    "$PSScriptRoot\UI\CredentialMenu.ps1",
-    "$PSScriptRoot\UI\HelpSystem.ps1"
+    "$parentPath\UI\MainMenu.ps1",
+    "$parentPath\UI\CertificateMenu.ps1",
+    "$parentPath\UI\CredentialMenu.ps1",
+    "$parentPath\UI\HelpSystem.ps1"
 )
 
 $utilityPaths = @(
-    "$PSScriptRoot\Utilities\ErrorHandling.ps1",
-    "$PSScriptRoot\Utilities\HealthCheck.ps1",
-    "$PSScriptRoot\Utilities\Configuration.ps1",
-    "$PSScriptRoot\Utilities\RenewalManager.ps1",
-    "$PSScriptRoot\Utilities\ModuleManager.ps1"
+    "$parentPath\Utilities\ErrorHandling.ps1",
+    "$parentPath\Utilities\HealthCheck.ps1",
+    "$parentPath\Utilities\Configuration.ps1",
+    "$parentPath\Utilities\RenewalManager.ps1",
+    "$parentPath\Utilities\ModuleManager.ps1"
 )
 
 # Test function to verify paths and function availability

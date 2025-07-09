@@ -212,11 +212,8 @@ We welcome contributions! Here's how to get started:
 
 ```powershell
 # Clone your fork
-git clone https://github.com/yourusername/autocert.git
+git clone https://github.com/omglazrgunpewpew/autocert.git
 cd autocert
-
-# Install development dependencies
-.\Tests\Install-DevDependencies.ps1
 
 # Optional: Disable Posh-ACME auto-updates during development
 $env:POSHACME_SKIP_UPGRADE_CHECK = $true
@@ -229,7 +226,7 @@ $env:POSHACME_SKIP_UPGRADE_CHECK = $true
 
 - Set `$env:POSHACME_SKIP_UPGRADE_CHECK = $true` to prevent Posh-ACME from
   auto-updating during testing
-- Use `.\Scripts\Build-Validation.ps1` for code quality and validation
+- Use `.\build\Build-Validation.ps1` for code quality and validation
   checks
 - The CI/CD pipeline automatically disables Posh-ACME updates for consistent
   builds

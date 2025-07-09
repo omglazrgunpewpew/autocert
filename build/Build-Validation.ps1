@@ -88,9 +88,9 @@ function Invoke-BuildValidation {
     Write-StatusMessage "`n🔍 Running PSScriptAnalyzer..." -Type Header
     
     try {
-        $settingsPath = Join-Path $PSScriptRoot 'PSScriptAnalyzerSettings.psd1'
+        $settingsPath = Join-Path $PSScriptRoot '..\tools\PSScriptAnalyzerSettings.psd1'
         $analyzerParams = @{
-            Path = $PSScriptRoot
+            Path = Join-Path $PSScriptRoot '..'
             Recurse = $true
             Settings = $settingsPath
         }

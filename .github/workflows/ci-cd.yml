@@ -52,11 +52,11 @@ jobs:
         POSHACME_SKIP_UPGRADE_CHECK: true
       run: |
         $allIssues = @()
-        $pathsToCheck = @('./Core', './Functions', './Main.ps1', './Build-Validation.ps1')
+        $pathsToCheck = @('./Core', './Functions', './Main.ps1', './build/Build-Validation.ps1')
         
         foreach ($path in $pathsToCheck) {
           if (Test-Path $path) {
-            $issues = Invoke-ScriptAnalyzer -Path $path -Settings ./PSScriptAnalyzerSettings.psd1
+            $issues = Invoke-ScriptAnalyzer -Path $path -Settings ./tools/PSScriptAnalyzerSettings.psd1
             $allIssues += $issues
           }
         }
@@ -81,13 +81,14 @@ jobs:
       env:
         POSHACME_SKIP_UPGRADE_CHECK: true
       run: |
+        cd build
         .\Build-Validation.ps1 -Detailed
         
     - name: Security Scan with PSScriptAnalyzer
       shell: pwsh
       run: |
         $allSecurityIssues = @()
-        $pathsToCheck = @('./Core', './Functions', './Main.ps1', './Build-Validation.ps1')
+        $pathsToCheck = @('./Core', './Functions', './Main.ps1', './build/Build-Validation.ps1')
         
         foreach ($path in $pathsToCheck) {
           if (Test-Path $path) {

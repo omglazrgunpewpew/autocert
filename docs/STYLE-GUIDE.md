@@ -370,7 +370,3 @@ function Get-ComprehensiveCertificateInformationWithAdvancedFeatures {
     }
 }
 ```
-
----
-
-*This style guide should be reviewed and updated as the project evolves to maintain consistency and clarity across all code.*

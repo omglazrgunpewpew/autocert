@@ -58,6 +58,52 @@
         PSReviewUnusedParameter = @{
             Enable = $true
         }
+        
+        # Consistent indentation (4 spaces, Allman style)
+        PSUseConsistentIndentation = @{
+            Enable = $true
+            IndentationSize = 4
+            PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
+            Kind = 'space'
+        }
+        
+        # Consistent whitespace
+        PSUseConsistentWhitespace = @{
+            Enable = $true
+            CheckInnerBrace = $true
+            CheckOpenBrace = $true
+            CheckOpenParen = $true
+            CheckOperator = $true
+            CheckPipe = $true
+            CheckSeparator = $true
+        }
+        
+        # Allman style braces (opening brace on new line)
+        PSPlaceOpenBrace = @{
+            Enable = $true
+            OnSameLine = $false
+            NewLineAfter = $true
+            IgnoreOneLineBlock = $true
+        }
+        
+        # Consistent closing brace placement
+        PSPlaceCloseBrace = @{
+            Enable = $true
+            NewLineAfter = $false
+            IgnoreOneLineBlock = $true
+            NoEmptyLineBefore = $false
+        }
+        
+        # Align assignment statements
+        PSAlignAssignmentStatement = @{
+            Enable = $true
+            CheckHashtable = $true
+        }
+        
+        # Use correct casing for cmdlets
+        PSUseCorrectCasing = @{
+            Enable = $true
+        }
     }
     
     # Rules to exclude (if any specific exemptions are needed)
@@ -75,6 +121,8 @@
         'Information'
     )
     
-    # Custom rule paths (if any custom rules are developed)
-    CustomRulePath = @()
+    # Custom rule paths for AutoCert style guide enforcement
+    CustomRulePath = @(
+        '.\CustomRules\AutoCertStyleRules.psm1'
+    )
 }
