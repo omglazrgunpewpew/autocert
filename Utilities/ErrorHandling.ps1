@@ -31,8 +31,8 @@ function Invoke-MenuOperation {
         & $Operation
         $duration = (Get-Date) - $startTime
         
-        Write-Host "`n$OperationName completed successfully in $($duration.TotalSeconds.ToString('F1')) seconds." -ForegroundColor Green
-        Write-Log "$OperationName completed successfully" -Level 'Success'
+        Write-Host "`n$OperationName completed in $($duration.TotalSeconds.ToString('F1')) seconds." -ForegroundColor Green
+        Write-Log "$OperationName completed" -Level 'Success'
         
     } catch {
         $errorMsg = "$OperationName failed: $($_.Exception.Message)"

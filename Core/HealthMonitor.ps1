@@ -43,7 +43,7 @@ class HealthCheck {
             if (Wait-Job -Job $job -Timeout $this.TimeoutSeconds) {
                 $jobResult = Receive-Job -Job $job
                 $result.Status = 'Pass'
-                $result.Message = if ($jobResult) { $jobResult.ToString() } else { 'Check completed successfully' }
+                $result.Message = if ($jobResult) { $jobResult.ToString() } else { 'Check completed' }
             } else {
                 $result.Status = 'Fail'
                 $result.Message = "Health check timed out after $($this.TimeoutSeconds) seconds"

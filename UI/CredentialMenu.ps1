@@ -131,7 +131,7 @@ function Invoke-AddCredentialMenu {
             }
         }
         
-        Write-Host "`nCredential '$credName' added successfully." -ForegroundColor Green
+        Write-Host "`nCredential '$credName' added." -ForegroundColor Green
     } catch {
         Write-Error "Failed to add credential: $($_.Exception.Message)"
     }
@@ -178,7 +178,7 @@ function Invoke-RemoveCredentialMenu {
         if ($confirm -eq "yes") {
             try {
                 Remove-DNSProviderCredential -Name $selectedCred.Name
-                Write-Host "Credential removed successfully." -ForegroundColor Green
+                Write-Host "Credential removed." -ForegroundColor Green
             } catch {
                 Write-Error "Failed to remove credential: $($_.Exception.Message)"
             }

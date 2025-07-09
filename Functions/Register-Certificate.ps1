@@ -2,7 +2,7 @@
 <#
     .SYNOPSIS
         Certificate registration with DNS provider support,
-        robust error handling, and advanced validation.
+        robust error handling, and validation.
 #>
 
 function Register-Certificate {

@@ -7,7 +7,7 @@
 .SYNOPSIS
     Help documentation system for AutoCert
 .DESCRIPTION
-    Provides comprehensive help information about the AutoCert system,
+    Provides help information about the AutoCert system,
     including features, menu options, and troubleshooting guidance
 .NOTES
     Accessed from the main menu with 'S' option

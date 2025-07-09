@@ -5,9 +5,9 @@
 
 <#
 .SYNOPSIS
-    Comprehensive health check system for AutoCert
+    Health check system for AutoCert
 .DESCRIPTION
-    Performs a detailed analysis of the certificate management system's health
+    Performs analysis of the certificate management system's health
     including PowerShell environment, module status, connectivity, certificates,
     file system, scheduled tasks, network connectivity, and system resources
 .NOTES
@@ -54,7 +54,7 @@ function Test-SystemHealth {
             
             # Test module import
             Import-Module Posh-ACME -Force
-            Write-Host "   Status: Loaded successfully" -ForegroundColor Green
+            Write-Host "   Status: Loaded" -ForegroundColor Green
             
             # Check for newer version
             try {
@@ -373,7 +373,7 @@ function Test-SystemHealth {
     Write-ProgressHelper -Activity "System Health Check" -Status "Health check complete" -PercentComplete 100
     Write-Progress -Activity "System Health Check" -Completed
     
-    # Display comprehensive summary
+    # Display summary
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
     Write-Host "HEALTH CHECK SUMMARY" -ForegroundColor Cyan
     Write-Host "="*60 -ForegroundColor Cyan

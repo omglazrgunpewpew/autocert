@@ -7,7 +7,7 @@
 .SYNOPSIS
     Certificate management menu for AutoCert system
 .DESCRIPTION
-    Provides a comprehensive menu system for managing certificates including viewing,
+    Provides a menu system for managing certificates including viewing,
     managing individual certificates, bulk renewal, exporting, revoking, and deletion.
 .NOTES
     Requires the core certificate functions to be available
@@ -242,7 +242,7 @@ function Invoke-CertificateExportMenu {
                         Copy-Item -Path $cert.PfxFile -Destination (Join-Path $domainPath "cert.pfx")
                     }
                     
-                    Write-Host "Certificate exported successfully to: $domainPath" -ForegroundColor Green
+                    Write-Host "Certificate exported to: $domainPath" -ForegroundColor Green
                 } catch {
                     Write-Error "Failed to export certificate: $($_.Exception.Message)"
                 }
@@ -379,7 +379,7 @@ function Invoke-SingleCertificateManagement {
                 try {
                     Write-Host "Initiating certificate renewal for $mainDomain..." -ForegroundColor Yellow
                     Submit-Renewal -MainDomain $mainDomain -Force
-                    Write-Host "Certificate renewal initiated successfully." -ForegroundColor Green
+                    Write-Host "Certificate renewal initiated." -ForegroundColor Green
                 } catch {
                     Write-Error "Failed to renew certificate: $($_.Exception.Message)"
                 }
@@ -408,7 +408,7 @@ function Invoke-SingleCertificateManagement {
                     try {
                         Write-Host "Revoking certificate for $mainDomain..." -ForegroundColor Yellow
                         Revoke-Certificate -MainDomain $mainDomain
-                        Write-Host "Certificate successfully revoked." -ForegroundColor Green
+                        Write-Host "Certificate revoked." -ForegroundColor Green
                     } catch {
                         Write-Error "Failed to revoke certificate: $($_.Exception.Message)"
                     }

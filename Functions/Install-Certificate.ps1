@@ -2,12 +2,12 @@
 <#
     .SYNOPSIS
         Certificate installation with deployment options,
-        robust error handling, and comprehensive post-installation features.
+        robust error handling, and post-installation features.
 
     .DESCRIPTION
-        Provides a comprehensive interface for installing Let's Encrypt certificates
+        Provides an interface for installing Let's Encrypt certificates
         to various targets including certificate stores, PEM files, and PFX exports.
-        Includes advanced options, testing, monitoring, and reporting capabilities.
+        Includes options, testing, monitoring, and reporting capabilities.
 
     .PARAMETER PACertificate
         The Posh-ACME certificate object to install. If not provided, user will select from available certificates.
@@ -123,7 +123,7 @@ function Install-Certificate {
         Write-Host "2) Install to Recording Server (PEM Files)"
         Write-Host "3) Export as PFX File"
         Write-Host "4) Export Multiple Formats"
-        Write-Host "5) Advanced Installation Options"
+        Write-Host "5) Installation Options"
         Write-Host "0) Back to main menu"
 
         $installChoice = Get-ValidatedInput -Prompt "`nSelect installation method (0-5)" -ValidOptions (0..5)
@@ -465,8 +465,8 @@ function Install-Certificate {
             }
             
             5 {
-                # Advanced Installation Options
-                Write-Host "`nAdvanced Installation Options:" -ForegroundColor Cyan
+                # Installation Options
+                Write-Host "`nInstallation Options:" -ForegroundColor Cyan
                 Write-Host "1) Install to custom certificate store"
                 Write-Host "2) Install with custom friendly name"
                 Write-Host "3) Install with backup creation"
@@ -474,9 +474,9 @@ function Install-Certificate {
                 Write-Host "5) Schedule automatic reinstallation"
                 Write-Host "0) Back to main menu"
                 
-                $advancedChoice = Get-ValidatedInput -Prompt "`nSelect advanced option (0-5)" -ValidOptions (0..5)
+                $installChoice = Get-ValidatedInput -Prompt "`nSelect installation option (0-5)" -ValidOptions (0..5)
                 
-                switch ($advancedChoice) {
+                switch ($installChoice) {
                     0 { continue }
                     
                     1 {
@@ -571,7 +571,7 @@ function Install-Certificate {
                             
                             # Install certificate
                             Install-PACertificate -PACertificate $PACertificate -StoreLocation LocalMachine -Verbose
-                            Write-Host "✓ Certificate installed successfully" -ForegroundColor Green
+                            Write-Host "✓ Certificate installed" -ForegroundColor Green
                             Write-Log "Certificate installed with backup created"
                             $installed = $true
                             
@@ -682,7 +682,7 @@ try {
     # Post-installation actions and verification
     if ($installed) {
         Write-Host "`n" + "="*70 -ForegroundColor Green
-        Write-Host "INSTALLATION COMPLETED SUCCESSFULLY!" -ForegroundColor Green
+        Write-Host "INSTALLATION COMPLETED!" -ForegroundColor Green
         Write-Host "="*70 -ForegroundColor Green
         
         # Post-installation menu
@@ -699,8 +699,8 @@ try {
         
         switch ($postChoice) {
             1 {
-                # Comprehensive certificate testing
-                Write-Host "`nRunning comprehensive certificate tests..." -ForegroundColor Cyan
+                # Certificate testing
+                Write-Host "`nRunning certificate tests..." -ForegroundColor Cyan
                 Write-ProgressHelper -Activity "Certificate Testing" -Status "Initializing tests..." -PercentComplete 10
                 
                 $testResults = @()
@@ -789,7 +789,7 @@ try {
                 Write-ProgressHelper -Activity "Certificate Testing" -Status "Tests complete" -PercentComplete 100
                 Write-Progress -Activity "Certificate Testing" -Completed
                 
-                # Display comprehensive test summary
+                # Display test summary
                 Write-Host "`n" + "="*60 -ForegroundColor Cyan
                 Write-Host "CERTIFICATE TEST SUMMARY" -ForegroundColor Cyan
                 Write-Host "="*60 -ForegroundColor Cyan
@@ -997,8 +997,8 @@ try {
             }
             
             4 {
-                # Generate comprehensive installation report
-                Write-Host "`nGenerating comprehensive installation report..." -ForegroundColor Cyan
+                # Generate installation report
+                Write-Host "`nGenerating installation report..." -ForegroundColor Cyan
                 
                 $reportPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "certificate_installation_report_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
                 
@@ -1007,7 +1007,7 @@ try {
                 $computerInfo = Get-CimInstance -ClassName Win32_ComputerSystem
                 
                 $report = @"
-COMPREHENSIVE CERTIFICATE INSTALLATION REPORT
+CERTIFICATE INSTALLATION REPORT
 ==============================================
 Generated: $(Get-Date)
 Report for: $($PACertificate.MainDomain)
@@ -1096,7 +1096,7 @@ VERIFICATION CHECKLIST
 ======================
 □ Certificate appears in LocalMachine\My certificate store
 □ Private key is accessible and properly secured
-□ Certificate chain validates successfully
+□ Certificate chain validates correctly
 □ Certificate is bound to target applications
 □ HTTPS connectivity works correctly
 □ Monitoring and alerts are configured
@@ -1110,7 +1110,7 @@ For questions or issues, refer to the troubleshooting section above.
 "@
                 
                 Set-Content -Path $reportPath -Value $report -Encoding UTF8
-                Write-Host "✓ Comprehensive installation report generated" -ForegroundColor Green
+                Write-Host "✓ Installation report generated" -ForegroundColor Green
                 Write-Host "  Report saved to: $reportPath" -ForegroundColor Cyan
                 
                 $openReport = Read-Host "`nOpen report in default text editor? (Y/N)"
@@ -1174,7 +1174,7 @@ For questions or issues, refer to the troubleshooting section above.
                                     $binding = Get-WebBinding -Name $selectedSite.Name -Protocol https -Port 443
                                     $binding.AddSslCertificate($PACertificate.Certificate.Thumbprint, "my")
                                     
-                                    Write-Host "✓ Certificate successfully bound to IIS site: $($selectedSite.Name)" -ForegroundColor Green
+                                    Write-Host "✓ Certificate bound to IIS site: $($selectedSite.Name)" -ForegroundColor Green
                                     Write-Host "  Binding: HTTPS on port 443" -ForegroundColor Cyan
                                     Write-Host "  Certificate: $($PACertificate.Certificate.Thumbprint)" -ForegroundColor Cyan
                                     
@@ -1578,7 +1578,7 @@ For more information, consult your application framework's SSL/TLS documentation
         Write-Host "`n" + "="*70 -ForegroundColor Green
         Write-Host "CERTIFICATE INSTALLATION SUMMARY" -ForegroundColor Green
         Write-Host "="*70 -ForegroundColor Green
-        Write-Host "✓ Certificate for $($PACertificate.MainDomain) has been successfully installed" -ForegroundColor Green
+        Write-Host "✓ Certificate for $($PACertificate.MainDomain) has been installed" -ForegroundColor Green
         Write-Host "✓ Installation completed at $(Get-Date)" -ForegroundColor Green
         Write-Host "✓ All post-installation options have been configured" -ForegroundColor Green
         
@@ -1589,7 +1589,7 @@ For more information, consult your application framework's SSL/TLS documentation
         Write-Host "• Document the installation for your team"
         Write-Host "• Consider setting up automated renewal for future certificates"
         
-        Write-Log "Certificate installation completed successfully for $($PACertificate.MainDomain)"
+        Write-Log "Certificate installation completed for $($PACertificate.MainDomain)"
     }
     
     Read-Host "`nPress Enter to return to the main menu"

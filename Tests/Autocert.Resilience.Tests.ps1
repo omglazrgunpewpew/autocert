@@ -1,7 +1,7 @@
 # Tests/Autocert.Tests.ps1
 <#
     .SYNOPSIS
-        Comprehensive test suite for AutoCert robustness and resilience features.
+        Test suite for AutoCert robustness and resilience features.
 #>
 
 Describe 'AutoCert Robustness and Resilience Tests' {

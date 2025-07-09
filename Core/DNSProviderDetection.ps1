@@ -51,7 +51,7 @@ function Get-PublicSuffixList {
 #endregion
 
 #region DNS Provider Detection
-# Enhanced DNS provider detection
+# DNS provider detection
 function Get-DNSProvider {
     [CmdletBinding()]
     param (
@@ -72,7 +72,7 @@ function Get-DNSProvider {
         $detectedProvider = $null
         $confidence = "Low"
 
-        # Enhanced provider detection with confidence scoring
+        # Provider detection with confidence scoring
         foreach ($ns in $nsRecords) {
             Write-Debug "Checking NS record: $ns"
             
@@ -267,8 +267,8 @@ function Get-AvailableDNSPlugins {
     try {
         $plugins = Get-PAPlugin | Where-Object { $_.ChallengeType -eq 'dns-01' }
         
-        # Enhanced plugin information with descriptions
-        $enhancedPlugins = @()
+        # Plugin information with descriptions
+        $pluginList = @()
         foreach ($plugin in $plugins) {
             $pluginInfo = @{
                 Name = $plugin.Name
@@ -277,13 +277,11 @@ function Get-AvailableDNSPlugins {
                 Description = Get-PluginDescription -PluginName $plugin.Name
                 SetupUrl = Get-PluginSetupUrl -PluginName $plugin.Name
             }
-            $enhancedPlugins += $pluginInfo
+            $pluginList += $pluginInfo
         }
-        
-        return $enhancedPlugins
+        return $pluginList
     } catch {
-        Write-Warning "Failed to get available DNS plugins: $_"
-        return @()
+        Write-Error "Failed to get DNS provider plugins: $($_.Exception.Message)"
     }
 }
 

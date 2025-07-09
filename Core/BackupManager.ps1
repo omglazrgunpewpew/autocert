@@ -417,7 +417,7 @@ function Test-BackupIntegrity {
         } else {
             try {
                 $manifest = Get-Content $manifestPath | ConvertFrom-Json
-                $results.Details += "Manifest loaded successfully"
+                $results.Details += "Manifest loaded"
                 
                 # Validate each file
                 foreach ($file in $manifest.Files) {
