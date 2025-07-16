@@ -1,8 +1,7 @@
-<#
+﻿<#
     .SYNOPSIS
         A small sub-menu for options (e.g., changing ACME servers).
 #>
-
 function Show-Options {
     while ($true) {
         Clear-Host
@@ -10,7 +9,6 @@ function Show-Options {
         Write-Host "=== Options ===`n"
         Write-Host "1) Change ACME server (current: $currentServer)"
         Write-Host "0) Back"
-
         $choice = Read-Host "`nEnter your choice (0-1)"
         switch ($choice) {
             '0' { return }
@@ -22,14 +20,12 @@ function Show-Options {
         Read-Host "`nPress Enter to return to options"
     }
 }
-
 function Set-ACMEServer {
     while ($true) {
         Write-Host "`nSelect the ACME server to use:"
         Write-Host "1) Let's Encrypt Production"
         Write-Host "2) Let's Encrypt Staging"
         Write-Host "0) Back"
-
         $serverChoice = Get-ValidatedInput -Prompt "`nEnter your choice (0-2)" -ValidOptions 1,2
         switch ($serverChoice) {
             0 { return }

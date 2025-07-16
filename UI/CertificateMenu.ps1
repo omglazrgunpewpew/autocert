@@ -1,4 +1,4 @@
-# Certificate Management Menu System
+﻿# Certificate Management Menu System
 # Part of AutoCert Certificate Management System
 # Version: 1.0
 # Date: July 8, 2025
@@ -32,7 +32,7 @@ function Show-CertificateManagementMenu {
                 $needsRenewal = ($renewalStatus | Where-Object { $_.NeedsRenewal }).Count
                 $expiringSoon = ($renewalStatus | Where-Object { $_.DaysUntilExpiry -le 7 }).Count
                 $total = $orders.Count
-                
+
                 Write-Host "Certificate Summary:" -ForegroundColor Green
                 Write-Host "  Total certificates: $total" -ForegroundColor White
                 if ($needsRenewal -gt 0) {
@@ -70,7 +70,7 @@ function Show-CertificateManagementMenu {
                 Write-Host "`n" + "="*60 -ForegroundColor Cyan
                 Write-Host "    ALL CERTIFICATES - DETAILED VIEW" -ForegroundColor Cyan
                 Write-Host "="*60 -ForegroundColor Cyan
-                
+
                 Get-ExistingCertificates
                 Read-Host "`nPress Enter to continue"
             }
@@ -80,7 +80,7 @@ function Show-CertificateManagementMenu {
                 Write-Host "`n" + "="*60 -ForegroundColor Cyan
                 Write-Host "    SELECT CERTIFICATE TO MANAGE" -ForegroundColor Cyan
                 Write-Host "="*60 -ForegroundColor Cyan
-                
+
                 $selectedOrder = Get-ExistingCertificates -ShowMenu
                 if ($selectedOrder) {
                     Invoke-SingleCertificateManagement -CertificateOrder $selectedOrder
@@ -95,23 +95,23 @@ function Show-CertificateManagementMenu {
                 Write-Host "`n" + "="*60 -ForegroundColor Cyan
                 Write-Host "    BULK RENEWAL CHECK" -ForegroundColor Cyan
                 Write-Host "="*60 -ForegroundColor Cyan
-                
+
                 try {
                     $orders = Get-PAOrder
                     if ($orders) {
                         $config = Get-RenewalConfig
                         $renewalStatus = Get-CertificateRenewalStatus -Config $config
-                        
+
                         Write-Host "Renewal Status Summary:" -ForegroundColor Green
                         foreach ($status in $renewalStatus) {
-                            $color = if ($status.NeedsRenewal) { 
+                            $color = if ($status.NeedsRenewal) {
                                 if ($status.DaysUntilExpiry -le 7) { "Red" } else { "Yellow" }
                             } else { "Green" }
-                            
+
                             $statusText = if ($status.NeedsRenewal) { "NEEDS RENEWAL" } else { "OK" }
                             Write-Host "  $($status.Domain): $statusText (expires in $($status.DaysUntilExpiry) days)" -ForegroundColor $color
                         }
-                        
+
                         $needsRenewal = $renewalStatus | Where-Object { $_.NeedsRenewal }
                         if ($needsRenewal) {
                             Write-Host "`nWould you like to renew all certificates that need renewal? (y/n)" -ForegroundColor Yellow
@@ -127,7 +127,7 @@ function Show-CertificateManagementMenu {
                 } catch {
                     Write-Error "Bulk renewal check failed: $($_.Exception.Message)"
                 }
-                
+
                 Read-Host "`nPress Enter to continue"
             }
             '4' {
@@ -162,7 +162,7 @@ function Invoke-CertificateExportMenu {
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
     Write-Host "    EXPORT CERTIFICATES" -ForegroundColor Cyan
     Write-Host "="*60 -ForegroundColor Cyan
-    
+
     try {
         $orders = Get-PAOrder
         if ($orders) {
@@ -172,23 +172,23 @@ function Invoke-CertificateExportMenu {
             }
             Write-Host "  A. All certificates" -ForegroundColor Yellow
             Write-Host "  0. Cancel" -ForegroundColor Red
-            
+
             $exportChoice = Read-Host "`nEnter your choice"
-            
+
             if ($exportChoice -eq 'A' -or $exportChoice -eq 'a') {
                 # Export all certificates
                 $exportPath = Read-Host "Enter export directory path (leave blank for current directory)"
                 if ([string]::IsNullOrWhiteSpace($exportPath)) {
                     $exportPath = $PWD.Path
                 }
-                
+
                 Write-Host "Exporting all certificates to: $exportPath" -ForegroundColor Cyan
                 foreach ($order in $orders) {
                     try {
                         $cert = Get-PACertificate -MainDomain $order.MainDomain
                         $domainPath = Join-Path $exportPath $order.MainDomain
                         New-Item -ItemType Directory -Path $domainPath -Force | Out-Null
-                        
+
                         # Export certificate files if they exist
                         if ($cert.CertFile -and (Test-Path $cert.CertFile)) {
                             Copy-Item -Path $cert.CertFile -Destination (Join-Path $domainPath "cert.pem")
@@ -205,7 +205,7 @@ function Invoke-CertificateExportMenu {
                         if ($cert.PfxFile -and (Test-Path $cert.PfxFile)) {
                             Copy-Item -Path $cert.PfxFile -Destination (Join-Path $domainPath "cert.pfx")
                         }
-                        
+
                         Write-Host "  Exported: $($order.MainDomain)" -ForegroundColor Green
                     } catch {
                         Write-Host "  Failed to export: $($order.MainDomain) - $($_.Exception.Message)" -ForegroundColor Red
@@ -219,12 +219,12 @@ function Invoke-CertificateExportMenu {
                 if ([string]::IsNullOrWhiteSpace($exportPath)) {
                     $exportPath = $PWD.Path
                 }
-                
+
                 try {
                     $cert = Get-PACertificate -MainDomain $selectedOrder.MainDomain
                     $domainPath = Join-Path $exportPath $selectedOrder.MainDomain
                     New-Item -ItemType Directory -Path $domainPath -Force | Out-Null
-                    
+
                     # Export certificate files if they exist
                     if ($cert.CertFile -and (Test-Path $cert.CertFile)) {
                         Copy-Item -Path $cert.CertFile -Destination (Join-Path $domainPath "cert.pem")
@@ -241,7 +241,7 @@ function Invoke-CertificateExportMenu {
                     if ($cert.PfxFile -and (Test-Path $cert.PfxFile)) {
                         Copy-Item -Path $cert.PfxFile -Destination (Join-Path $domainPath "cert.pfx")
                     }
-                    
+
                     Write-Host "Certificate exported to: $domainPath" -ForegroundColor Green
                 } catch {
                     Write-Error "Failed to export certificate: $($_.Exception.Message)"
@@ -255,7 +255,7 @@ function Invoke-CertificateExportMenu {
     } catch {
         Write-Error "Export operation failed: $($_.Exception.Message)"
     }
-    
+
     Read-Host "`nPress Enter to continue"
 }
 
@@ -268,17 +268,17 @@ function Invoke-CertificateRevocationMenu {
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
     Write-Host "    REVOKE CERTIFICATE" -ForegroundColor Cyan
     Write-Host "="*60 -ForegroundColor Cyan
-    
+
     Write-Host "Warning: Certificate revocation is permanent and cannot be undone!" -ForegroundColor Red
     Write-Host "Revoked certificates will be immediately invalid for all uses." -ForegroundColor Yellow
     Write-Host ""
-    
+
     $selectedOrder = Get-ExistingCertificates -ShowMenu
     if ($selectedOrder) {
         Write-Host "`nYou have selected: $($selectedOrder.MainDomain)" -ForegroundColor Yellow
         Write-Host "Are you sure you want to revoke this certificate? (yes/no)" -ForegroundColor Red
         $confirmation = Read-Host
-        
+
         if ($confirmation -eq 'yes') {
             try {
                 # Note: Revoke-Certificate doesn't accept MainDomain parameter
@@ -295,7 +295,7 @@ function Invoke-CertificateRevocationMenu {
     } else {
         Write-Host "No certificate selected." -ForegroundColor Yellow
     }
-    
+
     Read-Host "`nPress Enter to continue"
 }
 
@@ -308,12 +308,12 @@ function Invoke-CertificateDeletionMenu {
     Write-Host "`n" + "="*60 -ForegroundColor Cyan
     Write-Host "    DELETE CERTIFICATE" -ForegroundColor Cyan
     Write-Host "="*60 -ForegroundColor Cyan
-    
+
     Write-Host "Warning: This will permanently delete the certificate and all associated data!" -ForegroundColor Red
     Write-Host "The certificate will be removed from local storage and cannot be recovered." -ForegroundColor Yellow
     Write-Host "Consider revoking the certificate first if it's still valid." -ForegroundColor Yellow
     Write-Host ""
-    
+
     $selectedOrder = Get-ExistingCertificates -ShowMenu
     if ($selectedOrder) {
         Write-Host "`nYou have selected: $($selectedOrder.MainDomain)" -ForegroundColor Yellow
@@ -335,7 +335,7 @@ function Invoke-CertificateDeletionMenu {
     } else {
         Write-Host "No certificate selected." -ForegroundColor Yellow
     }
-    
+
     Read-Host "`nPress Enter to continue"
 }
 
@@ -383,7 +383,7 @@ function Invoke-SingleCertificateManagement {
                 } catch {
                     Write-Error "Failed to renew certificate: $($_.Exception.Message)"
                 }
-                
+
                 Read-Host "`nPress Enter to continue"
             }
             '2' {
@@ -394,7 +394,7 @@ function Invoke-SingleCertificateManagement {
                 } catch {
                     Write-Error "Failed to re-install certificate: $($_.Exception.Message)"
                 }
-                
+
                 Read-Host "`nPress Enter to continue"
             }
             '3' {
@@ -402,7 +402,7 @@ function Invoke-SingleCertificateManagement {
                 Write-Host "`nWarning: This will permanently revoke the certificate for $mainDomain!" -ForegroundColor Red
                 Write-Host "The certificate will be immediately invalid for all uses." -ForegroundColor Yellow
                 Write-Host "Are you sure you want to proceed? (yes/no)" -ForegroundColor Red
-                
+
                 $confirm = Read-Host
                 if ($confirm -eq 'yes') {
                     try {
@@ -415,7 +415,7 @@ function Invoke-SingleCertificateManagement {
                 } else {
                     Write-Host "Revocation cancelled." -ForegroundColor Yellow
                 }
-                
+
                 Read-Host "`nPress Enter to continue"
             }
             '4' {
@@ -424,11 +424,11 @@ function Invoke-SingleCertificateManagement {
                 Write-Host "`n" + "="*70 -ForegroundColor Cyan
                 Write-Host "    CERTIFICATE DETAILS: $mainDomain" -ForegroundColor Cyan
                 Write-Host "="*70 -ForegroundColor Cyan
-                
+
                 try {
                     $cert = Get-PACertificate -MainDomain $mainDomain
                     $order = Get-PAOrder -MainDomain $mainDomain
-                    
+
                     Write-Host "`nCertificate Information:" -ForegroundColor Green
                     Write-Host "  Subject: $($cert.Subject)" -ForegroundColor White
                     Write-Host "  Issuer: $($cert.Issuer)" -ForegroundColor White
@@ -437,28 +437,28 @@ function Invoke-SingleCertificateManagement {
                     Write-Host "  Expires in: $(($cert.NotAfter - (Get-Date)).Days) days" -ForegroundColor $(if (($cert.NotAfter - (Get-Date)).Days -gt 30) { "Green" } else { "Yellow" })
                     Write-Host "  Serial Number: $($cert.SerialNumber)" -ForegroundColor Gray
                     Write-Host "  Thumbprint: $($cert.Thumbprint)" -ForegroundColor Gray
-                    
+
                     Write-Host "`nSubject Alternative Names:" -ForegroundColor Green
                     foreach ($san in $cert.SANs) {
                         Write-Host "  • $san" -ForegroundColor White
                     }
-                    
+
                     Write-Host "`nOrder Information:" -ForegroundColor Green
                     Write-Host "  Status: $($order.Status)" -ForegroundColor White
                     Write-Host "  Created: $($order.Created)" -ForegroundColor White
                     Write-Host "  Last Renewed: $($order.RenewAfter)" -ForegroundColor White
-                    
+
                     Write-Host "`nCertificate Paths:" -ForegroundColor Green
                     Write-Host "  Certificate: $($cert.CertFile)" -ForegroundColor Gray
                     Write-Host "  Private Key: $($cert.KeyFile)" -ForegroundColor Gray
                     Write-Host "  Chain: $($cert.ChainFile)" -ForegroundColor Gray
                     Write-Host "  Full Chain: $($cert.FullChainFile)" -ForegroundColor Gray
                     Write-Host "  PFX: $($cert.PfxFile)" -ForegroundColor Gray
-                    
+
                 } catch {
                     Write-Error "Failed to retrieve certificate details: $($_.Exception.Message)"
                 }
-                
+
                 Read-Host "`nPress Enter to continue"
             }
             '0' { return }

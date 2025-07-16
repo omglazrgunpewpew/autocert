@@ -1,22 +1,18 @@
-<#
+﻿<#
     .SYNOPSIS
         Provides functions for securely managing credentials using the SecretManagement module.
-
     .DESCRIPTION
         This script offers a secure way to store, retrieve, and remove credentials (like API keys)
         for DNS providers, leveraging PowerShell's built-in SecretManagement and SecretStore modules.
         It includes checks to ensure the necessary modules are installed and configured.
-
     .NOTES
-        Requires PowerShell 7+ and the Microsoft.PowerShell.SecretManagement and 
+        Requires PowerShell 7+ and the Microsoft.PowerShell.SecretManagement and
         Microsoft.PowerShell.SecretStore modules. The script will guide the user
         through installation if they are missing.
 #>
-
 function Test-SecretManagementPrerequisites {
     [CmdletBinding()]
     param()
-
     Write-Host "Checking for SecretManagement prerequisites..." -ForegroundColor Cyan
     $missingModules = @()
     if (-not (Get-Module -Name Microsoft.PowerShell.SecretManagement -ListAvailable)) {
@@ -25,7 +21,6 @@ function Test-SecretManagementPrerequisites {
     if (-not (Get-Module -Name Microsoft.PowerShell.SecretStore -ListAvailable)) {
         $missingModules += "Microsoft.PowerShell.SecretStore"
     }
-
     if ($missingModules.Count -gt 0) {
         Write-Warning "The following required modules are not installed: $($missingModules -join ', ')"
         $choice = Read-Host "Do you want to install them now? (y/n)"
@@ -41,7 +36,6 @@ function Test-SecretManagementPrerequisites {
             return $false
         }
     }
-
     # Check if a vault is registered
     if (-not (Get-SecretVault -ErrorAction SilentlyContinue)) {
         Write-Warning "No secret vault found."
@@ -58,7 +52,6 @@ function Test-SecretManagementPrerequisites {
             return $false
         }
     }
-    
     # Check if vault is locked
     try {
         Get-SecretInfo -Vault (Get-SecretVault).Name -ErrorAction Stop
@@ -74,20 +67,16 @@ function Test-SecretManagementPrerequisites {
             }
         }
     }
-
     return $true
 }
-
 function Show-CredentialManagementMenu {
     [CmdletBinding()]
     param()
-
     if (-not (Test-SecretManagementPrerequisites)) {
         Write-Warning "Credential management prerequisites are not met. Returning to main menu."
         Read-Host "Press Enter to continue"
         return
     }
-
     while ($true) {
         Clear-Host
         Write-Host "`n" + "="*60 -ForegroundColor Cyan
@@ -98,9 +87,7 @@ function Show-CredentialManagementMenu {
         Write-Host "3. Remove a credential"
         Write-Host "0. Return to main menu"
         Write-Host "`n" + "="*60 -ForegroundColor Cyan
-
         $choice = Read-Host "Enter your choice"
-
         switch ($choice) {
             '1' { Get-StoredCredentials }
             '2' { Set-StoredCredential }
@@ -111,14 +98,12 @@ function Show-CredentialManagementMenu {
         Read-Host "Press Enter to continue"
     }
 }
-
 # Wrapper functions for compatibility with main script
 function Get-StoredCredential {
     [CmdletBinding()]
     param(
         [string]$Target
     )
-    
     if ($Target) {
         # Get specific credential by name/target
         try {
@@ -152,14 +137,12 @@ function Get-StoredCredential {
         }
     }
 }
-
 function Remove-StoredCredential {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$Target
     )
-    
     try {
         Remove-Secret -Name $Target -ErrorAction Stop
         Write-Host "Credential '$Target' removed." -ForegroundColor Green
@@ -169,7 +152,6 @@ function Remove-StoredCredential {
         return $false
     }
 }
-
 function Set-StoredCredential {
     [CmdletBinding()]
     param(
@@ -178,7 +160,6 @@ function Set-StoredCredential {
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]$Credential
     )
-    
     try {
         # Store password as a secret
         Set-Secret -Name $Target -Secret $Credential.Password -ErrorAction Stop

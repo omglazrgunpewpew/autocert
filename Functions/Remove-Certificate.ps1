@@ -1,21 +1,17 @@
-<#
+﻿<#
     .SYNOPSIS
         Allows the user to select and remove an existing Posh-ACME order from local storage.
 #>
-
 function Remove-Certificate {
     [CmdletBinding(SupportsShouldProcess)]
     param()
-    
     Initialize-ACMEServer
     $revokedCerts = Get-RevokedCertificates
     $orders       = Get-PAOrder
-
     if (-not $orders) {
         Write-Host "No certificates available to delete." -ForegroundColor Yellow
         return
     }
-
     Write-Host "`nSelect the certificate to delete:"
     $i = 1
     foreach ($order in $orders) {
@@ -23,17 +19,14 @@ function Remove-Certificate {
         Write-Host "$i) $($order.MainDomain) - Status: $status"
         $i++
     }
-
     $selection = Get-ValidatedInput -Prompt "`nEnter the number corresponding to the certificate or 0 to cancel" -ValidOptions (1..$orders.Count)
     if ($selection -eq 0) {
         Write-Host "Operation canceled."
         return
     }
-
     $orderToDelete = $orders[$selection - 1]
     $mainDomain    = $orderToDelete.MainDomain
     $isRevoked     = $revokedCerts -contains $mainDomain
-
     if ($isRevoked) {
         if (-not (Confirm-Action -Message "`nThe certificate for $mainDomain is already revoked. Delete anyway? (Y/N)")) {
             Write-Host "Deletion canceled."
@@ -82,13 +75,11 @@ function Remove-Certificate {
         }
         # If user typed 'N', continue to deletion
     }
-
     # Confirm deletion
     if (-not (Confirm-Action -Message "`nAre you sure you want to delete the certificate for ${mainDomain}? (Y/N)")) {
         Write-Host "Deletion canceled."
         return
     }
-
     try {
         Remove-PAOrder -MainDomain $mainDomain -Force -Verbose
         # Remove from revoked list if needed

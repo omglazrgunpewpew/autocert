@@ -1,9 +1,8 @@
-# Core/CircuitBreaker.ps1
+﻿# Core/CircuitBreaker.ps1
 <#
     .SYNOPSIS
         Circuit breaker pattern implementation for resilience.
 #>
-
 class CircuitBreaker {
     [int]$FailureThreshold
     [int]$SuccessThreshold
@@ -13,7 +12,6 @@ class CircuitBreaker {
     [datetime]$LastFailureTime
     [string]$State
     [hashtable]$FailureHistory
-    
     CircuitBreaker([int]$FailureThreshold, [int]$SuccessThreshold, [int]$Timeout) {
         $this.FailureThreshold = $FailureThreshold
         $this.SuccessThreshold = $SuccessThreshold
@@ -24,7 +22,6 @@ class CircuitBreaker {
         $this.State = 'Closed'
         $this.FailureHistory = @{}
     }
-    
     [object] Execute([scriptblock]$Operation, [string]$OperationName) {
         if ($this.State -eq 'Open') {
             if ((Get-Date) - $this.LastFailureTime -gt [timespan]::FromSeconds($this.Timeout)) {
@@ -36,7 +33,6 @@ class CircuitBreaker {
                 throw "Circuit breaker is OPEN for $OperationName. Retry in $([math]::Round($remainingTime)) seconds"
             }
         }
-        
         try {
             $result = & $Operation
             $this.OnSuccess($OperationName)
@@ -46,10 +42,8 @@ class CircuitBreaker {
             throw
         }
     }
-    
     [void] OnSuccess([string]$OperationName) {
         $this.SuccessCount++
-        
         if ($this.State -eq 'HalfOpen') {
             if ($this.SuccessCount -ge $this.SuccessThreshold) {
                 $this.State = 'Closed'
@@ -61,11 +55,9 @@ class CircuitBreaker {
             $this.FailureCount = 0
         }
     }
-    
     [void] OnFailure([string]$OperationName, [string]$ErrorMessage) {
         $this.FailureCount++
         $this.LastFailureTime = Get-Date
-        
         # Track failure patterns
         $failureKey = Get-Date -Format "yyyy-MM-dd HH"
         if (-not $this.FailureHistory.ContainsKey($failureKey)) {
@@ -76,13 +68,11 @@ class CircuitBreaker {
         }
         $this.FailureHistory[$failureKey].Count++
         $this.FailureHistory[$failureKey].Errors += $ErrorMessage
-        
         if ($this.FailureCount -ge $this.FailureThreshold) {
             $this.State = 'Open'
             Write-Log "Circuit breaker for $OperationName opened due to $($this.FailureCount) failures" -Level 'Warning'
         }
     }
-    
     [hashtable] GetStatus() {
         return @{
             State = $this.State
@@ -93,7 +83,6 @@ class CircuitBreaker {
         }
     }
 }
-
 # Global circuit breakers for different operations
 $script:CircuitBreakers = @{
     'DNSValidation' = [CircuitBreaker]::new(3, 2, 300)  # 3 failures, 2 successes, 5 min timeout
@@ -101,7 +90,6 @@ $script:CircuitBreakers = @{
     'CertificateInstallation' = [CircuitBreaker]::new(3, 2, 180)  # 3 failures, 2 successes, 3 min timeout
     'EmailNotification' = [CircuitBreaker]::new(5, 3, 900)  # 5 failures, 3 successes, 15 min timeout
 }
-
 function Invoke-WithCircuitBreaker {
     [CmdletBinding()]
     param(
@@ -111,11 +99,9 @@ function Invoke-WithCircuitBreaker {
         [scriptblock]$Operation,
         [string]$FallbackOperation = $null
     )
-    
     if (-not $script:CircuitBreakers.ContainsKey($OperationName)) {
         throw "No circuit breaker configured for operation: $OperationName"
     }
-    
     try {
         return $script:CircuitBreakers[$OperationName].Execute($Operation, $OperationName)
     } catch {
@@ -127,13 +113,11 @@ function Invoke-WithCircuitBreaker {
         }
     }
 }
-
 function Get-CircuitBreakerStatus {
     [CmdletBinding()]
     param(
         [string]$OperationName
     )
-    
     if ($OperationName) {
         if ($script:CircuitBreakers.ContainsKey($OperationName)) {
             return $script:CircuitBreakers[$OperationName].GetStatus()
@@ -148,13 +132,11 @@ function Get-CircuitBreakerStatus {
         return $status
     }
 }
-
 function Reset-CircuitBreaker {
     [CmdletBinding()]
     param(
         [string]$OperationName
     )
-    
     if ($OperationName) {
         if ($script:CircuitBreakers.ContainsKey($OperationName)) {
             $script:CircuitBreakers[$OperationName].State = 'Closed'

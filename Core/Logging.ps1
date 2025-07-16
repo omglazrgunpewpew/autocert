@@ -1,13 +1,11 @@
-# Core/Logging.ps1
+﻿# Core/Logging.ps1
 <#
     .SYNOPSIS
         Logging utilities with filtering.
 #>
-
 # Set up the log file
 $script:scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:LogFile = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Posh-ACME\certificate_script.log"
-
 function Write-Log {
     [CmdletBinding()]
     param (
@@ -17,12 +15,10 @@ function Write-Log {
         [ValidateSet('Info', 'Warning', 'Error', 'Success', 'Debug')]
         [string]$Level = 'Info'
     )
-
     # Only log if the message is meaningful
     if ([string]::IsNullOrWhiteSpace($Message)) {
         return
     }
-
     # Filter out routine info messages
     if ($Level -eq 'Info') {
         $routinePatterns = @(
@@ -32,23 +28,19 @@ function Write-Log {
             'Selected certificate:',
             'Detecting DNS provider'
         )
-
         foreach ($pattern in $routinePatterns) {
             if ($Message -like "*$pattern*") {
                 return
             }
         }
     }
-
     # Ensure log directory exists
     $logDir = Split-Path -Path $script:LogFile -Parent
     if (-not (Test-Path $logDir)) {
         New-Item -ItemType Directory -Path $logDir -Force | Out-Null
     }
-
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $logEntry = "$timestamp [$Level] $Message"
-    
     try {
         $logEntry | Out-File -FilePath $script:LogFile -Append -Encoding UTF8
     } catch {

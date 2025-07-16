@@ -1,9 +1,8 @@
-# Core/HealthMonitor.ps1
+﻿# Core/HealthMonitor.ps1
 <#
     .SYNOPSIS
         Health monitoring and alerting system.
 #>
-
 class HealthCheck {
     [string]$Name
     [scriptblock]$CheckScript
@@ -12,7 +11,6 @@ class HealthCheck {
     [string]$Description
     [string]$SeverityLevel
     [bool]$IsCritical
-    
     HealthCheck([string]$Name, [scriptblock]$CheckScript, [int]$TimeoutSeconds, [string]$Category, [string]$Description, [string]$SeverityLevel, [bool]$IsCritical) {
         $this.Name = $Name
         $this.CheckScript = $CheckScript
@@ -22,7 +20,6 @@ class HealthCheck {
         $this.SeverityLevel = $SeverityLevel
         $this.IsCritical = $IsCritical
     }
-    
     [hashtable] Execute() {
         $result = @{
             Name = $this.Name
@@ -35,11 +32,9 @@ class HealthCheck {
             IsCritical = $this.IsCritical
             SeverityLevel = $this.SeverityLevel
         }
-        
         try {
             $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
             $job = Start-Job -ScriptBlock $this.CheckScript -ArgumentList $this
-            
             if (Wait-Job -Job $job -Timeout $this.TimeoutSeconds) {
                 $jobResult = Receive-Job -Job $job
                 $result.Status = 'Pass'
@@ -48,29 +43,24 @@ class HealthCheck {
                 $result.Status = 'Fail'
                 $result.Message = "Health check timed out after $($this.TimeoutSeconds) seconds"
             }
-            
             Remove-Job -Job $job -Force
             $stopwatch.Stop()
             $result.Duration = $stopwatch.ElapsedMilliseconds
-            
         } catch {
             $result.Status = 'Fail'
             $result.Message = $_.Exception.Message
         }
-        
         return $result
     }
 }
-
 function Initialize-HealthCheck {
     [CmdletBinding()]
     [OutputType([void])]
     param()
-    
     $script:HealthChecks = @{
         'PowerShellVersion' = [HealthCheck]::new(
             'PowerShellVersion',
-            { 
+            {
                 if ($PSVersionTable.PSVersion.Major -lt 5) {
                     throw "PowerShell version $($PSVersionTable.PSVersion) is not supported. Minimum version is 5.1"
                 }
@@ -82,7 +72,6 @@ function Initialize-HealthCheck {
             'High',
             $true
         )
-        
         'AdminPrivileges' = [HealthCheck]::new(
             'AdminPrivileges',
             {
@@ -98,7 +87,6 @@ function Initialize-HealthCheck {
             'Critical',
             $true
         )
-        
         'PoshACMEModule' = [HealthCheck]::new(
             'PoshACMEModule',
             {
@@ -114,7 +102,6 @@ function Initialize-HealthCheck {
             'Critical',
             $true
         )
-        
         'NetworkConnectivity' = [HealthCheck]::new(
             'NetworkConnectivity',
             {
@@ -140,7 +127,6 @@ function Initialize-HealthCheck {
             'High',
             $true
         )
-        
         'CertificateStore' = [HealthCheck]::new(
             'CertificateStore',
             {
@@ -159,7 +145,6 @@ function Initialize-HealthCheck {
             'High',
             $true
         )
-        
         'DiskSpace' = [HealthCheck]::new(
             'DiskSpace',
             {
@@ -176,7 +161,6 @@ function Initialize-HealthCheck {
             'Medium',
             $false
         )
-        
         'LogFileAccess' = [HealthCheck]::new(
             'LogFileAccess',
             {
@@ -185,7 +169,6 @@ function Initialize-HealthCheck {
                 if (-not (Test-Path $logDir)) {
                     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
                 }
-                
                 try {
                     "Health check test" | Out-File -FilePath $logPath -Append
                     return "Log file access verified"
@@ -199,7 +182,6 @@ function Initialize-HealthCheck {
             'Medium',
             $false
         )
-        
         'ScheduledTaskAccess' = [HealthCheck]::new(
             'ScheduledTaskAccess',
             {
@@ -216,7 +198,6 @@ function Initialize-HealthCheck {
             'Medium',
             $false
         )
-        
         'CertificateExpiry' = [HealthCheck]::new(
             'CertificateExpiry',
             {
@@ -239,7 +220,6 @@ function Initialize-HealthCheck {
                                 # Skip certificates that can't be loaded
                             }
                         }
-                        
                         if ($expiringSoon.Count -gt 0) {
                             throw "Certificates expiring soon: $($expiringSoon -join ', ')"
                         }
@@ -259,7 +239,6 @@ function Initialize-HealthCheck {
         )
     }
 }
-
 function Invoke-HealthCheck {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable[]])]
@@ -269,13 +248,10 @@ function Invoke-HealthCheck {
         [switch]$CriticalOnly,
         [switch]$Detailed
     )
-    
     if (-not $script:HealthChecks) {
         Initialize-HealthCheck
     }
-    
     $checksToRun = @()
-    
     if ($CheckNames.Count -gt 0) {
         $checksToRun = $script:HealthChecks.Keys | Where-Object { $CheckNames -contains $_ }
     } elseif ($Categories.Count -gt 0) {
@@ -283,24 +259,19 @@ function Invoke-HealthCheck {
     } else {
         $checksToRun = $script:HealthChecks.Keys
     }
-    
     if ($CriticalOnly) {
         $checksToRun = $checksToRun | Where-Object { $script:HealthChecks[$_].IsCritical }
     }
-    
     $results = @()
     $totalChecks = $checksToRun.Count
     $currentCheck = 0
-    
     foreach ($checkName in $checksToRun) {
         $currentCheck++
         if (-not $NonInteractive) {
             Write-Progress -Activity "Running Health Checks" -Status "Running: $checkName" -PercentComplete (($currentCheck / $totalChecks) * 100)
         }
-        
         $result = $script:HealthChecks[$checkName].Execute()
         $results += $result
-        
         if ($Detailed) {
             $status = if ($result.Status -eq 'Pass') { '✓' } else { '✗' }
             $message = "$status $($result.Name): $($result.Message)"
@@ -311,21 +282,17 @@ function Invoke-HealthCheck {
             }
         }
     }
-    
     if (-not $NonInteractive) {
         Write-Progress -Activity "Running Health Checks" -Completed
     }
-    
     return $results
 }
-
 function Get-HealthReport {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
     param(
         [hashtable[]]$HealthResults
     )
-    
     $report = @{
         Timestamp = Get-Date
         TotalChecks = $HealthResults.Count
@@ -336,7 +303,6 @@ function Get-HealthReport {
         Details = $HealthResults
         Recommendations = @()
     }
-    
     if ($report.CriticalFailures -gt 0) {
         $report.OverallStatus = 'Critical'
         $report.Recommendations += "Address critical failures immediately"
@@ -346,7 +312,6 @@ function Get-HealthReport {
     } else {
         $report.OverallStatus = 'Healthy'
     }
-    
     # Add specific recommendations based on failures
     $failedChecks = $HealthResults | Where-Object { $_.Status -eq 'Fail' }
     foreach ($failure in $failedChecks) {
@@ -359,10 +324,8 @@ function Get-HealthReport {
             'CertificateExpiry' { $report.Recommendations += "Schedule certificate renewal immediately" }
         }
     }
-    
     return $report
 }
-
 function Send-HealthAlert {
     [CmdletBinding()]
     param(
@@ -371,7 +334,6 @@ function Send-HealthAlert {
         [string]$EmailAddress,
         [string]$Subject = "AutoCert Health Alert"
     )
-    
     if (-not $EmailAddress) {
         $config = Get-RenewalConfig
         if ($config.EmailNotifications -and $config.NotificationEmail) {
@@ -381,22 +343,17 @@ function Send-HealthAlert {
             return
         }
     }
-    
     $body = @"
 AutoCert Health Report
 ======================
-
 Overall Status: $($HealthReport.OverallStatus)
 Timestamp: $($HealthReport.Timestamp)
-
 Summary:
 - Total Checks: $($HealthReport.TotalChecks)
 - Passed: $($HealthReport.PassedChecks)
 - Failed: $($HealthReport.FailedChecks)
 - Critical Failures: $($HealthReport.CriticalFailures)
-
 "@
-    
     if ($HealthReport.CriticalFailures -gt 0 -or $HealthReport.FailedChecks -gt 0) {
         $body += "`nFailed Checks:`n"
         $failedChecks = $HealthReport.Details | Where-Object { $_.Status -eq 'Fail' }
@@ -404,14 +361,12 @@ Summary:
             $body += "- $($failure.Name): $($failure.Message)`n"
         }
     }
-    
     if ($HealthReport.Recommendations.Count -gt 0) {
         $body += "`nRecommendations:`n"
         foreach ($rec in $HealthReport.Recommendations) {
             $body += "- $rec`n"
         }
     }
-    
     try {
         Send-MailMessage -To $EmailAddress -Subject $Subject -Body $body -SmtpServer "localhost" -ErrorAction Stop
         Write-Log "Health alert sent to $EmailAddress" -Level 'Info'

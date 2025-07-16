@@ -1,4 +1,4 @@
-# Main Menu System
+﻿# Main Menu System
 # Part of AutoCert Certificate Management System
 # Version: 1.0
 # Date: July 8, 2025
@@ -15,20 +15,20 @@
 function Show-Menu {
     [CmdletBinding()]
     param()
-    
+
     Clear-Host
-    
+
     # Initialize ACME server if function is available
     if (Get-Command Initialize-ACMEServer -ErrorAction SilentlyContinue) {
         Initialize-ACMEServer -ErrorAction SilentlyContinue | Out-Null
     }
-    
+
     # Display header with system information
     Write-Host "`n" + "="*70 -ForegroundColor Cyan
     Write-Host "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
     Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
     Write-Host "="*70 -ForegroundColor Cyan
-    
+
     # Show current ACME server
     try {
         $currentServer = (Get-PAServer).Name
@@ -36,7 +36,7 @@ function Show-Menu {
     } catch {
         Write-Host "ACME Server: Not configured" -ForegroundColor Yellow
     }
-    
+
     # Show certificate summary with status
     try {
         $orders = Get-PAOrder
@@ -46,7 +46,7 @@ function Show-Menu {
             $needsRenewal = ($renewalStatus | Where-Object { $_.NeedsRenewal }).Count
             $expiringSoon = ($renewalStatus | Where-Object { $_.DaysUntilExpiry -le 7 }).Count
             $total = $orders.Count
-            
+
             Write-Host "Certificates: $total total" -ForegroundColor Green
             if ($needsRenewal -gt 0) {
                 Write-Host "Renewals Needed: $needsRenewal" -ForegroundColor Yellow
@@ -60,7 +60,7 @@ function Show-Menu {
     } catch {
         Write-Host "Certificate Status: Unavailable" -ForegroundColor Gray
     }
-    
+
     # Show system status
     try {
         $task = Get-ScheduledTask -TaskName "Posh-ACME Certificate Renewal" -ErrorAction SilentlyContinue
@@ -73,7 +73,7 @@ function Show-Menu {
     } catch {
         Write-Host "Auto-Renewal: Status unavailable" -ForegroundColor Gray
     }
-    
+
     Write-Host "`nAvailable Actions:" -ForegroundColor White
     Write-Host "1. Register a new certificate" -ForegroundColor Green
     Write-Host "2. Install existing certificate" -ForegroundColor Cyan
