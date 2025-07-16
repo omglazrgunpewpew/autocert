@@ -13,7 +13,19 @@
 #>
 
 function Show-Menu {
+    <#
+    .SYNOPSIS
+        Displays the main menu for AutoCert
+    .DESCRIPTION
+        Shows the primary interactive menu for the AutoCert certificate management system
+    .OUTPUTS
+        None. This function displays the menu interface.
+    .EXAMPLE
+        Show-Menu
+        Displays the main AutoCert menu
+    #>
     [CmdletBinding()]
+    [OutputType([void])]
     param()
 
     Clear-Host

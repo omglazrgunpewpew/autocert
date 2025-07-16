@@ -3,14 +3,14 @@
 
 @{
     # Global rule settings
-    Rules = @{
+    Rules               = @{
         # Write-Host usage - should use Write-Information, Write-Verbose, or Write-Output
-        PSAvoidUsingWriteHost = @{
+        PSAvoidUsingWriteHost                       = @{
             Enable = $true
         }
         
         # Function naming - should use singular nouns
-        PSUseSingularNouns = @{
+        PSUseSingularNouns                          = @{
             Enable = $true
         }
         
@@ -20,109 +20,110 @@
         }
         
         # Should declare OutputType attribute
-        PSUseOutputTypeCorrectly = @{
+        PSUseOutputTypeCorrectly                    = @{
             Enable = $true
         }
         
         # Avoid empty catch blocks
-        PSAvoidUsingEmptyCatchBlock = @{
+        PSAvoidUsingEmptyCatchBlock                 = @{
             Enable = $true
         }
         
         # Use CIM cmdlets instead of WMI
-        PSAvoidUsingWMICmdlets = @{
+        PSAvoidUsingWMICmdlets                      = @{
             Enable = $true
         }
         
         # Use named parameters
-        PSAvoidUsingPositionalParameters = @{
+        PSAvoidUsingPositionalParameters            = @{
             Enable = $true
         }
         
         # Proper BOM encoding
-        PSUseBOMForUnicodeEncodedFile = @{
+        PSUseBOMForUnicodeEncodedFile               = @{
             Enable = $true
         }
         
         # Avoid trailing whitespace
-        PSAvoidTrailingWhitespace = @{
+        PSAvoidTrailingWhitespace                   = @{
             Enable = $true
         }
         
         # Use declared variables
-        PSUseDeclaredVarsMoreThanAssignments = @{
+        PSUseDeclaredVarsMoreThanAssignments        = @{
             Enable = $true
         }
         
         # Review unused parameters
-        PSReviewUnusedParameter = @{
+        PSReviewUnusedParameter                     = @{
             Enable = $true
         }
         
         # Consistent indentation (4 spaces, Allman style)
-        PSUseConsistentIndentation = @{
-            Enable = $true
-            IndentationSize = 4
+        PSUseConsistentIndentation                  = @{
+            Enable              = $true
+            IndentationSize     = 4
             PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
-            Kind = 'space'
+            Kind                = 'space'
         }
         
         # Consistent whitespace
-        PSUseConsistentWhitespace = @{
-            Enable = $true
+        PSUseConsistentWhitespace                   = @{
+            Enable          = $true
             CheckInnerBrace = $true
-            CheckOpenBrace = $true
-            CheckOpenParen = $true
-            CheckOperator = $true
-            CheckPipe = $true
-            CheckSeparator = $true
+            CheckOpenBrace  = $true
+            CheckOpenParen  = $true
+            CheckOperator   = $true
+            CheckPipe       = $true
+            CheckSeparator  = $true
         }
         
         # Allman style braces (opening brace on new line)
-        PSPlaceOpenBrace = @{
-            Enable = $true
-            OnSameLine = $false
-            NewLineAfter = $true
+        PSPlaceOpenBrace                            = @{
+            Enable             = $true
+            OnSameLine         = $false
+            NewLineAfter       = $true
             IgnoreOneLineBlock = $true
         }
         
         # Consistent closing brace placement
-        PSPlaceCloseBrace = @{
-            Enable = $true
-            NewLineAfter = $false
+        PSPlaceCloseBrace                           = @{
+            Enable             = $true
+            NewLineAfter       = $false
             IgnoreOneLineBlock = $true
-            NoEmptyLineBefore = $false
+            NoEmptyLineBefore  = $false
         }
         
         # Align assignment statements
-        PSAlignAssignmentStatement = @{
-            Enable = $true
+        PSAlignAssignmentStatement                  = @{
+            Enable         = $true
             CheckHashtable = $true
         }
         
         # Use correct casing for cmdlets
-        PSUseCorrectCasing = @{
+        PSUseCorrectCasing                          = @{
             Enable = $true
         }
     }
     
     # Rules to exclude (if any specific exemptions are needed)
-    ExcludeRules = @(
-        'PSAvoidUsingWriteHost'  # Write-Host is used for interactive UI in this certificate management tool
+    ExcludeRules        = @(
+        'PSAvoidUsingWriteHost',  # Write-Host is used for interactive UI in this certificate management tool
+        'PSReviewUnusedParameter' # Some parameters may be used conditionally in certificate management
     )
     
     # Include default rules
     IncludeDefaultRules = $true
     
     # Severity levels to report
-    Severity = @(
+    Severity            = @(
         'Error',
         'Warning', 
         'Information'
     )
     
     # Custom rule paths for AutoCert style guide enforcement
-    CustomRulePath = @(
-        '.\tools\CustomRules\AutoCertStyleRules.psm1'
-    )
+    # CustomRulePath      = @(
+    #     './tools/CustomRules/AutoCertStyleRules.psm1'
+    # )
 }

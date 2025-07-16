@@ -1,72 +1,136 @@
 # AutoCert Development Tools
 
-This directory contains development and testing tools for the AutoCert project.
+This directory contains various tools and scripts to help maintain code quality and ensure the AutoCert project meets PowerShell best practices.
 
-## Files
+## Quick Start - Fix CI/CD Issues
 
-### Testing and Validation
-
-- **Test-AutoCert.ps1** - Test runner for AutoCert robustness and resilience features
-- **Test-Refactoring.ps1** - Validates that all refactored modules are working correctly
-- **Test-StyleGuideRules.ps1** - Test script to verify custom PSScriptAnalyzer rules are working
-- **Validate-StyleGuideRules.ps1** - Validates that the custom AutoCert style guide rules are working correctly
-
-### Code Analysis
-
-- **PSScriptAnalyzerSettings.psd1** - PowerShell Script Analyzer configuration for the AutoCert project
-- **CustomRules/** - Directory containing custom PSScriptAnalyzer rules for style guide compliance
-  - **AutoCertStyleRules.psm1** - Custom rules to enforce AutoCert style guide standards
-
-### Refactoring
-
-- **Apply-Refactoring.ps1** - Applies refactoring changes to the Main.ps1 file
-- **Main.ps1.new** - Refactored version of Main.ps1 (if present)
-
-## Usage
-
-### Running Tests
+If you're experiencing CI/CD pipeline failures, run these commands in order:
 
 ```powershell
-# Run all AutoCert tests
-.\Test-AutoCert.ps1
+# 1. Auto-fix common formatting issues
+.\tools\Fix-CommonIssues.ps1
 
-# Test specific category
-.\Test-AutoCert.ps1 -TestCategory "Configuration Management"
+# 2. Test your code locally (same as CI/CD pipeline)
+.\tools\Test-CodeQuality.ps1
 
-# Test refactored modules
-.\Test-Refactoring.ps1
+# 3. If tests pass, commit your changes
+git add .
+git commit -m "Fix code quality issues"
+git push
 ```
 
-### Style Guide Validation
+## Available Tools
+
+### Code Quality Scripts
+
+- **`Test-CodeQuality.ps1`** - Local test runner that mirrors the CI/CD pipeline
+  - Runs PSScriptAnalyzer with the same settings as GitHub Actions
+  - Runs Pester tests
+  - Use `-SkipTests` to run only PSScriptAnalyzer checks
+  
+- **`Fix-CommonIssues.ps1`** - Auto-fixes common formatting issues
+  - Removes trailing whitespace
+  - Fixes multiple blank lines
+  - Ensures files end with newline
+
+### Legacy Tools (for reference)
+
+- `Add-ShouldProcessSupport.ps1` - Adds ShouldProcess support to functions
+- `Advanced-CodeQuality.ps1` - Advanced code analysis
+- `Apply-Refactoring.ps1` - Apply refactoring suggestions
+- `Fix-*.ps1` - Various specific fix scripts
+- `Test-*.ps1` - Various test scripts
+- `Validate-StyleGuideRules.ps1` - Style guide validation
+
+### Configuration Files
+
+- **`PSScriptAnalyzerSettings.psd1`** - PSScriptAnalyzer configuration
+  - Defines coding standards for the project
+  - Excludes `Write-Host` usage for UI components
+  - Enforces PowerShell best practices
+
+## Understanding CI/CD Pipeline Failures
+
+The AutoCert CI/CD pipeline runs several checks:
+
+1. **Code Quality & Security Checks**
+   - PSScriptAnalyzer with custom rules
+   - Security vulnerability scanning
+   - Build validation
+
+2. **Unit & Integration Tests**
+   - Pester test execution
+   - Code coverage analysis
+
+3. **Security Vulnerability Scan**
+   - DevSkim security scanner
+
+4. **Documentation & Help Generation**
+   - PlatyPS help generation
+
+5. **Release Creation** (main branch only)
+   - Package creation
+   - GitHub release generation
+
+## Common Issues and Solutions
+
+### PSScriptAnalyzer Failures
+
+**Problem**: PSScriptAnalyzer finds formatting or style issues
+**Solution**: Run `.\tools\Fix-CommonIssues.ps1` then `.\tools\Test-CodeQuality.ps1`
+
+### Write-Host Usage
+
+**Problem**: PSScriptAnalyzer complains about Write-Host usage
+**Solution**: Write-Host is allowed for UI components. The rule is excluded in the settings.
+
+### Missing Dependencies
+
+**Problem**: Pipeline fails because modules aren't available
+
+**Solution**: Dependencies are automatically installed in the pipeline. If you see this locally, run:
 
 ```powershell
-# Validate style guide rules
-.\Validate-StyleGuideRules.ps1
-
-# Test against specific file
-.\Validate-StyleGuideRules.ps1 -TestFilePath ".\Test-StyleGuideRules.ps1"
+Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+Install-Module Pester -Force -Scope CurrentUser -MinimumVersion 5.0
 ```
 
-### Code Analysis
+### Test Failures
 
-```powershell
-# Run PSScriptAnalyzer with custom rules
-Invoke-ScriptAnalyzer -Path ..\Main.ps1 -Settings .\PSScriptAnalyzerSettings.psd1
-```
+**Problem**: Pester tests fail
 
-### Refactoring
+**Solution**:
 
-```powershell
-# Apply refactoring changes
-.\Apply-Refactoring.ps1 -Apply
+1. Run tests locally: `.\tools\Test-CodeQuality.ps1`
+2. Check the test output for specific failures
+3. Fix the underlying code issues
+4. Ensure all required functions are properly dot-sourced
 
-# Revert refactoring changes
-.\Apply-Refactoring.ps1 -Revert
-```
+## Best Practices
 
-## Notes
+1. **Before pushing code**:
+   - Run `.\tools\Test-CodeQuality.ps1`
+   - Fix any issues found
+   - Commit only when all tests pass
 
-- All tools are designed to be run from the `tools` directory
-- Path references have been updated to work with the new directory structure
-- Custom style guide rules are enforced through PSScriptAnalyzer
-- Test files validate both functionality and code quality
+2. **PowerShell style guidelines**:
+   - Use approved verbs for function names
+   - Include help documentation for all functions
+   - Use proper error handling with try/catch blocks
+   - Avoid hardcoded paths or credentials
+
+3. **Security considerations**:
+   - Never store passwords or secrets in plain text
+   - Use SecureString for sensitive data
+   - Implement proper credential management
+
+## Troubleshooting
+
+If you continue to have CI/CD issues after running the tools:
+
+1. Check the GitHub Actions log for specific error messages
+2. Verify all paths referenced in the CI/CD pipeline exist
+3. Ensure PSScriptAnalyzer settings are properly configured
+4. Run the exact same commands locally that the CI/CD pipeline runs
+
+For help, check the project's main README.md or create an issue in the repository.

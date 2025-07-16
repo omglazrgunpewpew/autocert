@@ -29,9 +29,9 @@ $ErrorActionPreference = 'Stop'
 $Colors = @{
     Success = 'Green'
     Warning = 'Yellow'
-    Error = 'Red'
-    Info = 'Cyan'
-    Header = 'Magenta'
+    Error   = 'Red'
+    Info    = 'Cyan'
+    Header  = 'Magenta'
 }
 
 function Write-StatusMessage {
@@ -53,7 +53,8 @@ function Test-ModuleAvailability {
         try {
             Install-Module $ModuleName -Force -Scope CurrentUser -AllowClobber
             return $true
-        } catch {
+        }
+        catch {
             Write-StatusMessage "Failed to install $ModuleName`: $($_.Exception.Message)" -Type Error
             return $false
         }
@@ -68,8 +69,8 @@ function Invoke-BuildValidation {
 
     $validationResults = @{
         PSScriptAnalyzer = @{ Passed = $false; Issues = 0; Details = @() }
-        Tests = @{ Passed = $false; TestCount = 0; FailedCount = 0 }
-        OverallSuccess = $false
+        Tests            = @{ Passed = $false; TestCount = 0; FailedCount = 0 }
+        OverallSuccess   = $false
     }
 
     # Check required modules
@@ -90,8 +91,8 @@ function Invoke-BuildValidation {
     try {
         $settingsPath = Join-Path $PSScriptRoot '..\tools\PSScriptAnalyzerSettings.psd1'
         $analyzerParams = @{
-            Path = Join-Path $PSScriptRoot '..'
-            Recurse = $true
+            Path     = Join-Path $PSScriptRoot '..'
+            Recurse  = $true
             Settings = $settingsPath
         }
 
@@ -107,7 +108,8 @@ function Invoke-BuildValidation {
         if ($issues.Count -eq 0) {
             Write-StatusMessage "✅ No PSScriptAnalyzer issues found!" -Type Success
             $validationResults.PSScriptAnalyzer.Passed = $true
-        } else {
+        }
+        else {
             Write-StatusMessage "⚠️  Found $($issues.Count) PSScriptAnalyzer issues" -Type Warning
 
             # Group issues by severity
@@ -136,7 +138,8 @@ function Invoke-BuildValidation {
             $validationResults.PSScriptAnalyzer.Passed = ($critical.Count -eq 0)
         }
 
-    } catch {
+    }
+    catch {
         Write-StatusMessage "❌ PSScriptAnalyzer failed: $($_.Exception.Message)" -Type Error
         $validationResults.PSScriptAnalyzer.Passed = $false
     }
@@ -146,7 +149,8 @@ function Invoke-BuildValidation {
         Write-StatusMessage "`n🧪 Running Pester tests..." -Type Header
 
         try {
-            $testPath = Join-Path $PSScriptRoot 'Tests'
+            # Look for tests in the parent directory (project root)
+            $testPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'Tests'
             if (Test-Path $testPath) {
                 # Check Pester version and use appropriate configuration
                 $pesterModule = Get-Module -ListAvailable -Name Pester | Sort-Object Version -Descending | Select-Object -First 1
@@ -163,11 +167,12 @@ function Invoke-BuildValidation {
                     )
 
                     $testResults = Invoke-Pester -Configuration $pesterConfig
-                } else {
+                }
+                else {
                     # Pester v4 configuration
                     $invokeParams = @{
-                        Path = $testPath
-                        PassThru = $true
+                        Path         = $testPath
+                        PassThru     = $true
                         CodeCoverage = @(
                             Join-Path $PSScriptRoot 'Core\*.ps1'
                             Join-Path $PSScriptRoot 'Functions\*.ps1'
@@ -191,25 +196,30 @@ function Invoke-BuildValidation {
                     if ($testResults.CodeCoverage) {
                         if ($pesterModule.Version -ge [version]'5.0.0') {
                             $coverage = [math]::Round($testResults.CodeCoverage.CoveragePercent, 2)
-                        } else {
+                        }
+                        else {
                             $totalLines = ($testResults.CodeCoverage.NumberOfCommandsAnalyzed)
                             $missedLines = ($testResults.CodeCoverage.NumberOfCommandsMissed)
                             $coverage = if ($totalLines -gt 0) { [math]::Round((($totalLines - $missedLines) / $totalLines) * 100, 2) } else { 0 }
                         }
                         Write-StatusMessage "📊 Code coverage: $coverage%" -Type Info
                     }
-                } else {
+                }
+                else {
                     Write-StatusMessage "❌ $($testResults.FailedCount) of $($testResults.TotalCount) tests failed" -Type Error
                 }
-            } else {
+            }
+            else {
                 Write-StatusMessage "⚠️  No test directory found at $testPath" -Type Warning
                 $validationResults.Tests.Passed = $true  # Don't fail build if no tests exist yet
             }
-        } catch {
+        }
+        catch {
             Write-StatusMessage "❌ Pester tests failed: $($_.Exception.Message)" -Type Error
             $validationResults.Tests.Passed = $false
         }
-    } else {
+    }
+    else {
         Write-StatusMessage "`n⏭️  Skipping tests as requested" -Type Info
         $validationResults.Tests.Passed = $true
     }
@@ -227,7 +237,8 @@ function Invoke-BuildValidation {
     if ($validationResults.OverallSuccess) {
         Write-StatusMessage "`n🎉 Build validation PASSED!" -Type Success
         exit 0
-    } else {
+    }
+    else {
         Write-StatusMessage "`n💥 Build validation FAILED!" -Type Error
         exit 1
     }
