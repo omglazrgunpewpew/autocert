@@ -55,3 +55,10 @@ dist/
 # Backup files
 backup/
 *.backup
+
+# Local development files
+AGENT.md
+
+# Development and testing directories
+tools/
+Tests/
