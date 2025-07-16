@@ -28,7 +28,8 @@ function Show-Menu {
     Write-Host -Object $headerLine -ForegroundColor Cyan
     Write-Host -Object "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
     Write-Host -Object "                            Version $script:ScriptVersion" -ForegroundColor Gray
-    Write-Host -Object "="*70 -ForegroundColor Cyan
+    $separatorLine = "=" * 70
+    Write-Host -Object $separatorLine -ForegroundColor Cyan
 
     # Show current ACME server
     try {
