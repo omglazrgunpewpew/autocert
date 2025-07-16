@@ -1,4 +1,4 @@
-﻿# Core/ConfigurationManager.ps1
+# Core/ConfigurationManager.ps1
 <#
     .SYNOPSIS
         Configuration management with validation, backup, and recovery capabilities.

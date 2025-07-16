@@ -1,4 +1,4 @@
-﻿# Core/BackupManager.ps1
+# Core/BackupManager.ps1
 <#
     .SYNOPSIS
         Backup and recovery system for certificates and configurations.
@@ -290,7 +290,7 @@ function Remove-OldBackups {
         foreach ($folder in $backupFolders) {
             $folderSize = (Get-ChildItem $folder.FullName -Recurse | Measure-Object -Property Length -Sum).Sum
             if ($WhatIf) {
-                Write-Host "Would remove: $($folder.FullName) ($([math]::Round($folderSize / 1MB, 2)) MB)" -ForegroundColor Yellow
+                Write-Warning -Message "Would remove: $($folder.FullName) ($([math]::Round($folderSize / 1MB, 2)) MB)"
             } else {
                 Write-Log "Removing old backup: $($folder.FullName)" -Level 'Info'
                 Remove-Item -Path $folder.FullName -Recurse -Force
@@ -395,3 +395,5 @@ function Test-BackupIntegrity {
         }
     }
 }
+
+

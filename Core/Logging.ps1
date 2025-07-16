@@ -1,4 +1,4 @@
-﻿# Core/Logging.ps1
+# Core/Logging.ps1
 <#
     .SYNOPSIS
         Logging utilities with filtering.

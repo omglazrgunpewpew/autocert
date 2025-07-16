@@ -1,4 +1,4 @@
-﻿# Core/CertificateCache.ps1
+# Core/CertificateCache.ps1
 <#
     .SYNOPSIS
         Certificate caching system.
@@ -70,7 +70,7 @@ function Get-CachedPACertificate {
         }
         throw "Failed to retrieve certificate after $maxAttempts attempts: $($lastError.Exception.Message)"
     } catch {
-        Write-Error "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)"
+        Write-Error -Message "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)"
         Write-Log "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)" -Level 'Error'
         throw
     }
@@ -123,9 +123,10 @@ function Get-CertificatePEMContent {
         $result.Success = $true
     } catch {
         $result.ErrorMessage = $_.Exception.Message
-        Write-Error $result.ErrorMessage
+        Write-Error -Message $result.ErrorMessage
         Write-Log $result.ErrorMessage -Level 'Error'
     }
     return $result
 }
 #endregion
+

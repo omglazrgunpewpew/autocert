@@ -16,8 +16,8 @@
 
 # Test marketing language in strings
 function Test-MarketingLanguage {
-    Write-Host "Advanced certificate processing completed successfully!" -ForegroundColor Green
-    Write-Host "Enhanced validation with comprehensive checks" -ForegroundColor Yellow
+    Write-Information -MessageData "Advanced certificate processing completed successfully!" -InformationAction Continue
+    Write-Warning -Message "Enhanced validation with comprehensive checks"
     $message = "This sophisticated tool provides intelligent management"
     return $message
 }
@@ -35,8 +35,8 @@ function Set-ComprehensiveConfigurationWithIntelligentValidation {
 
 # Test "successfully" usage
 function Test-SuccessfullyUsage {
-    Write-Host "Certificate installed successfully" -ForegroundColor Green
-    Write-Host "Module loaded successfully" -ForegroundColor Green
+    Write-Information -MessageData "Certificate installed successfully" -InformationAction Continue
+    Write-Information -MessageData "Module loaded successfully" -InformationAction Continue
     Write-Log "Operation completed successfully" -Level 'Info'
 }
 
@@ -44,10 +44,10 @@ function Test-SuccessfullyUsage {
 function Test-CommentQuality {
     # Set $certificateThumbprint to the thumbprint value
     $certificateThumbprint = $cert.Thumbprint
-    
+
     # Create $renewalDate variable
     $renewalDate = (Get-Date).AddDays(30)
-    
+
     # Return $result
     return $result
 }
@@ -66,14 +66,17 @@ function Get-Certificate {
         Retrieves certificate information from the store.
     #>
     param([string]$Thumbprint)
-    
+
     try {
         $cert = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object { $_.Thumbprint -eq $Thumbprint }
-        Write-Host "Certificate retrieved" -ForegroundColor Green  # No "successfully"
+        Write-Information -MessageData "Certificate retrieved" -InformationAction Continue  # No "successfully"
         Write-Log "Certificate found: $Thumbprint" -Level 'Info'
         return $cert
     } catch {
-        Write-Error "Failed to retrieve certificate: $($_.Exception.Message)"
+        Write-Error -Message "Failed to retrieve certificate: $($_.Exception.Message)"
         return $null
     }
 }
+
+
+

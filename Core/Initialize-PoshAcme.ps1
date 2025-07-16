@@ -1,16 +1,16 @@
-﻿<#
+<#
     .SYNOPSIS
         Ensures Posh-ACME is installed, up to date, and imported.
         Also defines a function to ensure the ACME server is set.
 #>
 # Check if Posh-ACME module is installed; if not, install it
 if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
-    Write-Host "Posh-ACME module not found. Installing..."
+    Write-Host -Object "Posh-ACME module not found. Installing..."
     try {
         Install-Module -Name Posh-ACME -Scope CurrentUser -Force -ErrorAction Stop
-        Write-Host "Posh-ACME module installed."
+        Write-Host -Object "Posh-ACME module installed."
     } catch {
-        Write-Host "Failed to install Posh-ACME module: $($_)" -ForegroundColor Red
+        Write-Host -Object "Failed to install Posh-ACME module: $($_)" -ForegroundColor Red
         Exit
     }
 } else {
@@ -20,12 +20,12 @@ if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
         try {
             $latestVersion = (Find-Module -Name Posh-ACME).Version
             if ($currentVersion -lt $latestVersion) {
-                Write-Host "`nA newer version of Posh-ACME is available. Updating..."
+                Write-Host -Object "`nA newer version of Posh-ACME is available. Updating..."
                 Update-Module -Name Posh-ACME -Force -ErrorAction Stop
-                Write-Host "Posh-ACME module updated to version $latestVersion."
+                Write-Host -Object "Posh-ACME module updated to version $latestVersion."
             }
         } catch {
-            Write-Host "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
+            Write-Host -Object "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
         }
     } else {
         Write-Verbose "Posh-ACME update check skipped (POSHACME_SKIP_UPGRADE_CHECK is set)"
@@ -41,7 +41,7 @@ try {
     Copy-Item -Path $modulePath\* -Destination $targetPath -Recurse -Force
     Write-Log "Posh-ACME module copied to $targetPath"
 } catch {
-    Write-Host "Failed to copy Posh-ACME module: $($_)" -ForegroundColor Yellow
+    Write-Host -Object "Failed to copy Posh-ACME module: $($_)" -ForegroundColor Yellow
     Write-Log "Failed to copy Posh-ACME module: $($_)" -Level 'Warning'
 }
 Import-Module Posh-ACME -Force
@@ -52,3 +52,4 @@ function Initialize-ACMEServer {
         Write-Log "ACME server set to Let's Encrypt Production."
     }
 }
+

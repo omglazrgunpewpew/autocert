@@ -7,7 +7,7 @@
 Describe 'AutoCert Resilience Tests' {
     BeforeAll {
         $ErrorActionPreference = 'Stop'
-        
+
         # Load all modules in dependency order
         . "$PSScriptRoot/../Core/Logging.ps1"
         . "$PSScriptRoot/../Core/Helpers.ps1"
@@ -20,10 +20,10 @@ Describe 'AutoCert Resilience Tests' {
         . "$PSScriptRoot/../Core/CertificateCache.ps1"
         . "$PSScriptRoot/../Core/DNSProviderDetection.ps1"
         . "$PSScriptRoot/../Core/RenewalConfig.ps1"
-        
+
         # Load function modules
         Get-ChildItem "$PSScriptRoot/../Functions" -Filter '*.ps1' | ForEach-Object { . $_.FullName }
-        
+
         # Set global test variables
         $script:TestBackupPath = "$env:TEMP\AutoCert_Tests_$(Get-Date -Format 'yyyyMMddHHmmss')"
     }
@@ -44,7 +44,7 @@ Describe 'AutoCert Resilience Tests' {
                 EmailNotifications = $false
                 BackupBeforeRenewal = $true
             }
-            
+
             $result = Test-Configuration -Config $goodConfig
             $result.IsValid | Should -Be $true
             $result.Errors | Should -HaveCount 0
@@ -55,7 +55,7 @@ Describe 'AutoCert Resilience Tests' {
                 RenewalThresholdDays = 999  # Too high
                 MaxRetries = 0  # Too low
             }
-            
+
             $result = Test-Configuration -Config $badConfig
             $result.IsValid | Should -Be $false
             $result.Errors | Should -Not -BeNullOrEmpty
@@ -69,22 +69,22 @@ Describe 'AutoCert Resilience Tests' {
                 EmailNotifications = $true
                 BackupBeforeRenewal = $true
             }
-            
+
             # Save test configuration
             Save-RenewalConfig -Config $testConfig
-            
+
             # Backup configuration
             $backupFile = Backup-Configuration
             $backupFile | Should -Exist
-            
+
             # Modify configuration
             $modifiedConfig = $testConfig.Clone()
             $modifiedConfig.RenewalThresholdDays = 60
             Save-RenewalConfig -Config $modifiedConfig
-            
+
             # Restore from backup
             { Restore-Configuration -BackupFile $backupFile } | Should -Not -Throw
-            
+
             # Verify restoration
             $restoredConfig = Get-RenewalConfig
             $restoredConfig.RenewalThresholdDays | Should -Be 45
@@ -109,7 +109,7 @@ Describe 'AutoCert Resilience Tests' {
         It 'Should open circuit breaker after failures' {
             # Reset circuit breaker
             Reset-CircuitBreaker -OperationName 'DNSValidation'
-            
+
             # Cause failures to trip breaker
             for ($i = 1; $i -le 4; $i++) {
                 try {
@@ -120,7 +120,7 @@ Describe 'AutoCert Resilience Tests' {
                     # Expected failures
                 }
             }
-            
+
             # Circuit should now be open
             $status = Get-CircuitBreakerStatus -OperationName 'DNSValidation'
             $status.State | Should -Be 'Open'
@@ -158,7 +158,7 @@ Describe 'AutoCert Resilience Tests' {
         It 'Should generate health report' {
             $healthResults = Invoke-HealthCheck -CheckNames @('PowerShellVersion', 'DiskSpace')
             $report = Get-HealthReport -HealthResults $healthResults
-            
+
             $report | Should -Not -BeNullOrEmpty
             $report.TotalChecks | Should -Be 2
             $report.OverallStatus | Should -BeIn @('Healthy', 'Warning', 'Critical')
@@ -181,7 +181,7 @@ Describe 'AutoCert Resilience Tests' {
         It 'Should initialize backup system' {
             $backupPath = Initialize-BackupSystem -BackupRootPath $script:TestBackupPath
             $backupPath | Should -Be $script:TestBackupPath
-            
+
             # Check required directories
             @('Certificates', 'Configurations', 'Logs', 'Metadata') | ForEach-Object {
                 Join-Path $script:TestBackupPath $_ | Should -Exist
@@ -192,13 +192,13 @@ Describe 'AutoCert Resilience Tests' {
             # Create mock certificate structure for testing
             $mockCertPath = Join-Path $script:TestBackupPath "MockCerts\test.example.com"
             New-Item -ItemType Directory -Path $mockCertPath -Force | Out-Null
-            
+
             # Create mock certificate files
             "MOCK CERTIFICATE" | Set-Content -Path (Join-Path $mockCertPath "cert.cer")
             "MOCK CHAIN" | Set-Content -Path (Join-Path $mockCertPath "chain.cer")
             "MOCK FULLCHAIN" | Set-Content -Path (Join-Path $mockCertPath "fullchain.cer")
             "MOCK PRIVATE KEY" | Set-Content -Path (Join-Path $mockCertPath "cert.key")
-            
+
             # Test backup creation would require actual Posh-ACME certificate
             # This test verifies backup structure creation
             $mockCertPath | Should -Exist
@@ -214,7 +214,7 @@ Describe 'AutoCert Resilience Tests' {
             # Create a mock backup structure
             $mockBackupDir = Join-Path $script:TestBackupPath "TestIntegrity"
             New-Item -ItemType Directory -Path $mockBackupDir -Force | Out-Null
-            
+
             # Create mock manifest
             $manifest = @{
                 Domain = "test.example.com"
@@ -227,10 +227,10 @@ Describe 'AutoCert Resilience Tests' {
                     }
                 )
             }
-            
+
             $manifest | ConvertTo-Json | Set-Content -Path (Join-Path $mockBackupDir "manifest.json")
             "Test content" | Set-Content -Path (Join-Path $mockBackupDir "test.txt")
-            
+
             $result = Test-BackupIntegrity -BackupPath $mockBackupDir
             $result.IsValid | Should -Be $true
             $result.Errors | Should -HaveCount 0
@@ -248,7 +248,7 @@ Describe 'AutoCert Resilience Tests' {
         It 'Should generate notification content from template' {
             Initialize-NotificationSystem
             $template = $script:NotificationTemplates['CertificateRenewalSuccess']
-            
+
             $variables = @{
                 Domain = "test.example.com"
                 RenewalDate = "2025-07-03 10:30:00"
@@ -257,7 +257,7 @@ Describe 'AutoCert Resilience Tests' {
                 Duration = "3 minutes"
                 NextRenewalDate = "2025-09-01 02:30:00"
             }
-            
+
             $body = $template.GenerateBody($variables)
             $body | Should -Match "test\.example\.com"
             $body | Should -Match "2025-07-03 10:30:00"
@@ -266,12 +266,12 @@ Describe 'AutoCert Resilience Tests' {
 
         It 'Should send file notification' {
             $testLogPath = Join-Path $env:TEMP "test_notifications_$(Get-Date -Format 'yyyyMMddHHmmss').log"
-            
+
             try {
                 $result = Send-FileNotification -Subject "Test Notification" -Body "Test message" -FilePath $testLogPath
                 $result.Success | Should -Be $true
                 $testLogPath | Should -Exist
-                
+
                 $content = Get-Content $testLogPath -Raw
                 $content | Should -Match "Test Notification"
                 $content | Should -Match "Test message"
@@ -293,20 +293,20 @@ Describe 'AutoCert Resilience Tests' {
                 }
                 return "Success on attempt $attempts"
             } -MaxAttempts 5 -InitialDelaySeconds 1 -BackoffMultiplier 1.5
-            
+
             $result | Should -Be "Success on attempt 3"
             $attempts | Should -Be 3
         }
 
         It 'Should respect maximum retry attempts' {
             $attempts = 0
-            { 
+            {
                 Invoke-WithRetry -ScriptBlock {
                     $attempts++
                     throw "Always fails"
                 } -MaxAttempts 3 -InitialDelaySeconds 1
             } | Should -Throw
-            
+
             $attempts | Should -Be 3
         }
 
@@ -346,10 +346,10 @@ Describe 'AutoCert Resilience Tests' {
     Context 'Performance and Monitoring' {
         It 'Should track operation performance' {
             $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-            
+
             # Simulate an operation
             Start-Sleep -Milliseconds 100
-            
+
             $stopwatch.Stop()
             $stopwatch.ElapsedMilliseconds | Should -BeGreaterThan 90
             $stopwatch.ElapsedMilliseconds | Should -BeLessThan 200
@@ -358,7 +358,7 @@ Describe 'AutoCert Resilience Tests' {
         It 'Should cache frequently accessed data' {
             # Test certificate caching functionality
             Clear-CertificateCache
-            
+
             # Verify cache operations don't throw errors
             { Clear-CertificateCache } | Should -Not -Throw
         }
@@ -366,8 +366,8 @@ Describe 'AutoCert Resilience Tests' {
 
     Context 'Integration and End-to-End' {
         It 'Should load all required functions' {
-            @( 'Register-Certificate', 'Install-Certificate', 'Revoke-Certificate', 
-               'Remove-Certificate', 'Get-ExistingCertificates', 'Set-AutomaticRenewal', 
+            @( 'Register-Certificate', 'Install-Certificate', 'Revoke-Certificate',
+               'Remove-Certificate', 'Get-ExistingCertificates', 'Set-AutomaticRenewal',
                'Show-Options', 'Update-AllCertificates', 'Manage-Credentials' ) | ForEach-Object {
                 Get-Command $_ | Should -Not -BeNullOrEmpty
             }
@@ -385,7 +385,7 @@ Describe 'AutoCert Resilience Tests' {
             $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
             # Note: This test will pass regardless of admin status but logs the information
             $isAdmin | Should -BeOfType [bool]
-            
+
             $psVersion = $PSVersionTable.PSVersion.Major
             $psVersion | Should -BeGreaterOrEqual 5
         }
@@ -398,3 +398,4 @@ Describe 'AutoCert Resilience Tests' {
         }
     }
 }
+

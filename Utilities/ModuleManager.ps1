@@ -1,4 +1,4 @@
-﻿# ModuleManager.ps1
+# ModuleManager.ps1
 # Handles module loading and initialization for the AutoCert system
 
 <#
@@ -10,11 +10,10 @@
     and progress reporting for all AutoCert components.
 #>
 
-function Initialize-AutoCertModules {
+function Initialize-AutoCertModule {
     [CmdletBinding()]
     param(
-        [switch]$NonInteractive,
-        [string]$LogLevel = 'Info'
+        [switch]$NonInteractive
     )
 
     try {
@@ -27,7 +26,7 @@ function Initialize-AutoCertModules {
         }
 
         if (-not $NonInteractive) {
-            Write-Information "Loading certificate management system..." -InformationAction Continue
+            Write-Information -MessageData "Loading certificate management system..." -InformationAction Continue
             Write-ProgressHelper -Activity "System Initialization" -Status "Loading core modules..." -PercentComplete 10
         }
 
@@ -89,24 +88,28 @@ function Initialize-AutoCertModules {
                     }
 
                     Write-Verbose "Loaded module: $($module.Name)"
-                } else {
+                }
+                else {
                     $errorMsg = "Module file not found: $($module.Path)"
                     $script:InitializationErrors += $errorMsg
 
                     if ($module.Critical) {
                         throw $errorMsg
-                    } else {
-                        Write-Warning $errorMsg
+                    }
+                    else {
+                        Write-Warning -Message $errorMsg
                     }
                 }
-            } catch {
+            }
+            catch {
                 $errorMsg = "Failed to load module '$($module.Name)': $($_.Exception.Message)"
                 $script:InitializationErrors += $errorMsg
 
                 if ($module.Critical) {
                     throw $errorMsg
-                } else {
-                    Write-Warning $errorMsg
+                }
+                else {
+                    Write-Warning -Message $errorMsg
                 }
             }
         }
@@ -153,32 +156,33 @@ function Initialize-AutoCertModules {
         }
 
         return @{
-            Success = $true
+            Success       = $true
             LoadedModules = $script:LoadedModules
-            Errors = $script:InitializationErrors
-            ModuleCount = $script:LoadedModules.Count
+            Errors        = $script:InitializationErrors
+            ModuleCount   = $script:LoadedModules.Count
         }
 
-    } catch {
+    }
+    catch {
         $criticalError = "Failed to load required modules: $($_.Exception.Message)"
-        Write-Error $criticalError
+        Write-Error -Message $criticalError
 
         if (Get-Command Write-Log -ErrorAction SilentlyContinue) {
             Write-Log $criticalError -Level 'Error'
         }
 
-        Write-Host "Please ensure all script files are present and accessible." -ForegroundColor Red
-        Write-Host "Missing modules will prevent the system from functioning correctly." -ForegroundColor Red
+        Write-Error -Message "Please ensure all script files are present and accessible."
+        Write-Error -Message "Missing modules will prevent the system from functioning correctly."
 
         if (-not $NonInteractive) {
             Write-Progress -Activity "System Initialization" -Completed
         }
 
         return @{
-            Success = $false
+            Success       = $false
             LoadedModules = $script:LoadedModules
-            Errors = $script:InitializationErrors + @($_.Exception.Message)
-            ModuleCount = $script:LoadedModules.Count
+            Errors        = $script:InitializationErrors + @($_.Exception.Message)
+            ModuleCount   = $script:LoadedModules.Count
         }
     }
 }
@@ -192,14 +196,14 @@ function Get-LoadedModuleInfo {
     param()
 
     return @{
-        LoadedModules = if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) { $script:LoadedModules } else { @() }
+        LoadedModules        = if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) { $script:LoadedModules } else { @() }
         InitializationErrors = if (Get-Variable -Name "InitializationErrors" -Scope Script -ErrorAction SilentlyContinue) { $script:InitializationErrors } else { @() }
-        ModuleCount = if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) { $script:LoadedModules.Count } else { 0 }
-        ErrorCount = if (Get-Variable -Name "InitializationErrors" -Scope Script -ErrorAction SilentlyContinue) { $script:InitializationErrors.Count } else { 0 }
+        ModuleCount          = if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) { $script:LoadedModules.Count } else { 0 }
+        ErrorCount           = if (Get-Variable -Name "InitializationErrors" -Scope Script -ErrorAction SilentlyContinue) { $script:InitializationErrors.Count } else { 0 }
     }
 }
 
-function Test-ModuleDependencies {
+function Test-ModuleDependency {
     <#
     .SYNOPSIS
         Tests if all module dependencies are satisfied.
@@ -227,8 +231,8 @@ function Test-ModuleDependencies {
 
     return @{
         AllDependenciesSatisfied = ($missingDependencies.Count -eq 0)
-        MissingDependencies = $missingDependencies
-        TestedDependencies = $dependencies.Count
+        MissingDependencies      = $missingDependencies
+        TestedDependencies       = $dependencies.Count
     }
 }
 
@@ -237,19 +241,24 @@ function Reset-ModuleState {
     .SYNOPSIS
         Resets the module loading state (useful for testing).
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) {
-        $script:LoadedModules = @()
-    }
-    if (Get-Variable -Name "InitializationErrors" -Scope Script -ErrorAction SilentlyContinue) {
-        $script:InitializationErrors = @()
-    }
+    if ($PSCmdlet.ShouldProcess("Module State", "Reset")) {
+        if (Get-Variable -Name "LoadedModules" -Scope Script -ErrorAction SilentlyContinue) {
+            $script:LoadedModules = @()
+        }
+        if (Get-Variable -Name "InitializationErrors" -Scope Script -ErrorAction SilentlyContinue) {
+            $script:InitializationErrors = @()
+        }
 
-    Write-Verbose "Module state has been reset"
+        Write-Verbose "Module state has been reset"
+    }
 }
 
 # Export functions for module use
 # Export functions for dot-sourcing (commented out for script execution)
-# Export-ModuleMember -Function Initialize-AutoCertModules, Get-LoadedModuleInfo, Test-ModuleDependencies, Reset-ModuleState
+# Export-ModuleMember -Function Initialize-AutoCertModule, Get-LoadedModuleInfo, Test-ModuleDependency, Reset-ModuleState
+
+
+

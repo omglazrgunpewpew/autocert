@@ -1,4 +1,4 @@
-﻿# Core/CircuitBreaker.ps1
+# Core/CircuitBreaker.ps1
 <#
     .SYNOPSIS
         Circuit breaker pattern implementation for resilience.

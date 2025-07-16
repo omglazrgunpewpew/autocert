@@ -1,4 +1,4 @@
-﻿# Configuration.ps1
+# Configuration.ps1
 # Configuration validation and management utilities
 
 <#
@@ -25,7 +25,7 @@ function Test-SystemConfiguration {
         [switch]$Detailed
     )
 
-    Write-Host "Running configuration validation..." -ForegroundColor Cyan
+    Write-Host -Object "Running configuration validation..." -ForegroundColor Cyan
 
     $configIssues = @()
     $configWarnings = @()
@@ -125,18 +125,18 @@ function Test-SystemConfiguration {
         }
 
         # Display results
-        Write-Host "`nConfiguration Validation Results:" -ForegroundColor Cyan
+        Write-Host -Object "`nConfiguration Validation Results:" -ForegroundColor Cyan
 
         if ($configIssues.Count -eq 0) {
-            Write-Host "✓ Configuration validation passed" -ForegroundColor Green
+            Write-Information -MessageData "✓ Configuration validation passed" -InformationAction Continue
         } else {
-            Write-Host "✗ Configuration issues found:" -ForegroundColor Red
-            $configIssues | ForEach-Object { Write-Host "  • $_" -ForegroundColor Red }
+            Write-Error -Message "✗ Configuration issues found:"
+            $configIssues | ForEach-Object { Write-Error -Message "  • $_" }
         }
 
         if ($configWarnings.Count -gt 0) {
-            Write-Host "⚠ Configuration warnings:" -ForegroundColor Yellow
-            $configWarnings | ForEach-Object { Write-Host "  • $_" -ForegroundColor Yellow }
+            Write-Warning -Message "⚠ Configuration warnings:"
+            $configWarnings | ForEach-Object { Write-Warning -Message "  • $_" }
         }
 
         return @{
@@ -146,7 +146,7 @@ function Test-SystemConfiguration {
         }
 
     } catch {
-        Write-Error "Configuration validation failed: $($_.Exception.Message)"
+        Write-Error -Message "Configuration validation failed: $($_.Exception.Message)"
         return @{
             Success = $false
             Issues = @("Configuration validation exception: $($_.Exception.Message)")
@@ -220,3 +220,6 @@ function Test-NetworkConnectivity {
 # Export functions for module use
 # Export functions for dot-sourcing (commented out for script execution)
 # Export-ModuleMember -Function Test-SystemConfiguration, Get-ConfigurationPath, Test-RequiredModules, Test-NetworkConnectivity
+
+
+

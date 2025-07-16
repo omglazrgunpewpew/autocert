@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
         Renews all existing certificates via scheduled task or manual trigger.
 #>
@@ -12,7 +12,7 @@ function Update-AllCertificates {
     Initialize-ACMEServer
     $orders = Get-PAOrder
     if (-not $orders) {
-        Write-Host "No certificates found to update." -ForegroundColor Yellow
+        Write-Warning -Message "No certificates found to update."
         return
     }
     foreach ($order in $orders) {
@@ -26,7 +26,7 @@ function Update-AllCertificates {
                 $renewParams['Force'] = $true
             }
             $renewed = New-PACertificate @renewParams
-            Write-Host "`nRenewed certificate for $($order.MainDomain)" -ForegroundColor Green
+            Write-Information -MessageData "`nRenewed certificate for $($order.MainDomain)" -InformationAction Continue
             Write-Log "Renewed certificate for $($order.MainDomain)"
             # Automatically install renewed certificate if it was previously installed
             if ($renewed) {
@@ -39,17 +39,19 @@ function Update-AllCertificates {
                     }
                     $store.Close()
                     if ($existingCert) {
-                        Write-Host "Reinstalling renewed certificate..." -ForegroundColor Cyan
+                        Write-Host -Object "Reinstalling renewed certificate..." -ForegroundColor Cyan
                         Install-PACertificate -PACertificate $renewed -StoreLocation LocalMachine
-                        Write-Host "Certificate reinstalled." -ForegroundColor Green
+                        Write-Information -MessageData "Certificate reinstalled." -InformationAction Continue
                     }
                 } catch {
-                    Write-Warning "Certificate renewed but reinstallation failed: $($_.Exception.Message)"
+                    Write-Warning -Message "Certificate renewed but reinstallation failed: $($_.Exception.Message)"
                 }
             }
         } catch {
-            Write-Host "`nFailed to renew certificate for $($order.MainDomain): $($_)" -ForegroundColor Red
+            Write-Error -Message "`nFailed to renew certificate for $($order.MainDomain): $($_)"
             Write-Log "Failed to renew certificate for $($order.MainDomain): $($_)" -Level 'Error'
         }
     }
 }
+
+

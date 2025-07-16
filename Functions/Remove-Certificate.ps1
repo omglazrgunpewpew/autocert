@@ -1,4 +1,4 @@
-﻿<#
+<#
     .SYNOPSIS
         Allows the user to select and remove an existing Posh-ACME order from local storage.
 #>
@@ -9,19 +9,19 @@ function Remove-Certificate {
     $revokedCerts = Get-RevokedCertificates
     $orders       = Get-PAOrder
     if (-not $orders) {
-        Write-Host "No certificates available to delete." -ForegroundColor Yellow
+        Write-Warning -Message "No certificates available to delete."
         return
     }
-    Write-Host "`nSelect the certificate to delete:"
+    Write-Host -Object "`nSelect the certificate to delete:"
     $i = 1
     foreach ($order in $orders) {
         $status = ($revokedCerts -contains $order.MainDomain) ? "Revoked" : "Active"
-        Write-Host "$i) $($order.MainDomain) - Status: $status"
+        Write-Host -Object "$i) $($order.MainDomain) - Status: $status"
         $i++
     }
     $selection = Get-ValidatedInput -Prompt "`nEnter the number corresponding to the certificate or 0 to cancel" -ValidOptions (1..$orders.Count)
     if ($selection -eq 0) {
-        Write-Host "Operation canceled."
+        Write-Host -Object "Operation canceled."
         return
     }
     $orderToDelete = $orders[$selection - 1]
@@ -29,7 +29,7 @@ function Remove-Certificate {
     $isRevoked     = $revokedCerts -contains $mainDomain
     if ($isRevoked) {
         if (-not (Confirm-Action -Message "`nThe certificate for $mainDomain is already revoked. Delete anyway? (Y/N)")) {
-            Write-Host "Deletion canceled."
+            Write-Host -Object "Deletion canceled."
             return
         }
     } else {
@@ -46,38 +46,38 @@ function Remove-Certificate {
                             Revoke-PACertificate -CertFile $certFilePath -KeyFile $keyFilePath -Reason keyCompromise -Force -Verbose
                             $revokedCerts += $mainDomain
                             Save-RevokedCertificates $revokedCerts
-                            Write-Information "Certificate for $mainDomain revoked." -InformationAction Continue
+                            Write-Information -MessageData "Certificate for $mainDomain revoked." -InformationAction Continue
                         } catch {
                             if ($_.Exception.Message -match 'already revoked') {
                                 $revokedCerts += $mainDomain
                                 Save-RevokedCertificates $revokedCerts
-                                Write-Warning "Certificate was already revoked. Updated status."
+                                Write-Warning -Message "Certificate was already revoked. Updated status."
                             } else {
-                                Write-Host "Failed to revoke certificate for ${mainDomain}: $($_)" -ForegroundColor Red
+                                Write-Error -Message "Failed to revoke certificate for ${mainDomain}: $($_)"
                                 Write-Log "Failed to revoke certificate for ${mainDomain}: $($_)" -Level 'Error'
                                 return
                             }
                         }
                     }
                 } else {
-                    Write-Host "`nCertificate or key file not found. Cannot revoke." -ForegroundColor Red
+                    Write-Error -Message "`nCertificate or key file not found. Cannot revoke."
                     Write-Log "Certificate or key file not found for $mainDomain. Cannot revoke." -Level 'Error'
                     return
                 }
             } else {
-                Write-Host "`nCertificate not found. Cannot revoke." -ForegroundColor Red
+                Write-Error -Message "`nCertificate not found. Cannot revoke."
                 Write-Log "Certificate not found for $mainDomain. Cannot revoke." -Level 'Error'
                 return
             }
         } elseif ($revokeFirst -match '^(Cancel|cancel|C|c)$') {
-            Write-Host "Deletion canceled."
+            Write-Host -Object "Deletion canceled."
             return
         }
         # If user typed 'N', continue to deletion
     }
     # Confirm deletion
     if (-not (Confirm-Action -Message "`nAre you sure you want to delete the certificate for ${mainDomain}? (Y/N)")) {
-        Write-Host "Deletion canceled."
+        Write-Host -Object "Deletion canceled."
         return
     }
     try {
@@ -87,10 +87,12 @@ function Remove-Certificate {
             $revokedCerts = $revokedCerts | Where-Object { $_ -ne $mainDomain }
             Save-RevokedCertificates $revokedCerts
         }
-        Write-Host "`nCertificate for $mainDomain deleted." -ForegroundColor Green
+        Write-Information -MessageData "`nCertificate for $mainDomain deleted." -InformationAction Continue
         Write-Log "Certificate for $mainDomain deleted."
     } catch {
-        Write-Host "Failed to delete certificate for ${mainDomain}: $($_)" -ForegroundColor Red
+        Write-Error -Message "Failed to delete certificate for ${mainDomain}: $($_)"
         Write-Log "Failed to delete certificate for ${mainDomain}: $($_)" -Level 'Error'
     }
 }
+
+

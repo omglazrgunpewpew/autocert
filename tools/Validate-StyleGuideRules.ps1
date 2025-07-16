@@ -16,59 +16,63 @@ param(
 
 # Import required modules
 if (-not (Get-Module -Name PSScriptAnalyzer -ListAvailable)) {
-    Write-Host "Installing PSScriptAnalyzer module..." -ForegroundColor Yellow
+    Write-Warning -Message "Installing PSScriptAnalyzer module..."
     Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
 }
 
 Import-Module PSScriptAnalyzer
 
 # Run analysis with custom rules
-Write-Host "Running PSScriptAnalyzer with custom AutoCert style guide rules..." -ForegroundColor Cyan
-Write-Host "=" * 70 -ForegroundColor Cyan
+Write-Host -Object "Running PSScriptAnalyzer with custom AutoCert style guide rules..." -ForegroundColor Cyan
+Write-Host -Object "=" * 70 -ForegroundColor Cyan
 
 try {
     $results = Invoke-ScriptAnalyzer -Path $TestFilePath -Settings "$PSScriptRoot\PSScriptAnalyzerSettings.psd1"
-    
+
     if ($results) {
-        Write-Host "Found $($results.Count) style guide violations:" -ForegroundColor Yellow
-        Write-Host ""
-        
+        Write-Warning -Message "Found $($results.Count) style guide violations:"
+        Write-Information -MessageData "" -InformationAction Continue
+
         # Group results by rule name
         $groupedResults = $results | Group-Object RuleName
-        
+
         foreach ($group in $groupedResults) {
-            Write-Host "Rule: $($group.Name)" -ForegroundColor Magenta
-            Write-Host "-" * 40 -ForegroundColor Gray
-            
+            Write-Host -Object "Rule: $($group.Name)" -ForegroundColor Magenta
+            Write-Host -Object "-" * 40 -ForegroundColor Gray
+
             foreach ($result in $group.Group) {
-                Write-Host "  Line $($result.Line): $($result.Message)" -ForegroundColor Red
-                Write-Host "  Severity: $($result.Severity)" -ForegroundColor Yellow
-                Write-Host ""
+                Write-Error -Message "  Line $($result.Line): $($result.Message)"
+                Write-Warning -Message "  Severity: $($result.Severity)"
+                Write-Information -MessageData "" -InformationAction Continue
             }
         }
-        
+
         # Check if our custom rules are working
         $customRules = @('AvoidMarketingLanguage', 'AvoidSuccessfullyAdverb', 'AvoidVerboseFunctionNames', 'CommentQuality', 'VariableNamingConvention')
         $detectedCustomRules = $results | Where-Object { $_.RuleName -in $customRules } | Select-Object -ExpandProperty RuleName -Unique
-        
+
         if ($detectedCustomRules) {
-            Write-Host "✓ Custom rules are working! Detected rules:" -ForegroundColor Green
+            Write-Information -MessageData "✓ Custom rules are working! Detected rules:" -InformationAction Continue
             foreach ($rule in $detectedCustomRules) {
-                Write-Host "  - $rule" -ForegroundColor Green
+                Write-Host -Object "  - $rule" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠ No custom rules detected. Check rule implementation." -ForegroundColor Yellow
+            Write-Warning -Message "⚠ No custom rules detected. Check rule implementation."
         }
-        
+
     } else {
-        Write-Host "No violations found." -ForegroundColor Green
+        Write-Information -MessageData "No violations found." -InformationAction Continue
     }
-    
+
 } catch {
-    Write-Host "Error running PSScriptAnalyzer: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Make sure PSScriptAnalyzer is installed and the settings file is correct." -ForegroundColor Yellow
+    Write-Error -Message "Error running PSScriptAnalyzer: $($_.Exception.Message)"
+    Write-Warning -Message "Make sure PSScriptAnalyzer is installed and the settings file is correct."
 }
 
-Write-Host ""
-Write-Host "=" * 70 -ForegroundColor Cyan
-Write-Host "Style guide rule validation complete." -ForegroundColor Cyan
+Write-Information -MessageData "" -InformationAction Continue
+Write-Host -Object "=" * 70 -ForegroundColor Cyan
+Write-Host -Object "Style guide rule validation complete." -ForegroundColor Cyan
+
+
+
+

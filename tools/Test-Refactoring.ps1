@@ -1,8 +1,8 @@
 # Test-Refactoring.ps1
 # This script validates that all refactored modules are working correctly
 
-Write-Host "Testing AutoCert Refactoring..." -ForegroundColor Cyan
-Write-Host "----------------------------------" -ForegroundColor Cyan
+Write-Host -Object "Testing AutoCert Refactoring..." -ForegroundColor Cyan
+Write-Host -Object "----------------------------------" -ForegroundColor Cyan
 
 # Define paths to test
 $parentPath = Split-Path $PSScriptRoot -Parent
@@ -32,25 +32,25 @@ function Test-ModuleFiles {
         [string[]]$Paths,
         [string]$Category
     )
-    
-    Write-Host "`nTesting $Category Files:" -ForegroundColor Yellow
-    
+
+    Write-Warning -Message "`nTesting $Category Files:"
+
     foreach ($path in $Paths) {
         $fileName = Split-Path -Path $path -Leaf
-        
+
         if (Test-Path $path) {
-            Write-Host "  ✓ $fileName exists" -ForegroundColor Green
-            
+            Write-Information -MessageData "  ✓ $fileName exists" -InformationAction Continue
+
             # Load the file to test for functions
             try {
                 . $path
-                Write-Host "  ✓ $fileName loaded successfully" -ForegroundColor Green
+                Write-Information -MessageData "  ✓ $fileName loaded successfully" -InformationAction Continue
             } catch {
-                Write-Host "  ✗ $fileName failed to load: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Error -Message "  ✗ $fileName failed to load: $($_.Exception.Message)"
             }
-            
+
         } else {
-            Write-Host "  ✗ $fileName does not exist at path: $path" -ForegroundColor Red
+            Write-Error -Message "  ✗ $fileName does not exist at path: $path"
         }
     }
 }
@@ -61,7 +61,7 @@ Test-ModuleFiles -Paths $uiPaths -Category "UI"
 Test-ModuleFiles -Paths $utilityPaths -Category "Utility"
 
 # Test if critical functions are available after loading
-Write-Host "`nTesting Critical Functions:" -ForegroundColor Yellow
+Write-Warning -Message "`nTesting Critical Functions:"
 
 $criticalFunctions = @(
     "Show-Menu",
@@ -77,10 +77,13 @@ $criticalFunctions = @(
 
 foreach ($function in $criticalFunctions) {
     if (Get-Command $function -ErrorAction SilentlyContinue) {
-        Write-Host "  ✓ $function is available" -ForegroundColor Green
+        Write-Information -MessageData "  ✓ $function is available" -InformationAction Continue
     } else {
-        Write-Host "  ✗ $function is NOT available" -ForegroundColor Red
+        Write-Error -Message "  ✗ $function is NOT available"
     }
 }
 
-Write-Host "`nTesting Complete" -ForegroundColor Cyan
+Write-Host -Object "`nTesting Complete" -ForegroundColor Cyan
+
+
+

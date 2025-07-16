@@ -1,4 +1,4 @@
-﻿# Core/DNSProviderDetection.ps1
+# Core/DNSProviderDetection.ps1
 <#
     .SYNOPSIS
         DNS provider detection and public suffix list management for AutoCert.
@@ -49,7 +49,7 @@ function Get-PublicSuffixList {
             Invoke-WebRequest -Uri $Url -OutFile $cachePath -UseBasicParsing
             Write-Log "Public suffix list updated successfully"
         } catch {
-            Write-Error "Failed to download public suffix list: $($_)"
+            Write-Error -Message "Failed to download public suffix list: $($_)"
             Write-Log "Failed to download public suffix list: $($_)" -Level 'Error'
             # Return empty array if download fails and no cache exists
             if (-not (Test-Path $cachePath)) {
@@ -64,7 +64,7 @@ function Get-PublicSuffixList {
         }
         return $suffixes
     } catch {
-        Write-Error "Failed to load public suffix list: $($_)"
+        Write-Error -Message "Failed to load public suffix list: $($_)"
         Write-Log "Failed to load public suffix list: $($_)" -Level 'Error'
         return @()
     }
@@ -135,7 +135,7 @@ function Get-DNSProvider {
         Set-CachedDNSProvider -Domain $Domain -Provider $finalProvider
         return $finalProvider
     } catch {
-        Write-Warning "Failed to retrieve DNS information for $Domain`: $($_)"
+        Write-Warning -Message "Failed to retrieve DNS information for $Domain`: $($_)"
         Write-Log "Failed to retrieve DNS information for $Domain`: $($_)" -Level 'Warning'
         return @{
             Name = "Unknown"
@@ -567,30 +567,30 @@ function Test-DNSProviderConfiguration {
         [Parameter()]
         [hashtable]$credentials
     )
-    Write-Host "`n=== Testing DNS Provider Configuration ===" -ForegroundColor Cyan
-    Write-Host "Provider: $providerName" -ForegroundColor Yellow
+    Write-Host -Object "`n=== Testing DNS Provider Configuration ===" -ForegroundColor Cyan
+    Write-Warning -Message "Provider: $providerName"
     try {
         # Test if the provider plugin is available
         $plugin = Get-PAPlugin | Where-Object { $_.Name -eq $providerName }
         if (-not $plugin) {
-            Write-Host "❌ Plugin '$providerName' not found in Posh-ACME" -ForegroundColor Red
-            Write-Host "Available DNS plugins:" -ForegroundColor Yellow
+            Write-Host -Object "❌ Plugin '$providerName' not found in Posh-ACME" -ForegroundColor Red
+            Write-Warning -Message "Available DNS plugins:"
             Get-PAPlugin | Where-Object { $_.ChallengeType -eq 'dns-01' } | ForEach-Object {
-                Write-Host "  • $($_.Name)" -ForegroundColor White
+                Write-Host -Object "  • $($_.Name)" -ForegroundColor White
             }
             return $false
         }
-        Write-Host "✅ Plugin found: $($plugin.Name)" -ForegroundColor Green
+        Write-Information -MessageData "✅ Plugin found: $($plugin.Name)" -InformationAction Continue
         # Show required parameters
         if ($plugin.Params) {
-            Write-Host "Required parameters:" -ForegroundColor Yellow
+            Write-Warning -Message "Required parameters:"
             foreach ($param in $plugin.Params) {
                 $status = if ($credentials -and $credentials.ContainsKey($param)) { "✅" } else { "❌" }
-                Write-Host "  $status $param" -ForegroundColor White
+                Write-Host -Object "  $status $param" -ForegroundColor White
             }
         }
         # Test API connectivity (basic check)
-        Write-Host "Testing API connectivity..." -ForegroundColor Yellow
+        Write-Warning -Message "Testing API connectivity..."
         # This is a placeholder - actual implementation would depend on the provider
         # For now, just check if required credentials are provided
         $missingCreds = @()
@@ -602,14 +602,14 @@ function Test-DNSProviderConfiguration {
             }
         }
         if ($missingCreds.Count -eq 0) {
-            Write-Host "✅ All required credentials appear to be provided" -ForegroundColor Green
+            Write-Information -MessageData "✅ All required credentials appear to be provided" -InformationAction Continue
             return $true
         } else {
-            Write-Host "❌ Missing credentials: $($missingCreds -join ', ')" -ForegroundColor Red
+            Write-Host -Object "❌ Missing credentials: $($missingCreds -join ', ')" -ForegroundColor Red
             return $false
         }
     } catch {
-        Write-Host "❌ Error testing provider configuration: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Error -Message "❌ Error testing provider configuration: $($_.Exception.Message)"
         return $false
     }
 }
@@ -620,20 +620,20 @@ function Get-DNSProviderRecommendation {
         [Parameter(Mandatory = $true)]
         [string]$Domain
     )
-    Write-Host "`n=== DNS Provider Recommendations for $Domain ===" -ForegroundColor Cyan
+    Write-Host -Object "`n=== DNS Provider Recommendations for $Domain ===" -ForegroundColor Cyan
     # Get current provider info
     $currentProvider = Get-DNSProviderExtended -Domain $Domain
     if ($currentProvider -and $currentProvider.Name -ne "Unknown") {
-        Write-Host "Current Provider: $($currentProvider.Name)" -ForegroundColor Green
-        Write-Host "Plugin: $($currentProvider.Plugin)" -ForegroundColor White
-        Write-Host "Confidence: $($currentProvider.Confidence)" -ForegroundColor White
+        Write-Information -MessageData "Current Provider: $($currentProvider.Name)" -InformationAction Continue
+        Write-Host -Object "Plugin: $($currentProvider.Plugin)" -ForegroundColor White
+        Write-Host -Object "Confidence: $($currentProvider.Confidence)" -ForegroundColor White
         if ($currentProvider.SetupUrl) {
-            Write-Host "Setup URL: $($currentProvider.SetupUrl)" -ForegroundColor Blue
+            Write-Host -Object "Setup URL: $($currentProvider.SetupUrl)" -ForegroundColor Blue
         }
-        Write-Host ""
+        Write-Information -MessageData "" -InformationAction Continue
     }
     # Provide general recommendations
-    Write-Host "Recommended DNS Providers (in order of preference):" -ForegroundColor Yellow
+    Write-Warning -Message "Recommended DNS Providers (in order of preference):"
     $recommendations = @(
         @{
             Name = "Cloudflare"
@@ -661,17 +661,17 @@ function Get-DNSProviderRecommendation {
         }
     )
     foreach ($rec in $recommendations) {
-        Write-Host "  📍 $($rec.Name) - $($rec.Difficulty)" -ForegroundColor White
-        Write-Host "     Pros: $($rec.Pros -join ', ')" -ForegroundColor Green
-        Write-Host "     Cons: $($rec.Cons -join ', ')" -ForegroundColor Red
-        Write-Host ""
+        Write-Host -Object "  📍 $($rec.Name) - $($rec.Difficulty)" -ForegroundColor White
+        Write-Host -Object "     Pros: $($rec.Pros -join ', ')" -ForegroundColor Green
+        Write-Host -Object "     Cons: $($rec.Cons -join ', ')" -ForegroundColor Red
+        Write-Information -MessageData "" -InformationAction Continue
     }
-    Write-Host "💡 Quick Start Tips:" -ForegroundColor Yellow
-    Write-Host "  • For beginners: Start with Cloudflare or DigitalOcean" -ForegroundColor White
-    Write-Host "  • For AWS users: Route53 integrates well" -ForegroundColor White
-    Write-Host "  • For cost-conscious: Cloudflare free tier or DigitalOcean" -ForegroundColor White
-    Write-Host "  • For high-volume: Consider Route53 or Google Cloud DNS" -ForegroundColor White
-    Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Warning -Message "💡 Quick Start Tips:"
+    Write-Host -Object "  • For beginners: Start with Cloudflare or DigitalOcean" -ForegroundColor White
+    Write-Host -Object "  • For AWS users: Route53 integrates well" -ForegroundColor White
+    Write-Host -Object "  • For cost-conscious: Cloudflare free tier or DigitalOcean" -ForegroundColor White
+    Write-Host -Object "  • For high-volume: Consider Route53 or Google Cloud DNS" -ForegroundColor White
+    Write-Host -Object "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
 }
 # Function to get all available DNS plugins
 function Get-AvailableDNSPlugin {
@@ -693,7 +693,7 @@ function Get-AvailableDNSPlugin {
         }
         return $pluginList
     } catch {
-        Write-Error "Failed to get DNS provider plugins: $($_.Exception.Message)"
+        Write-Error -Message "Failed to get DNS provider plugins: $($_.Exception.Message)"
     }
 }
 # Function to get plugin description
@@ -796,27 +796,27 @@ function Test-DNSPropagationMultiple {
         [Parameter()]
         [string[]]$dnsServers = @('8.8.8.8', '1.1.1.1', '208.67.222.222', '9.9.9.9')
     )
-    Write-Host "`nTesting DNS propagation across multiple servers:" -ForegroundColor Cyan
+    Write-Host -Object "`nTesting DNS propagation across multiple servers:" -ForegroundColor Cyan
     $results = @()
     foreach ($server in $dnsServers) {
         try {
-            Write-Host "  Testing $server..." -NoNewline
+            Write-Host -Object "  Testing $server..." -NoNewline
             $result = Resolve-DnsName -Name $dnsName -Type TXT -Server $server -ErrorAction Stop
             if ($result.Strings -contains $expectedValue) {
-                Write-Host " ✓ FOUND" -ForegroundColor Green
+                Write-Information -MessageData " ✓ FOUND" -InformationAction Continue
                 $results += @{ Server = $server; Status = "Found"; Value = $result.Strings -join ', ' }
             } else {
-                Write-Host " ✗ NOT FOUND" -ForegroundColor Red
+                Write-Error -Message " ✗ NOT FOUND"
                 $results += @{ Server = $server; Status = "Not Found"; Value = $result.Strings -join ', ' }
             }
         } catch {
-            Write-Host " ✗ ERROR" -ForegroundColor Red
+            Write-Error -Message " ✗ ERROR"
             $results += @{ Server = $server; Status = "Error"; Value = $_.Exception.Message }
         }
     }
     $foundCount = ($results | Where-Object { $_.Status -eq "Found" }).Count
     $totalCount = $results.Count
-    Write-Host "`nPropagation Summary: $foundCount/$totalCount servers have the record" -ForegroundColor $(
+    Write-Host -Object "`nPropagation Summary: $foundCount/$totalCount servers have the record" -ForegroundColor $(
         if ($foundCount -eq $totalCount) { "Green" }
         elseif ($foundCount -gt 0) { "Yellow" }
         else { "Red" }
@@ -839,36 +839,36 @@ function Get-DNSProviderSuggestion {
         [Parameter()]
         [string[]]$nsRecords
     )
-    Write-Host "`n=== DNS Provider Suggestions for $Domain ===" -ForegroundColor Cyan
+    Write-Host -Object "`n=== DNS Provider Suggestions for $Domain ===" -ForegroundColor Cyan
     if ($nsRecords -and $nsRecords.Count -gt 0) {
-        Write-Host "NS Records found:" -ForegroundColor Yellow
+        Write-Warning -Message "NS Records found:"
         foreach ($ns in $nsRecords) {
-            Write-Host "  • $ns" -ForegroundColor White
+            Write-Host -Object "  • $ns" -ForegroundColor White
         }
-        Write-Host ""
+        Write-Information -MessageData "" -InformationAction Continue
     }
     # Analyze NS records for hosting patterns
     $suggestions = Get-HostingProviderSuggestions -NSRecords $nsRecords
     # Display suggestions
-    Write-Host "Suggestions:" -ForegroundColor Green
+    Write-Information -MessageData "Suggestions:" -InformationAction Continue
     if ($suggestions.Count -gt 0) {
         foreach ($suggestion in $suggestions) {
-            Write-Host "  • $suggestion" -ForegroundColor White
+            Write-Host -Object "  • $suggestion" -ForegroundColor White
         }
     }
     # General recommendations
-    Write-Host "  • Check if your domain registrar offers DNS API access" -ForegroundColor White
-    Write-Host "  • Consider switching to a supported DNS provider:" -ForegroundColor White
-    Write-Host "    - Cloudflare (free tier available)" -ForegroundColor Gray
-    Write-Host "    - AWS Route53 (pay-per-use)" -ForegroundColor Gray
-    Write-Host "    - Google Cloud DNS" -ForegroundColor Gray
-    Write-Host "    - DigitalOcean DNS (free with account)" -ForegroundColor Gray
-    Write-Host "  • Manual DNS configuration is always an option" -ForegroundColor White
-    Write-Host "`nFor manual configuration, you'll need to:" -ForegroundColor Yellow
-    Write-Host "  1. Create a TXT record when prompted" -ForegroundColor White
-    Write-Host "  2. Wait for DNS propagation (usually 5-15 minutes)" -ForegroundColor White
-    Write-Host "  3. Continue with the certificate process" -ForegroundColor White
-    Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
+    Write-Host -Object "  • Check if your domain registrar offers DNS API access" -ForegroundColor White
+    Write-Host -Object "  • Consider switching to a supported DNS provider:" -ForegroundColor White
+    Write-Host -Object "    - Cloudflare (free tier available)" -ForegroundColor Gray
+    Write-Host -Object "    - AWS Route53 (pay-per-use)" -ForegroundColor Gray
+    Write-Host -Object "    - Google Cloud DNS" -ForegroundColor Gray
+    Write-Host -Object "    - DigitalOcean DNS (free with account)" -ForegroundColor Gray
+    Write-Host -Object "  • Manual DNS configuration is always an option" -ForegroundColor White
+    Write-Warning -Message "`nFor manual configuration, you'll need to:"
+    Write-Host -Object "  1. Create a TXT record when prompted" -ForegroundColor White
+    Write-Host -Object "  2. Wait for DNS propagation (usually 5-15 minutes)" -ForegroundColor White
+    Write-Host -Object "  3. Continue with the certificate process" -ForegroundColor White
+    Write-Host -Object "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
 }
 <#
     .SYNOPSIS
@@ -916,3 +916,6 @@ function Get-HostingProviderSuggestion {
     return $suggestions
 }
 #endregion
+
+
+

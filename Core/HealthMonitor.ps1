@@ -1,4 +1,4 @@
-﻿# Core/HealthMonitor.ps1
+# Core/HealthMonitor.ps1
 <#
     .SYNOPSIS
         Health monitoring and alerting system.
@@ -276,9 +276,9 @@ function Invoke-HealthCheck {
             $status = if ($result.Status -eq 'Pass') { '✓' } else { '✗' }
             $message = "$status $($result.Name): $($result.Message)"
             if ($result.Status -eq 'Pass') {
-                Write-Information $message -InformationAction Continue
+                Write-Information -MessageData $message -InformationAction Continue
             } else {
-                Write-Warning $message
+                Write-Warning -Message $message
             }
         }
     }
@@ -374,3 +374,4 @@ Summary:
         Write-Log "Failed to send health alert: $($_.Exception.Message)" -Level 'Error'
     }
 }
+

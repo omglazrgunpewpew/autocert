@@ -1,4 +1,4 @@
-﻿# Core/NotificationManager.ps1
+# Core/NotificationManager.ps1
 <#
     .SYNOPSIS
         Notification and alerting system with multiple channels and templates.
@@ -626,15 +626,16 @@ function Test-NotificationSystem {
         Duration = "2 minutes"
         NextRenewalDate = (Get-Date).AddDays(60)
     }
-    Write-Information "Testing notification system..." -InformationAction Continue
+    Write-Information -MessageData "Testing notification system..." -InformationAction Continue
     $results = Send-Notification -TemplateName 'CertificateRenewalSuccess' -Variables $testVariables -Channels $Channels -OverrideRecipient $TestRecipient
     foreach ($channel in $results.Keys) {
         $result = $results[$channel]
         $status = if ($result.Success) { "✓ PASS" } else { "✗ FAIL" }
-        Write-Information "$status $channel" -InformationAction Continue
+        Write-Information -MessageData "$status $channel" -InformationAction Continue
         if (-not $result.Success) {
-            Write-Error "  Error: $($result.Error)"
+            Write-Error -Message "  Error: $($result.Error)"
         }
     }
     return $results
 }
+

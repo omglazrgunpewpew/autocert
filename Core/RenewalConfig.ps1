@@ -1,4 +1,4 @@
-﻿# Core/RenewalConfig.ps1
+# Core/RenewalConfig.ps1
 <#
     .SYNOPSIS
         Renewal configuration management with randomization and scheduling.
@@ -16,7 +16,7 @@ function Get-RenewalConfig {
             $config = Get-Content $ConfigPath | ConvertFrom-Json
             return $config
         } catch {
-            Write-Warning "Failed to load renewal configuration: $($_)"
+            Write-Warning -Message "Failed to load renewal configuration: $($_)"
             Write-Log "Failed to load renewal configuration: $($_)" -Level 'Warning'
         }
     }
@@ -55,7 +55,7 @@ function Save-RenewalConfig {
         return $true
     } catch {
         $msg = "Failed to save renewal configuration to '$ConfigPath': $($_.Exception.Message)"
-        Write-Error $msg
+        Write-Error -Message $msg
         Write-Log $msg -Level 'Error'
         return $false
     }
@@ -105,10 +105,10 @@ function New-RenewalScheduledTask {
         # Verify task creation
         $registeredTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($registeredTask) {
-            Write-Host "Scheduled task '$taskName' created." -ForegroundColor Green
-            Write-Host "Base run time: $($baseTime.ToString('HH:mm'))" -ForegroundColor Cyan
+            Write-Information -MessageData "Scheduled task '$taskName' created." -InformationAction Continue
+            Write-Host -Object "Base run time: $($baseTime.ToString('HH:mm'))" -ForegroundColor Cyan
             if ($Config.UseRandomization) {
-                Write-Host "Random delay window: $($Config.RandomizationWindow) minutes" -ForegroundColor Cyan
+                Write-Host -Object "Random delay window: $($Config.RandomizationWindow) minutes" -ForegroundColor Cyan
             }
             Write-Log "Scheduled task '$taskName' created with base time $($baseTime.ToString('HH:mm'))"
             return $true
@@ -117,7 +117,7 @@ function New-RenewalScheduledTask {
         }
     } catch {
         $msg = "Failed to create scheduled task '$taskName': $($_.Exception.Message)"
-        Write-Error $msg
+        Write-Error -Message $msg
         Write-Log $msg -Level 'Error'
         return $false
     }
@@ -157,8 +157,8 @@ function Test-RenewalConfig {
         $issues += "Valid NotificationEmail required when EmailNotifications is enabled"
     }
     if (-not $isValid) {
-        Write-Warning "Renewal configuration validation failed:"
-        $issues | ForEach-Object { Write-Warning "  - $_" }
+        Write-Warning -Message "Renewal configuration validation failed:"
+        $issues | ForEach-Object { Write-Warning -Message "  - $_" }
     }
     return $isValid
 }
@@ -188,7 +188,7 @@ function Get-CertificateRenewalStatus {
                 $renewalInfo += $status
             }
         } catch {
-            Write-Warning "Failed to get renewal status for $($order.MainDomain): $_"
+            Write-Warning -Message "Failed to get renewal status for $($order.MainDomain): $_"
         }
     }
     return $renewalInfo
@@ -214,3 +214,5 @@ function Send-RenewalNotification {
     # - Other email services
 }
 #endregion
+
+

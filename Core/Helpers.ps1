@@ -1,4 +1,4 @@
-﻿# Core/Helpers.ps1
+# Core/Helpers.ps1
 <#
     .SYNOPSIS
         Helper functions shared across the utility.
@@ -37,7 +37,7 @@ function Invoke-WithRetry {
             Write-Verbose "$OperationName attempt $attempt failed: $($_.Exception.Message)"
         }
         if ($attempt -eq $MaxAttempts) {
-            Write-Error "All $MaxAttempts attempts for $OperationName failed"
+            Write-Error -Message "All $MaxAttempts attempts for $OperationName failed"
             throw "Failed to complete $OperationName after $MaxAttempts attempts"
         }
         Write-Debug "Waiting $delay seconds before next attempt"
@@ -86,7 +86,7 @@ function Get-ValidatedInput {
             return 0
         } else {
             $validChoices = ($ValidOptions | Sort-Object) -join ', '
-            Write-Warning "Please enter a valid option ($validChoices) or 0 to go back."
+            Write-Warning -Message "Please enter a valid option ($validChoices) or 0 to go back."
         }
     } while ($true)
 }
@@ -103,33 +103,33 @@ function Test-ValidPath {
     try {
         # Check if path is null or empty
         if ([string]::IsNullOrWhiteSpace($Path)) {
-            Write-Warning "Path cannot be empty."
+            Write-Warning -Message "Path cannot be empty."
             return $false
         }
         # Check for invalid characters
         $invalidChars = [System.IO.Path]::GetInvalidPathChars()
         if ($Path.IndexOfAny($invalidChars) -ge 0) {
-            Write-Warning "Path contains invalid characters."
+            Write-Warning -Message "Path contains invalid characters."
             return $false
         }
         # Check if the path exists
         if ($MustExist -and -not (Test-Path $Path)) {
-            Write-Warning "Path does not exist: $Path"
+            Write-Warning -Message "Path does not exist: $Path"
             return $false
         }
         # Check if the path must not exist
         if ($MustNotExist -and (Test-Path $Path)) {
-            Write-Warning "Path already exists: $Path"
+            Write-Warning -Message "Path already exists: $Path"
             return $false
         }
         # Check if the path is a directory
         if ($IsDirectory -and (Test-Path $Path) -and -not (Test-Path $Path -PathType Container)) {
-            Write-Warning "Path is not a directory: $Path"
+            Write-Warning -Message "Path is not a directory: $Path"
             return $false
         }
         # Check if the path is a file
         if (-not $IsDirectory -and (Test-Path $Path) -and -not (Test-Path $Path -PathType Leaf)) {
-            Write-Warning "Path is not a file: $Path"
+            Write-Warning -Message "Path is not a file: $Path"
             return $false
         }
         # Check if the path is writable
@@ -140,13 +140,13 @@ function Test-ValidPath {
                 [System.IO.File]::Create($testFile).Dispose()
                 [System.IO.File]::Delete($testFile)
             } catch {
-                Write-Warning "Path is not writable: $Path"
+                Write-Warning -Message "Path is not writable: $Path"
                 return $false
             }
         }
         return $true
     } catch {
-        Write-Warning "An error occurred while validating the path: $($_)"
+        Write-Warning -Message "An error occurred while validating the path: $($_)"
         return $false
     }
 }
@@ -157,11 +157,11 @@ function Test-ValidEmail {
         [string]$Email
     )
     if ([string]::IsNullOrWhiteSpace($Email)) {
-        Write-Warning "Email address cannot be empty."
+        Write-Warning -Message "Email address cannot be empty."
         return $false
     }
     if ($Email -notmatch '^[\w\.-]+@[\w\.-]+\.\w+$') {
-        Write-Warning "Invalid email address format: $Email"
+        Write-Warning -Message "Invalid email address format: $Email"
         return $false
     }
     return $true
@@ -173,11 +173,11 @@ function Test-ValidDomain {
         [string]$Domain
     )
     if ([string]::IsNullOrWhiteSpace($Domain)) {
-        Write-Warning "Domain name cannot be empty."
+        Write-Warning -Message "Domain name cannot be empty."
         return $false
     }
     if ($Domain -notmatch '^[a-zA-Z0-9.-]+$') {
-        Write-Warning "Invalid domain name format: $Domain"
+        Write-Warning -Message "Invalid domain name format: $Domain"
         return $false
     }
     return $true
@@ -214,7 +214,7 @@ function Test-PluginParameters {
     foreach ($param in $Parameters.GetEnumerator()) {
         if ($rules.ContainsKey($param.Key)) {
             if ($param.Value -notmatch $rules[$param.Key]) {
-                Write-Error "Invalid format for $($param.Key) in $Plugin plugin"
+                Write-Error -Message "Invalid format for $($param.Key) in $Plugin plugin"
                 $isValid = $false
             }
         }
@@ -235,7 +235,7 @@ function Get-ScriptSettings {
             $settings = Get-Content $SettingsPath -Raw | ConvertFrom-Json
             return $settings
         } catch {
-            Write-Warning "Failed to load settings: $($_)"
+            Write-Warning -Message "Failed to load settings: $($_)"
             Write-Log "Failed to load settings: $($_)" -Level 'Warning'
         }
     }
@@ -272,7 +272,7 @@ function Save-ScriptSettings {
         $Settings | ConvertTo-Json | Set-Content -Path $SettingsPath
         return $true
     } catch {
-        Write-Warning "Failed to save settings: $($_)"
+        Write-Warning -Message "Failed to save settings: $($_)"
         Write-Log "Failed to save settings: $($_)" -Level 'Warning'
         return $false
     }
@@ -295,7 +295,7 @@ function Set-SecureCredential {
         $Credential | Export-Clixml -Path $credPath
     } catch {
         $msg = "Failed to save credentials for ${ProviderName} to '$credPath': $($_.Exception.Message)"
-        Write-Error $msg
+        Write-Error -Message $msg
         Write-Log $msg -Level 'Error'
     }
 }
@@ -313,7 +313,7 @@ function Get-SecureCredential {
             return $cred
         } catch {
             $msg = "Failed to import credentials for ${ProviderName} from '$credPath': $($_.Exception.Message)"
-            Write-Error $msg
+            Write-Error -Message $msg
             Write-Log $msg -Level 'Error'
             return $null
         }
@@ -338,11 +338,11 @@ function Get-BaseDomain {
         [string[]]$Suffixes
     )
     if ([string]::IsNullOrWhiteSpace($domainName)) {
-        Write-Warning "Domain name is empty."
+        Write-Warning -Message "Domain name is empty."
         return $null
     }
     if ($null -eq $Suffixes -or $Suffixes.Count -eq 0) {
-        Write-Warning "Suffixes list is empty."
+        Write-Warning -Message "Suffixes list is empty."
         return $domainName
     }
     $domainLabels = $domainName.ToLower().Split('.')
@@ -392,7 +392,7 @@ function Get-RSCertFolder {
             return $path
         }
     }
-    Write-Error "Failed to find any predefined certificate folders."
+    Write-Error -Message "Failed to find any predefined certificate folders."
     Write-Log "Failed to find any predefined certificate folders." -Level 'Error'
     return $null
 }
@@ -412,7 +412,7 @@ function Save-PEMFiles {
     Write-Debug "Saving PEM files to $directory"
     if (-not (Test-Path $directory)) {
         $msg = "Certificate directory does not exist: '$directory'"
-        Write-Error $msg
+        Write-Error -Message $msg
         Write-Log $msg -Level 'Error'
         return $null
     }
@@ -442,7 +442,7 @@ function Save-PEMFiles {
         }
     } catch {
         $msg = "Failed to save PEM files to '$directory' after multiple attempts. Certificate: '$certOutputFile', Key: '$keyOutputFile'. Error: $($_.Exception.Message)"
-        Write-Error $msg
+        Write-Error -Message $msg
         Write-Log $msg -Level 'Error'
         throw
     }
@@ -457,7 +457,7 @@ function Get-RevokedCertificates {
         try {
             $revokedCerts = Get-Content $script:RevokedCertsFile | ConvertFrom-Json
         } catch {
-            Write-Warning "Failed to load revoked certificates: $($_)"
+            Write-Warning -Message "Failed to load revoked certificates: $($_)"
             Write-Log "Failed to load revoked certificates: $($_)" -Level 'Warning'
             $revokedCerts = @()
         }
@@ -481,7 +481,8 @@ function Save-RevokedCertificates {
         }
         $revokedCerts | ConvertTo-Json | Set-Content -Path $script:RevokedCertsFile
     } catch {
-        Write-Warning "Failed to save revoked certificates: $($_)"
+        Write-Warning -Message "Failed to save revoked certificates: $($_)"
         Write-Log "Failed to save revoked certificates: $($_)" -Level 'Warning'
     }
 }
+
