@@ -48,7 +48,8 @@ function Get-PublicSuffixList {
         try {
             Invoke-WebRequest -Uri $Url -OutFile $cachePath -UseBasicParsing
             Write-Log "Public suffix list updated successfully"
-        } catch {
+        }
+        catch {
             Write-Error -Message "Failed to download public suffix list: $($_)"
             Write-Log "Failed to download public suffix list: $($_)" -Level 'Error'
             # Return empty array if download fails and no cache exists
@@ -63,7 +64,8 @@ function Get-PublicSuffixList {
             $_ -and -not $_.StartsWith("//") -and $_.Trim()
         }
         return $suffixes
-    } catch {
+    }
+    catch {
         Write-Error -Message "Failed to load public suffix list: $($_)"
         Write-Log "Failed to load public suffix list: $($_)" -Level 'Error'
         return @()
@@ -119,35 +121,38 @@ function Get-DNSProvider {
         $finalProvider = if ($detectedProvider -and $detectedProvider.Name -ne "Unknown") {
             Write-Log "DNS provider detected: $($detectedProvider.Name) (Confidence: $($detectedProvider.Confidence))"
             $detectedProvider
-        } else {
+        }
+        else {
             Write-Log "DNS provider could not be automatically detected for $Domain" -Level 'Warning'
             @{
-                Name = "Unknown"
-                Plugin = "Manual"
-                Confidence = "None"
-                NSRecords = $nsRecords
-                Description = "Manual DNS - Requires manual TXT record creation"
-                SetupUrl = $null
+                Name            = "Unknown"
+                Plugin          = "Manual"
+                Confidence      = "None"
+                NSRecords       = $nsRecords
+                Description     = "Manual DNS - Requires manual TXT record creation"
+                SetupUrl        = $null
                 DetectionMethod = "NS Records"
             }
         }
         # Cache and return result
         Set-CachedDNSProvider -Domain $Domain -Provider $finalProvider
         return $finalProvider
-    } catch {
+    }
+    catch {
         Write-Warning -Message "Failed to retrieve DNS information for $Domain`: $($_)"
         Write-Log "Failed to retrieve DNS information for $Domain`: $($_)" -Level 'Warning'
         return @{
-            Name = "Unknown"
-            Plugin = "Manual"
-            Confidence = "None"
-            NSRecords = @()
-            Error = $_.Exception.Message
-            Description = "DNS lookup failed - Manual DNS required"
-            SetupUrl = $null
+            Name            = "Unknown"
+            Plugin          = "Manual"
+            Confidence      = "None"
+            NSRecords       = @()
+            Error           = $_.Exception.Message
+            Description     = "DNS lookup failed - Manual DNS required"
+            SetupUrl        = $null
             DetectionMethod = "Error"
         }
-    } finally {
+    }
+    finally {
         Write-Progress -Activity "DNS Provider Detection" -Completed
     }
 }
@@ -182,15 +187,15 @@ function Get-ProviderFromNSRecord {
             foreach ($pattern in $provider.Patterns) {
                 if ($ns -like $pattern) {
                     $result = @{
-                        Name = $providerName
-                        Plugin = $provider.Plugin
-                        Confidence = $provider.Confidence
-                        NSRecords = $NSRecords
-                        Description = $provider.Description
-                        SetupUrl = $provider.SetupUrl
+                        Name            = $providerName
+                        Plugin          = $provider.Plugin
+                        Confidence      = $provider.Confidence
+                        NSRecords       = $NSRecords
+                        Description     = $provider.Description
+                        SetupUrl        = $provider.SetupUrl
                         DetectionMethod = "NS Records"
-                        MatchedPattern = $pattern
-                        MatchedRecord = $ns
+                        MatchedPattern  = $pattern
+                        MatchedRecord   = $ns
                     }
                     # Return immediately for high confidence matches
                     if ($provider.Confidence -eq "High") {
@@ -222,167 +227,167 @@ function Get-DNSProviderPattern {
     param()
     return @{
         # Tier 1 - High confidence patterns (Cloud providers)
-        'Cloudflare' = @{
-            Patterns = @('*.cloudflare.com')
-            Plugin = 'Cloudflare'
-            Confidence = 'High'
+        'Cloudflare'         = @{
+            Patterns    = @('*.cloudflare.com')
+            Plugin      = 'Cloudflare'
+            Confidence  = 'High'
             Description = 'Cloudflare DNS - Requires API Token'
-            SetupUrl = 'https://dash.cloudflare.com/profile/api-tokens'
+            SetupUrl    = 'https://dash.cloudflare.com/profile/api-tokens'
         }
-        'AWS Route53' = @{
-            Patterns = @('*.awsdns-*.*.amazonaws.com', '*.awsdns-*.amazonaws.com')
-            Plugin = 'Route53'
-            Confidence = 'High'
+        'AWS Route53'        = @{
+            Patterns    = @('*.awsdns-*.*.amazonaws.com', '*.awsdns-*.amazonaws.com')
+            Plugin      = 'Route53'
+            Confidence  = 'High'
             Description = 'Amazon Route53 - Requires AWS credentials or profile'
-            SetupUrl = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html'
+            SetupUrl    = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html'
         }
-        'Azure DNS' = @{
-            Patterns = @('*.azure-dns*.info', '*.azure-dns*.org', '*.azure-dns*.com', '*.azure-dns*.net')
-            Plugin = 'Azure'
-            Confidence = 'High'
+        'Azure DNS'          = @{
+            Patterns    = @('*.azure-dns*.info', '*.azure-dns*.org', '*.azure-dns*.com', '*.azure-dns*.net')
+            Plugin      = 'Azure'
+            Confidence  = 'High'
             Description = 'Microsoft Azure DNS - Requires Azure authentication'
-            SetupUrl = 'https://docs.microsoft.com/en-us/azure/dns/'
+            SetupUrl    = 'https://docs.microsoft.com/en-us/azure/dns/'
         }
-        'Google Cloud DNS' = @{
-            Patterns = @('*.googledomains.com', '*.google.com', '*.googledns.com')
-            Plugin = 'GoogleDomains'
-            Confidence = 'High'
+        'Google Cloud DNS'   = @{
+            Patterns    = @('*.googledomains.com', '*.google.com', '*.googledns.com')
+            Plugin      = 'GoogleDomains'
+            Confidence  = 'High'
             Description = 'Google Cloud DNS - Requires service account or OAuth'
-            SetupUrl = 'https://cloud.google.com/dns/docs'
+            SetupUrl    = 'https://cloud.google.com/dns/docs'
         }
-        'DigitalOcean' = @{
-            Patterns = @('*.digitalocean.com')
-            Plugin = 'DigitalOcean'
-            Confidence = 'High'
+        'DigitalOcean'       = @{
+            Patterns    = @('*.digitalocean.com')
+            Plugin      = 'DigitalOcean'
+            Confidence  = 'High'
             Description = 'DigitalOcean DNS - Requires API token'
-            SetupUrl = 'https://cloud.digitalocean.com/account/api/tokens'
+            SetupUrl    = 'https://cloud.digitalocean.com/account/api/tokens'
         }
-        'Linode' = @{
-            Patterns = @('*.linode.com')
-            Plugin = 'Linode'
-            Confidence = 'High'
+        'Linode'             = @{
+            Patterns    = @('*.linode.com')
+            Plugin      = 'Linode'
+            Confidence  = 'High'
             Description = 'Linode DNS - Requires API token'
-            SetupUrl = 'https://cloud.linode.com/profile/tokens'
+            SetupUrl    = 'https://cloud.linode.com/profile/tokens'
         }
-        'Vultr' = @{
-            Patterns = @('*.vultr.com')
-            Plugin = 'Vultr'
-            Confidence = 'High'
+        'Vultr'              = @{
+            Patterns    = @('*.vultr.com')
+            Plugin      = 'Vultr'
+            Confidence  = 'High'
             Description = 'Vultr DNS - Requires API key'
-            SetupUrl = 'https://my.vultr.com/settings/#settingsapi'
+            SetupUrl    = 'https://my.vultr.com/settings/#settingsapi'
         }
-        'Hetzner' = @{
-            Patterns = @('*.hetzner.com', '*.hetzner.de')
-            Plugin = 'Hetzner'
-            Confidence = 'High'
+        'Hetzner'            = @{
+            Patterns    = @('*.hetzner.com', '*.hetzner.de')
+            Plugin      = 'Hetzner'
+            Confidence  = 'High'
             Description = 'Hetzner DNS - Requires API token'
-            SetupUrl = 'https://dns.hetzner.com/settings/api-token'
+            SetupUrl    = 'https://dns.hetzner.com/settings/api-token'
         }
-        'DNS Made Easy' = @{
-            Patterns = @('*.dnsmadeeasy.com')
-            Plugin = 'DNSMadeEasy'
-            Confidence = 'High'
+        'DNS Made Easy'      = @{
+            Patterns    = @('*.dnsmadeeasy.com')
+            Plugin      = 'DNSMadeEasy'
+            Confidence  = 'High'
             Description = 'DNS Made Easy - Requires API credentials'
-            SetupUrl = 'https://cp.dnsmadeeasy.com/account/info'
+            SetupUrl    = 'https://cp.dnsmadeeasy.com/account/info'
         }
-        'NS1' = @{
-            Patterns = @('*.nsone.net', '*.ns1.com')
-            Plugin = 'NS1'
-            Confidence = 'High'
+        'NS1'                = @{
+            Patterns    = @('*.nsone.net', '*.ns1.com')
+            Plugin      = 'NS1'
+            Confidence  = 'High'
             Description = 'NS1 DNS - Requires API key'
-            SetupUrl = 'https://my.nsone.net/#/account/settings'
+            SetupUrl    = 'https://my.nsone.net/#/account/settings'
         }
-        'DNSimple' = @{
-            Patterns = @('*.dnsimple.com')
-            Plugin = 'DNSimple'
-            Confidence = 'High'
+        'DNSimple'           = @{
+            Patterns    = @('*.dnsimple.com')
+            Plugin      = 'DNSimple'
+            Confidence  = 'High'
             Description = 'DNSimple - Requires API token'
-            SetupUrl = 'https://dnsimple.com/user'
+            SetupUrl    = 'https://dnsimple.com/user'
         }
-        'Gandi' = @{
-            Patterns = @('*.gandi.net')
-            Plugin = 'Gandi'
-            Confidence = 'High'
+        'Gandi'              = @{
+            Patterns    = @('*.gandi.net')
+            Plugin      = 'Gandi'
+            Confidence  = 'High'
             Description = 'Gandi DNS - Requires API key'
-            SetupUrl = 'https://account.gandi.net/account/api'
+            SetupUrl    = 'https://account.gandi.net/account/api'
         }
-        'Porkbun' = @{
-            Patterns = @('*.porkbun.com')
-            Plugin = 'Porkbun'
-            Confidence = 'High'
+        'Porkbun'            = @{
+            Patterns    = @('*.porkbun.com')
+            Plugin      = 'Porkbun'
+            Confidence  = 'High'
             Description = 'Porkbun DNS - Requires API key'
-            SetupUrl = 'https://porkbun.com/account/api'
+            SetupUrl    = 'https://porkbun.com/account/api'
         }
-        'Dynu' = @{
-            Patterns = @('*.dynu.com')
-            Plugin = 'Dynu'
-            Confidence = 'High'
+        'Dynu'               = @{
+            Patterns    = @('*.dynu.com')
+            Plugin      = 'Dynu'
+            Confidence  = 'High'
             Description = 'Dynu DNS - Requires API credentials'
-            SetupUrl = 'https://www.dynu.com/ControlPanel/APICredentials'
+            SetupUrl    = 'https://www.dynu.com/ControlPanel/APICredentials'
         }
         'Hurricane Electric' = @{
-            Patterns = @('*.he.net')
-            Plugin = 'HurricaneElectric'
-            Confidence = 'High'
+            Patterns    = @('*.he.net')
+            Plugin      = 'HurricaneElectric'
+            Confidence  = 'High'
             Description = 'Hurricane Electric DNS - Requires API key'
-            SetupUrl = 'https://dns.he.net/'
+            SetupUrl    = 'https://dns.he.net/'
         }
         # Tier 2 - Medium confidence patterns (Registrar DNS)
-        'GoDaddy' = @{
-            Patterns = @('*.domaincontrol.com')
-            Plugin = 'GoDaddy'
-            Confidence = 'Medium'
+        'GoDaddy'            = @{
+            Patterns    = @('*.domaincontrol.com')
+            Plugin      = 'GoDaddy'
+            Confidence  = 'Medium'
             Description = 'GoDaddy DNS - Requires API key and secret'
-            SetupUrl = 'https://developer.godaddy.com/keys'
+            SetupUrl    = 'https://developer.godaddy.com/keys'
         }
-        'Namecheap' = @{
-            Patterns = @('*.registrar-servers.com')
-            Plugin = 'Namecheap'
-            Confidence = 'Medium'
+        'Namecheap'          = @{
+            Patterns    = @('*.registrar-servers.com')
+            Plugin      = 'Namecheap'
+            Confidence  = 'Medium'
             Description = 'Namecheap DNS - Requires API key and username'
-            SetupUrl = 'https://ap.www.namecheap.com/settings/tools/apiaccess/'
+            SetupUrl    = 'https://ap.www.namecheap.com/settings/tools/apiaccess/'
         }
-        'OVH' = @{
-            Patterns = @('*.ovh.net', '*.ovh.com')
-            Plugin = 'OVH'
-            Confidence = 'Medium'
+        'OVH'                = @{
+            Patterns    = @('*.ovh.net', '*.ovh.com')
+            Plugin      = 'OVH'
+            Confidence  = 'Medium'
             Description = 'OVH DNS - Requires API credentials'
-            SetupUrl = 'https://eu.api.ovh.com/createToken/'
+            SetupUrl    = 'https://eu.api.ovh.com/createToken/'
         }
-        'Hover' = @{
-            Patterns = @('*.hover.com')
-            Plugin = 'Hover'
-            Confidence = 'Medium'
+        'Hover'              = @{
+            Patterns    = @('*.hover.com')
+            Plugin      = 'Hover'
+            Confidence  = 'Medium'
             Description = 'Hover DNS - Requires API credentials'
-            SetupUrl = 'https://www.hover.com/api'
+            SetupUrl    = 'https://www.hover.com/api'
         }
-        'Network Solutions' = @{
-            Patterns = @('*.worldnic.com', '*.networksolutions.com')
-            Plugin = 'NetworkSolutions'
-            Confidence = 'Medium'
+        'Network Solutions'  = @{
+            Patterns    = @('*.worldnic.com', '*.networksolutions.com')
+            Plugin      = 'NetworkSolutions'
+            Confidence  = 'Medium'
             Description = 'Network Solutions DNS - May require manual configuration'
-            SetupUrl = 'https://www.networksolutions.com/'
+            SetupUrl    = 'https://www.networksolutions.com/'
         }
-        'Domain.com' = @{
-            Patterns = @('*.domain.com')
-            Plugin = 'DomainCom'
-            Confidence = 'Medium'
+        'Domain.com'         = @{
+            Patterns    = @('*.domain.com')
+            Plugin      = 'DomainCom'
+            Confidence  = 'Medium'
             Description = 'Domain.com DNS - May require manual configuration'
-            SetupUrl = 'https://www.domain.com/'
+            SetupUrl    = 'https://www.domain.com/'
         }
-        'Bluehost' = @{
-            Patterns = @('*.bluehost.com')
-            Plugin = 'Bluehost'
-            Confidence = 'Medium'
+        'Bluehost'           = @{
+            Patterns    = @('*.bluehost.com')
+            Plugin      = 'Bluehost'
+            Confidence  = 'Medium'
             Description = 'Bluehost DNS - May require manual configuration'
-            SetupUrl = 'https://www.bluehost.com/'
+            SetupUrl    = 'https://www.bluehost.com/'
         }
-        'HostGator' = @{
-            Patterns = @('*.hostgator.com')
-            Plugin = 'HostGator'
-            Confidence = 'Medium'
+        'HostGator'          = @{
+            Patterns    = @('*.hostgator.com')
+            Plugin      = 'HostGator'
+            Confidence  = 'Medium'
             Description = 'HostGator DNS - May require manual configuration'
-            SetupUrl = 'https://www.hostgator.com/'
+            SetupUrl    = 'https://www.hostgator.com/'
         }
     }
 }
@@ -399,7 +404,8 @@ function Get-ProviderFromSOA {
         Write-Debug "SOA primary server: $primaryNS"
         # Use the same pattern matching logic as NS records
         return Get-ProviderFromNSRecord -NSRecords @($primaryNS)
-    } catch {
+    }
+    catch {
         Write-Debug "SOA detection failed for $Domain`: $($_)"
         return $null
     }
@@ -430,7 +436,8 @@ function Get-CachedDNSProvider {
             if ($cacheAge.TotalHours -lt 24) {
                 return $cached.Provider
             }
-        } catch {
+        }
+        catch {
             Write-Debug "Failed to read DNS cache for $Domain`: $($_)"
         }
     }
@@ -460,13 +467,14 @@ function Set-CachedDNSProvider {
                 New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
             }
             $cacheData = @{
-                Domain = $Domain
-                Provider = $Provider
+                Domain    = $Domain
+                Provider  = $Provider
                 Timestamp = (Get-Date).ToString('o')
             }
             $cacheData | ConvertTo-Json -Depth 10 | Set-Content $cacheFile -Encoding UTF8
             Write-Debug "Cached DNS provider for $Domain"
-        } catch {
+        }
+        catch {
             Write-Debug "Failed to cache DNS provider for $Domain`: $($_)"
         }
     }
@@ -516,7 +524,8 @@ function Get-ApexDomain {
             return "$($parts[-2]).$($parts[-1])"
         }
         return $Domain
-    } catch {
+    }
+    catch {
         Write-Debug "Failed to determine apex domain for $Domain`: $($_)"
         return $Domain
     }
@@ -604,11 +613,13 @@ function Test-DNSProviderConfiguration {
         if ($missingCreds.Count -eq 0) {
             Write-Information -MessageData "✅ All required credentials appear to be provided" -InformationAction Continue
             return $true
-        } else {
+        }
+        else {
             Write-Host -Object "❌ Missing credentials: $($missingCreds -join ', ')" -ForegroundColor Red
             return $false
         }
-    } catch {
+    }
+    catch {
         Write-Error -Message "❌ Error testing provider configuration: $($_.Exception.Message)"
         return $false
     }
@@ -636,27 +647,27 @@ function Get-DNSProviderRecommendation {
     Write-Warning -Message "Recommended DNS Providers (in order of preference):"
     $recommendations = @(
         @{
-            Name = "Cloudflare"
-            Pros = @("Free tier available", "Good performance", "Easy API setup", "Built-in CDN")
-            Cons = @("Requires domain transfer for full features")
+            Name       = "Cloudflare"
+            Pros       = @("Free tier available", "Good performance", "Easy API setup", "Built-in CDN")
+            Cons       = @("Requires domain transfer for full features")
             Difficulty = "Easy"
         },
         @{
-            Name = "AWS Route53"
-            Pros = @("Reliable", "Integrates with AWS services", "Pay-per-use pricing")
-            Cons = @("Can be complex for beginners", "Costs money")
+            Name       = "AWS Route53"
+            Pros       = @("Reliable", "Integrates with AWS services", "Pay-per-use pricing")
+            Cons       = @("Can be complex for beginners", "Costs money")
             Difficulty = "Medium"
         },
         @{
-            Name = "Google Cloud DNS"
-            Pros = @("Good performance", "Integrates with Google Cloud", "Reasonable pricing")
-            Cons = @("Requires Google Cloud account", "Less user-friendly")
+            Name       = "Google Cloud DNS"
+            Pros       = @("Good performance", "Integrates with Google Cloud", "Reasonable pricing")
+            Cons       = @("Requires Google Cloud account", "Less user-friendly")
             Difficulty = "Medium"
         },
         @{
-            Name = "DigitalOcean DNS"
-            Pros = @("Free with account", "Simple API", "Good documentation")
-            Cons = @("Requires DigitalOcean account")
+            Name       = "DigitalOcean DNS"
+            Pros       = @("Free with account", "Simple API", "Good documentation")
+            Cons       = @("Requires DigitalOcean account")
             Difficulty = "Easy"
         }
     )
@@ -683,16 +694,17 @@ function Get-AvailableDNSPlugin {
         $pluginList = @()
         foreach ($plugin in $plugins) {
             $pluginInfo = @{
-                Name = $plugin.Name
-                ChallengeType = $plugin.ChallengeType
+                Name           = $plugin.Name
+                ChallengeType  = $plugin.ChallengeType
                 RequiredParams = $plugin.Params
-                Description = Get-PluginDescription -PluginName $plugin.Name
-                SetupUrl = Get-PluginSetupUrl -PluginName $plugin.Name
+                Description    = Get-PluginDescription -PluginName $plugin.Name
+                SetupUrl       = Get-PluginSetupUrl -PluginName $plugin.Name
             }
             $pluginList += $pluginInfo
         }
         return $pluginList
-    } catch {
+    }
+    catch {
         Write-Error -Message "Failed to get DNS provider plugins: $($_.Exception.Message)"
     }
 }
@@ -701,19 +713,19 @@ function Get-PluginDescription {
     [CmdletBinding()]
     param([string]$PluginName)
     $descriptions = @{
-        'Cloudflare' = 'Cloudflare DNS - Global CDN and DNS provider'
-        'Route53' = 'Amazon Route 53 - AWS DNS service'
-        'Azure' = 'Microsoft Azure DNS - Azure cloud DNS'
+        'Cloudflare'    = 'Cloudflare DNS - Global CDN and DNS provider'
+        'Route53'       = 'Amazon Route 53 - AWS DNS service'
+        'Azure'         = 'Microsoft Azure DNS - Azure cloud DNS'
         'GoogleDomains' = 'Google Cloud DNS - Google cloud DNS service'
-        'DigitalOcean' = 'DigitalOcean DNS - Simple cloud DNS'
-        'DNSMadeEasy' = 'DNS Made Easy - DNS provider'
-        'Namecheap' = 'Namecheap DNS - Domain registrar DNS'
-        'GoDaddy' = 'GoDaddy DNS - Domain registrar DNS'
-        'Linode' = 'Linode DNS - Cloud hosting DNS'
-        'Vultr' = 'Vultr DNS - Cloud hosting DNS'
-        'Hetzner' = 'Hetzner DNS - German cloud provider DNS'
-        'OVH' = 'OVH DNS - European cloud provider DNS'
-        'Manual' = 'Manual DNS - Requires manual TXT record creation'
+        'DigitalOcean'  = 'DigitalOcean DNS - Simple cloud DNS'
+        'DNSMadeEasy'   = 'DNS Made Easy - DNS provider'
+        'Namecheap'     = 'Namecheap DNS - Domain registrar DNS'
+        'GoDaddy'       = 'GoDaddy DNS - Domain registrar DNS'
+        'Linode'        = 'Linode DNS - Cloud hosting DNS'
+        'Vultr'         = 'Vultr DNS - Cloud hosting DNS'
+        'Hetzner'       = 'Hetzner DNS - German cloud provider DNS'
+        'OVH'           = 'OVH DNS - European cloud provider DNS'
+        'Manual'        = 'Manual DNS - Requires manual TXT record creation'
     }
     return $descriptions[$PluginName] ?? "DNS provider plugin: $PluginName"
 }
@@ -722,18 +734,18 @@ function Get-PluginSetupUrl {
     [CmdletBinding()]
     param([string]$PluginName)
     $setupUrls = @{
-        'Cloudflare' = 'https://dash.cloudflare.com/profile/api-tokens'
-        'Route53' = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html'
-        'Azure' = 'https://docs.microsoft.com/en-us/azure/dns/'
+        'Cloudflare'    = 'https://dash.cloudflare.com/profile/api-tokens'
+        'Route53'       = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html'
+        'Azure'         = 'https://docs.microsoft.com/en-us/azure/dns/'
         'GoogleDomains' = 'https://cloud.google.com/dns/docs'
-        'DigitalOcean' = 'https://cloud.digitalocean.com/account/api/tokens'
-        'DNSMadeEasy' = 'https://cp.dnsmadeeasy.com/account/info'
-        'Namecheap' = 'https://ap.www.namecheap.com/settings/tools/apiaccess/'
-        'GoDaddy' = 'https://developer.godaddy.com/keys'
-        'Linode' = 'https://cloud.linode.com/profile/tokens'
-        'Vultr' = 'https://my.vultr.com/settings/#settingsapi'
-        'Hetzner' = 'https://dns.hetzner.com/settings/api-token'
-        'OVH' = 'https://eu.api.ovh.com/createToken/'
+        'DigitalOcean'  = 'https://cloud.digitalocean.com/account/api/tokens'
+        'DNSMadeEasy'   = 'https://cp.dnsmadeeasy.com/account/info'
+        'Namecheap'     = 'https://ap.www.namecheap.com/settings/tools/apiaccess/'
+        'GoDaddy'       = 'https://developer.godaddy.com/keys'
+        'Linode'        = 'https://cloud.linode.com/profile/tokens'
+        'Vultr'         = 'https://my.vultr.com/settings/#settingsapi'
+        'Hetzner'       = 'https://dns.hetzner.com/settings/api-token'
+        'OVH'           = 'https://eu.api.ovh.com/createToken/'
     }
     return $setupUrls[$PluginName]
 }
@@ -761,7 +773,7 @@ function Test-DNSPropagation {
             $dnsResult = Invoke-WithRetry -ScriptBlock {
                 Resolve-DnsName -Name $dnsName -Type TXT -ErrorAction Stop
             } -MaxAttempts 3 -InitialDelaySeconds 5 `
-              -OperationName "DNS TXT record lookup for $dnsName"
+                -OperationName "DNS TXT record lookup for $dnsName"
             if ($dnsResult.Strings -contains $expectedValue) {
                 Write-ProgressHelper -Activity "DNS Propagation Check" -Status "Record found!" -PercentComplete 100
                 Write-Log "DNS TXT record found for $dnsName`: $($dnsResult.Strings)"
@@ -774,7 +786,8 @@ function Test-DNSPropagation {
                     -PercentComplete $percentComplete
                 Start-Sleep -Seconds $delaySeconds
             }
-        } catch {
+        }
+        catch {
             Write-Verbose "DNS lookup failed for $dnsName`: $($_.Exception.Message)"
             if ($attempt -lt $maxAttempts) {
                 Start-Sleep -Seconds $delaySeconds
@@ -805,11 +818,13 @@ function Test-DNSPropagationMultiple {
             if ($result.Strings -contains $expectedValue) {
                 Write-Information -MessageData " ✓ FOUND" -InformationAction Continue
                 $results += @{ Server = $server; Status = "Found"; Value = $result.Strings -join ', ' }
-            } else {
+            }
+            else {
                 Write-Error -Message " ✗ NOT FOUND"
                 $results += @{ Server = $server; Status = "Not Found"; Value = $result.Strings -join ', ' }
             }
-        } catch {
+        }
+        catch {
             Write-Error -Message " ✗ ERROR"
             $results += @{ Server = $server; Status = "Error"; Value = $_.Exception.Message }
         }
@@ -891,19 +906,19 @@ function Get-HostingProviderSuggestion {
     }
     # Common hosting provider patterns
     $hostingPatterns = @{
-        "dnspod.com" = "DNSPod (Tencent Cloud) - Popular in China. May need manual configuration."
-        "dns.com" = "DNS.com service - May need manual configuration."
-        "cloudns.net" = "ClouDNS service - May have API available."
-        "zoneedit.com" = "ZoneEdit DNS service - May need manual configuration."
-        "afraid.org" = "FreeDNS (afraid.org) - Free DNS service, may need manual configuration."
-        "wordpress.com" = "WordPress.com hosting - May need manual configuration."
-        "github.io" = "GitHub Pages - Requires manual DNS configuration."
-        "netlify.com" = "Netlify hosting - May have API available."
-        "vercel.com" = "Vercel hosting - May have API available."
-        "shopify.com" = "Shopify hosting - May need manual configuration."
+        "dnspod.com"      = "DNSPod (Tencent Cloud) - Popular in China. May need manual configuration."
+        "dns.com"         = "DNS.com service - May need manual configuration."
+        "cloudns.net"     = "ClouDNS service - May have API available."
+        "zoneedit.com"    = "ZoneEdit DNS service - May need manual configuration."
+        "afraid.org"      = "FreeDNS (afraid.org) - Free DNS service, may need manual configuration."
+        "wordpress.com"   = "WordPress.com hosting - May need manual configuration."
+        "github.io"       = "GitHub Pages - Requires manual DNS configuration."
+        "netlify.com"     = "Netlify hosting - May have API available."
+        "vercel.com"      = "Vercel hosting - May have API available."
+        "shopify.com"     = "Shopify hosting - May need manual configuration."
         "squarespace.com" = "Squarespace hosting - May need manual configuration."
-        "wix.com" = "Wix hosting - May need manual configuration."
-        "hubspot.com" = "HubSpot hosting - May need manual configuration."
+        "wix.com"         = "Wix hosting - May need manual configuration."
+        "hubspot.com"     = "HubSpot hosting - May need manual configuration."
     }
     foreach ($ns in $NSRecords) {
         foreach ($pattern in $hostingPatterns.Keys) {
@@ -915,6 +930,359 @@ function Get-HostingProviderSuggestion {
     }
     return $suggestions
 }
+
+# Function to test DNS provider API connectivity
+function Test-DNSProviderAPI {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$ProviderName,
+        [Parameter()]
+        [hashtable]$Credentials = @{},
+        [Parameter()]
+        [string]$TestDomain,
+        [Parameter()]
+        [int]$TimeoutSeconds = 30
+    )
+    
+    Write-Log "Testing API connectivity for DNS provider: $ProviderName" -Level 'Info'
+    
+    try {
+        # Provider-specific API health checks
+        $testResult = switch ($ProviderName) {
+            'Cloudflare' { Test-CloudflareAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'AWS' { Test-Route53API -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'Azure' { Test-AzureDNSAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'Google' { Test-GoogleCloudDNSAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'DigitalOcean' { Test-DigitalOceanAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'Combell' { Test-CombellAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'Namecheap' { Test-NamecheapAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            'GoDaddy' { Test-GoDaddyAPI -Credentials $Credentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds }
+            default { Test-GenericDNSProvider -ProviderName $ProviderName -Credentials $Credentials -TestDomain $TestDomain }
+        }
+        
+        Write-Log "API connectivity test completed for $ProviderName`: $($testResult.Status)" -Level $testResult.LogLevel
+        return $testResult
+        
+    }
+    catch {
+        $errorMsg = "Failed to test DNS provider API connectivity: $($_.Exception.Message)"
+        Write-Log $errorMsg -Level 'Error'
+        return @{
+            Provider  = $ProviderName
+            Status    = 'Error'
+            Success   = $false
+            Message   = $errorMsg
+            Details   = @{}
+            LogLevel  = 'Error'
+            Timestamp = Get-Date
+        }
+    }
+}
+
+# Test Cloudflare API connectivity
+function Test-CloudflareAPI {
+    [CmdletBinding()]
+    param (
+        [hashtable]$Credentials,
+        [string]$TestDomain,
+        [int]$TimeoutSeconds = 30
+    )
+    
+    $apiToken = $Credentials.CFToken
+    if (-not $apiToken) {
+        return @{
+            Provider  = 'Cloudflare'
+            Status    = 'Missing Credentials'
+            Success   = $false
+            Message   = 'Cloudflare API token not provided'
+            Details   = @{ RequiredCredentials = @('CFToken') }
+            LogLevel  = 'Warning'
+            Timestamp = Get-Date
+        }
+    }
+    
+    try {
+        $headers = @{
+            'Authorization' = "Bearer $apiToken"
+            'Content-Type'  = 'application/json'
+        }
+        
+        # Test API connectivity by fetching user details
+        $response = Invoke-RestMethod -Uri 'https://api.cloudflare.com/client/v4/user' -Headers $headers -TimeoutSec $TimeoutSeconds
+        
+        if ($response.success) {
+            $details = @{
+                UserEmail = $response.result.email
+                UserID    = $response.result.id
+                APIStatus = 'Active'
+            }
+            
+            # If test domain is provided, check zone access
+            if ($TestDomain) {
+                try {
+                    $zoneResponse = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/zones?name=$TestDomain" -Headers $headers -TimeoutSec $TimeoutSeconds
+                    if ($zoneResponse.success -and $zoneResponse.result.Count -gt 0) {
+                        $details.ZoneAccess = 'Available'
+                        $details.ZoneID = $zoneResponse.result[0].id
+                    }
+                    else {
+                        $details.ZoneAccess = 'Not Found'
+                    }
+                }
+                catch {
+                    $details.ZoneAccess = "Error: $($_.Exception.Message)"
+                }
+            }
+            
+            return @{
+                Provider  = 'Cloudflare'
+                Status    = 'Connected'
+                Success   = $true
+                Message   = 'API connectivity confirmed'
+                Details   = $details
+                LogLevel  = 'Success'
+                Timestamp = Get-Date
+            }
+        }
+        else {
+            return @{
+                Provider  = 'Cloudflare'
+                Status    = 'API Error'
+                Success   = $false
+                Message   = "API returned error: $($response.errors -join ', ')"
+                Details   = @{ Errors = $response.errors }
+                LogLevel  = 'Error'
+                Timestamp = Get-Date
+            }
+        }
+    }
+    catch {
+        return @{
+            Provider  = 'Cloudflare'
+            Status    = 'Connection Failed'
+            Success   = $false
+            Message   = "Failed to connect to Cloudflare API: $($_.Exception.Message)"
+            Details   = @{ Exception = $_.Exception.Message }
+            LogLevel  = 'Error'
+            Timestamp = Get-Date
+        }
+    }
+}
+
+# Test Combell API connectivity
+function Test-CombellAPI {
+    [CmdletBinding()]
+    param (
+        [hashtable]$Credentials,
+        [string]$TestDomain,
+        [int]$TimeoutSeconds = 30
+    )
+    
+    $apiKey = $Credentials.CombellApiKey
+    $apiSecret = $Credentials.CombellApiSecret
+    
+    if (-not $apiKey -or -not $apiSecret) {
+        return @{
+            Provider  = 'Combell'
+            Status    = 'Missing Credentials'
+            Success   = $false
+            Message   = 'Combell API key and secret not provided'
+            Details   = @{ RequiredCredentials = @('CombellApiKey', 'CombellApiSecret') }
+            LogLevel  = 'Warning'
+            Timestamp = Get-Date
+        }
+    }
+    
+    try {
+        # Import Combell helper functions
+        $combellPluginPath = "$PSScriptRoot\..\Modules\Posh-ACME\Plugins\Combell.ps1"
+        if (Test-Path $combellPluginPath) {
+            . $combellPluginPath
+        }
+        else {
+            throw "Combell plugin not found at expected path"
+        }
+        
+        # Test API by fetching domains (with pagination)
+        $domains = Send-CombellHttpRequest GET "domains?take=5" $apiKey $apiSecret
+        
+        $details = @{
+            APIStatus    = 'Active'
+            DomainsFound = $domains.Count
+            TestMethod   = 'Domain List'
+        }
+        
+        # Test specific domain if provided
+        if ($TestDomain -and $domains) {
+            $matchingDomain = $domains | Where-Object { $_.domain_name -eq $TestDomain }
+            if ($matchingDomain) {
+                $details.DomainAccess = 'Available'
+                $details.DomainID = $matchingDomain.id
+                
+                # Test DNS record access
+                try {
+                    $dnsRecords = Send-CombellHttpRequest GET "dns/$TestDomain/records?take=1" $apiKey $apiSecret
+                    $details.DNSAccess = 'Available'
+                }
+                catch {
+                    $details.DNSAccess = "Limited: $($_.Exception.Message)"
+                }
+            }
+            else {
+                $details.DomainAccess = 'Not Found'
+            }
+        }
+        
+        return @{
+            Provider  = 'Combell'
+            Status    = 'Connected'
+            Success   = $true
+            Message   = 'API connectivity confirmed'
+            Details   = $details
+            LogLevel  = 'Success'
+            Timestamp = Get-Date
+        }
+        
+    }
+    catch {
+        return @{
+            Provider  = 'Combell'
+            Status    = 'Connection Failed'
+            Success   = $false
+            Message   = "Failed to connect to Combell API: $($_.Exception.Message)"
+            Details   = @{ Exception = $_.Exception.Message }
+            LogLevel  = 'Error'
+            Timestamp = Get-Date
+        }
+    }
+}
+
+# Test Route53 API connectivity
+function Test-Route53API {
+    [CmdletBinding()]
+    param (
+        [hashtable]$Credentials,
+        [string]$TestDomain,
+        [int]$TimeoutSeconds = 30
+    )
+    
+    $accessKey = $Credentials.AWSAccessKeyId
+    $secretKey = $Credentials.AWSSecretAccessKey
+    
+    if (-not $accessKey -or -not $secretKey) {
+        return @{
+            Provider  = 'AWS Route53'
+            Status    = 'Missing Credentials'
+            Success   = $false
+            Message   = 'AWS access key and secret key not provided'
+            Details   = @{ RequiredCredentials = @('AWSAccessKeyId', 'AWSSecretAccessKey') }
+            LogLevel  = 'Warning'
+            Timestamp = Get-Date
+        }
+    }
+    
+    # This would require AWS SDK or custom implementation
+    # For now, return a basic test result
+    return @{
+        Provider  = 'AWS Route53'
+        Status    = 'Test Not Implemented'
+        Success   = $false
+        Message   = 'Route53 API testing requires AWS SDK integration'
+        Details   = @{ Note = 'Implement using AWS PowerShell module or REST API calls' }
+        LogLevel  = 'Warning'
+        Timestamp = Get-Date
+    }
+}
+
+# Generic DNS provider test
+function Test-GenericDNSProvider {
+    [CmdletBinding()]
+    param (
+        [string]$ProviderName,
+        [hashtable]$Credentials,
+        [string]$TestDomain
+    )
+    
+    return @{
+        Provider  = $ProviderName
+        Status    = 'Unknown Provider'
+        Success   = $false
+        Message   = "No specific API test available for $ProviderName"
+        Details   = @{ 
+            Note                = 'Consider implementing provider-specific API test'
+            ProvidedCredentials = $Credentials.Keys -join ', '
+        }
+        LogLevel  = 'Warning'
+        Timestamp = Get-Date
+    }
+}
+
+# Function to run comprehensive DNS provider health check
+function Invoke-DNSProviderHealthCheck {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [string[]]$Providers = @(),
+        [Parameter()]
+        [string]$TestDomain,
+        [Parameter()]
+        [hashtable]$CredentialStore = @{},
+        [Parameter()]
+        [int]$TimeoutSeconds = 30
+    )
+    
+    Write-Log "Starting DNS provider health check" -Level 'Info'
+    $results = @()
+    
+    # If no providers specified, detect from current domain
+    if ($Providers.Count -eq 0 -and $TestDomain) {
+        $detectedProvider = Get-DNSProvider -Domain $TestDomain
+        if ($detectedProvider -and $detectedProvider.Name -ne 'Unknown') {
+            $Providers = @($detectedProvider.Name)
+        }
+    }
+    
+    # If still no providers, check common ones
+    if ($Providers.Count -eq 0) {
+        $Providers = @('Cloudflare', 'Combell', 'AWS', 'Azure', 'Google', 'DigitalOcean')
+        Write-Log "No providers specified, testing common providers" -Level 'Info'
+    }
+    
+    foreach ($provider in $Providers) {
+        Write-ProgressHelper -Activity "DNS Health Check" -Status "Testing $provider..." -PercentComplete (($results.Count / $Providers.Count) * 100)
+        
+        $providerCredentials = if ($CredentialStore.ContainsKey($provider)) {
+            $CredentialStore[$provider]
+        }
+        else {
+            @{}
+        }
+        
+        $testResult = Test-DNSProviderAPI -ProviderName $provider -Credentials $providerCredentials -TestDomain $TestDomain -TimeoutSeconds $TimeoutSeconds
+        $results += $testResult
+    }
+    
+    Write-Progress -Activity "DNS Health Check" -Completed
+    
+    # Generate summary report
+    $successCount = ($results | Where-Object { $_.Success }).Count
+    $totalCount = $results.Count
+    
+    Write-Log "DNS provider health check completed: $successCount/$totalCount providers accessible" -Level 'Info'
+    
+    return @{
+        Summary = @{
+            TotalProviders        = $totalCount
+            SuccessfulConnections = $successCount
+            FailedConnections     = $totalCount - $successCount
+            TestDomain            = $TestDomain
+            Timestamp             = Get-Date
+        }
+        Results = $results
+    }
+}
+
 #endregion
 
 

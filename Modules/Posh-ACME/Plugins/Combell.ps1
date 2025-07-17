@@ -22,7 +22,7 @@ function Add-DnsTxt {
     $cmdletName = "Add-DnsTxt"
     $zoneName = Find-CombellZone $RecordName $ApiKey $ApiSecret
     Write-Verbose "${cmdletName}: Find domain '$zoneName' for record '$RecordName' - OK"
-    $relativeRecordName = ($RecordName -ireplace [regex]::Escape($zoneName), [string]::Empty).TrimEnd('.')
+    $relativeRecordName = $RecordName -ireplace "\.?$([regex]::Escape($zoneName.TrimEnd('.')))$",''
     $txtRecords = Get-CombellTxtRecords $zoneName $relativeRecordName $TxtValue $ApiKey $ApiSecret
     $numberOfTxtRecords = $txtRecords.Length
 
@@ -95,7 +95,7 @@ function Remove-DnsTxt {
     $cmdletName = "Remove-DnsTxt"
     $zoneName = Find-CombellZone $RecordName $ApiKey $ApiSecret
     Write-Verbose "${cmdletName}: Find domain '$zoneName' for record '$RecordName' - OK"
-    $relativeRecordName = ($RecordName -ireplace [regex]::Escape($zoneName), [string]::Empty).TrimEnd('.')
+    $relativeRecordName = $RecordName -ireplace "\.?$([regex]::Escape($zoneName.TrimEnd('.')))$",''
     $txtRecords = Get-CombellTxtRecords $zoneName $relativeRecordName $TxtValue $ApiKey $ApiSecret
     $numberOfTxtRecords = $txtRecords.Length
 
@@ -188,20 +188,8 @@ function Find-CombellZone {
         return $script:CombellRecordZones.$RecordName
     }
 
-    # Not specifying the 'take' query parameter defaults the result set to a maximum 25 items (situation on 30
-    # September 2021). It is not clear from the documentation how you can get all domains in a single request, so I'm
-    # defaulting here to a 'take' parameter value of '1000'.
-    # If you find a better solution, feel free to submit an issue.
-    # See https://api.combell.com/v2/documentation#operation/Domains for more information.
-    # - Steven Volckaert, 30 September 2021.
-    # TODO Although undocumented, it appears it might be possible to retrieve the total number of domains from some
-    #      custom HTTP response headers. So: Consider removing the 'take' query parameter, which will default back to
-    #      maximum 25 items per response, and sending addtional HTTP requests if the HTTP header(s) indicate that more
-    #      domains exist.
-    #      Implementing this requires further investigation though (start by reading
-    #      https://api.combell.com/v2/documentation#section/Conventions/Pagination), so if you need this, feel free to
-    #      submit a pull request or an issue - Steven Volckaert, 5 October 2021.   
-    $zones = Send-CombellHttpRequest GET "domains?take=1000" $ApiKey $ApiSecret;
+    # Get all domains using improved pagination
+    $zones = Get-CombellDomainsWithPagination $ApiKey $ApiSecret
 
     # We need to find the deepest sub-zone that can hold the record and add it there, except if there is only the apex
     # zone. So for a $RecordName like _acme-challenge.site1.sub1.sub2.example.com, we need to search the zone from
@@ -333,5 +321,145 @@ function Send-CombellHttpRequest {
         $Stopwatch.Stop()
         Write-Error "$Method $uri - FAILED ($($Stopwatch.ElapsedMilliseconds) ms) - $($_)"
         throw
+    }
+}
+
+# Enhanced domain retrieval with pagination and caching
+function Get-CombellDomainsWithPagination {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ApiKey,
+        [Parameter(Mandatory)]
+        [string]$ApiSecret,
+        [Parameter()]
+        [int]$PageSize = 100,
+        [Parameter()]
+        [int]$CacheExpiryMinutes = 15
+    )
+
+    # Check cache first
+    $cacheKey = "CombellDomains_$ApiKey"
+    if ($script:CombellDomainCache -and $script:CombellDomainCache.ContainsKey($cacheKey)) {
+        $cached = $script:CombellDomainCache[$cacheKey]
+        if ((Get-Date) -lt $cached.ExpiryTime) {
+            Write-Verbose "Using cached domain list ($($cached.Domains.Count) domains)"
+            return $cached.Domains
+        } else {
+            Write-Verbose "Domain cache expired, refreshing..."
+            $script:CombellDomainCache.Remove($cacheKey)
+        }
+    }
+
+    Write-Verbose "Retrieving all domains with pagination (page size: $PageSize)"
+    
+    $allDomains = @()
+    $skip = 0
+    $hasMorePages = $true
+    $pageNumber = 1
+
+    while ($hasMorePages) {
+        try {
+            Write-Verbose "Fetching page $pageNumber (skip: $skip, take: $PageSize)"
+            
+            $uri = "domains?skip=$skip&take=$PageSize"
+            $response = Send-CombellHttpRequest GET $uri $ApiKey $ApiSecret
+            
+            if ($response -and $response.Count -gt 0) {
+                $allDomains += $response
+                Write-Verbose "Page $pageNumber: Retrieved $($response.Count) domains"
+                
+                # Check if we got fewer results than requested (indicates last page)
+                if ($response.Count -lt $PageSize) {
+                    $hasMorePages = $false
+                    Write-Verbose "Last page reached (received $($response.Count) < $PageSize)"
+                } else {
+                    $skip += $PageSize
+                    $pageNumber++
+                }
+            } else {
+                $hasMorePages = $false
+                Write-Verbose "No more domains found"
+            }
+            
+            # Safety check to prevent infinite loops
+            if ($pageNumber -gt 1000) {
+                Write-Warning "Pagination safety limit reached (1000 pages). Stopping domain retrieval."
+                break
+            }
+            
+        } catch {
+            Write-Error "Failed to retrieve domains on page $pageNumber : $($_.Exception.Message)"
+            throw
+        }
+    }
+
+    Write-Verbose "Total domains retrieved: $($allDomains.Count)"
+
+    # Cache the results
+    if (-not $script:CombellDomainCache) {
+        $script:CombellDomainCache = @{}
+    }
+    
+    $script:CombellDomainCache[$cacheKey] = @{
+        Domains = $allDomains
+        ExpiryTime = (Get-Date).AddMinutes($CacheExpiryMinutes)
+        RetrievedAt = Get-Date
+    }
+
+    return $allDomains
+}
+
+# Function to clear domain cache (useful for testing or forcing refresh)
+function Clear-CombellDomainCache {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$ApiKey
+    )
+    
+    if ($script:CombellDomainCache) {
+        if ($ApiKey) {
+            $cacheKey = "CombellDomains_$ApiKey"
+            if ($script:CombellDomainCache.ContainsKey($cacheKey)) {
+                $script:CombellDomainCache.Remove($cacheKey)
+                Write-Verbose "Cleared domain cache for specific API key"
+            }
+        } else {
+            $script:CombellDomainCache.Clear()
+            Write-Verbose "Cleared all domain cache entries"
+        }
+    }
+}
+
+# Function to get cache statistics
+function Get-CombellCacheInfo {
+    [CmdletBinding()]
+    param()
+    
+    if (-not $script:CombellDomainCache) {
+        return @{
+            CacheExists = $false
+            EntryCount = 0
+            Entries = @()
+        }
+    }
+    
+    $entries = @()
+    foreach ($key in $script:CombellDomainCache.Keys) {
+        $entry = $script:CombellDomainCache[$key]
+        $entries += @{
+            Key = $key
+            DomainCount = $entry.Domains.Count
+            RetrievedAt = $entry.RetrievedAt
+            ExpiryTime = $entry.ExpiryTime
+            IsExpired = (Get-Date) -gt $entry.ExpiryTime
+        }
+    }
+    
+    return @{
+        CacheExists = $true
+        EntryCount = $script:CombellDomainCache.Count
+        Entries = $entries
     }
 }

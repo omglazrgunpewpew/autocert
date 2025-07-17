@@ -90,18 +90,59 @@ function Invoke-BuildValidation {
 
     try {
         $settingsPath = Join-Path $PSScriptRoot '..\tools\PSScriptAnalyzerSettings.psd1'
-        $analyzerParams = @{
-            Path     = Join-Path $PSScriptRoot '..'
-            Recurse  = $true
-            Settings = $settingsPath
+        
+        # Check if settings file exists
+        if (-not (Test-Path $settingsPath)) {
+            Write-StatusMessage "⚠️  PSScriptAnalyzer settings file not found at $settingsPath" -Type Warning
+            $settingsPath = $null
         }
+        
+        $rootPath = Join-Path $PSScriptRoot '..'
+        
+        # Get all PowerShell files to analyze (exclude certain directories)
+        $excludePaths = @('Modules\Posh-ACME', '.git', 'bin', 'obj')
+        $psFiles = Get-ChildItem -Path $rootPath -Recurse -Include '*.ps1', '*.psm1', '*.psd1' |
+                   Where-Object { 
+                       $exclude = $false
+                       foreach ($excludePath in $excludePaths) {
+                           if ($_.FullName -like "*$excludePath*") {
+                               $exclude = $true
+                               break
+                           }
+                       }
+                       -not $exclude
+                   }
+        
+        Write-StatusMessage "Analyzing $($psFiles.Count) PowerShell files..." -Type Info
+        
+        # Analyze files individually to avoid path conversion issues
+        $allIssues = @()
+        
+        foreach ($file in $psFiles) {
+            try {
+                $analyzerParams = @{
+                    Path = $file.FullName
+                }
+                
+                # Add settings only if file exists
+                if ($settingsPath) {
+                    $analyzerParams.Settings = $settingsPath
+                }
 
-        if ($Fix) {
-            $analyzerParams.Fix = $true
-            Write-StatusMessage "Auto-fix mode enabled" -Type Warning
+                if ($Fix) {
+                    $analyzerParams.Fix = $true
+                }
+
+                $fileIssues = Invoke-ScriptAnalyzer @analyzerParams
+                if ($fileIssues) {
+                    $allIssues += $fileIssues
+                }
+            } catch {
+                Write-StatusMessage "Warning: Could not analyze $($file.Name): $($_.Exception.Message)" -Type Warning
+            }
         }
-
-        $issues = Invoke-ScriptAnalyzer @analyzerParams
+        
+        $issues = $allIssues
         $validationResults.PSScriptAnalyzer.Issues = $issues.Count
         $validationResults.PSScriptAnalyzer.Details = $issues
 
@@ -148,10 +189,16 @@ function Invoke-BuildValidation {
     if (-not $SkipTests) {
         Write-StatusMessage "`n🧪 Running Pester tests..." -Type Header
 
+        # Set testing environment variables to prevent module updates
+        $env:AUTOCERT_TESTING_MODE = $true
+        $env:POSHACME_SKIP_UPGRADE_CHECK = $true
+
         try {
             # Look for tests in the parent directory (project root)
             $testPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'Tests'
             if (Test-Path $testPath) {
+                Write-StatusMessage "Using repository's Posh-ACME module (testing mode)" -Type Info
+                
                 # Check Pester version and use appropriate configuration
                 $pesterModule = Get-Module -ListAvailable -Name Pester | Sort-Object Version -Descending | Select-Object -First 1
 
@@ -217,6 +264,11 @@ function Invoke-BuildValidation {
         catch {
             Write-StatusMessage "❌ Pester tests failed: $($_.Exception.Message)" -Type Error
             $validationResults.Tests.Passed = $false
+        }
+        finally {
+            # Clean up testing environment variables
+            Remove-Item env:AUTOCERT_TESTING_MODE -ErrorAction SilentlyContinue
+            Remove-Item env:POSHACME_SKIP_UPGRADE_CHECK -ErrorAction SilentlyContinue
         }
     }
     else {

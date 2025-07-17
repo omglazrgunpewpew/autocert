@@ -36,6 +36,8 @@ function Add-DnsTxt {
         [string]$AZPfxPass,
         [Parameter(ParameterSetName='Token',Mandatory)]
         [string]$AZAccessToken,
+        [Parameter(ParameterSetName='TokenSecure',Mandatory)]
+        [securestring]$AZAccessTokenSecure,
         [Parameter(ParameterSetName='IMDS',Mandatory)]
         [switch]$AZUseIMDS,
         [ValidateSet('AzureCloud', 'AzureUSGovernment', 'AzureGermanCloud', 'AzureChinaCloud')]
@@ -121,7 +123,10 @@ function Add-DnsTxt {
         (DEPRECATED) The export password for the PFX file specified by AZCertPfx.
 
     .PARAMETER AZAccessToken
-        An existing Azure access token (JWT) to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
+        An existing Azure access token (JWT) string to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
+
+    .PARAMETER AZAccessTokenSecure
+        An existing Azure access token (JWT) SecureString to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
 
     .PARAMETER AZUseIMDS
         If specified, the module will attempt to authenticate using the Azure Instance Metadata Service (IMDS). This will only work if the system is running within Azure and has been assigned a Managed Service Identity (MSI).
@@ -196,6 +201,8 @@ function Remove-DnsTxt {
         [string]$AZPfxPass,
         [Parameter(ParameterSetName='Token',Mandatory)]
         [string]$AZAccessToken,
+        [Parameter(ParameterSetName='TokenSecure',Mandatory)]
+        [securestring]$AZAccessTokenSecure,
         [Parameter(ParameterSetName='IMDS',Mandatory)]
         [switch]$AZUseIMDS,
         [ValidateSet('AzureCloud', 'AzureUSGovernment', 'AzureGermanCloud', 'AzureChinaCloud')]
@@ -292,7 +299,10 @@ function Remove-DnsTxt {
         (DEPRECATED) The export password for the PFX file specified by AZCertPfx.
 
     .PARAMETER AZAccessToken
-        An existing Azure access token (JWT) to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
+        An existing Azure access token (JWT) string to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
+
+    .PARAMETER AZAccessTokenSecure
+        An existing Azure access token (JWT) SecureString to use for authorization when modifying TXT records. This is useful only for short lived instances or when the Azure authentication logic lives outside the module because access tokens are only valid for 1 hour.
 
     .PARAMETER AZUseIMDS
         If specified, the module will attempt to authenticate using the Azure Instance Metadata Service (IMDS). This will only work if the system is running within Azure and has been assigned a Managed Service Identity (MSI).
@@ -420,6 +430,8 @@ function Connect-AZTenant {
         [string]$AZPfxPass,
         [Parameter(ParameterSetName='Token',Mandatory)]
         [string]$AZAccessToken,
+        [Parameter(ParameterSetName='TokenSecure',Mandatory)]
+        [securestring]$AZAccessTokenSecure,
         [Parameter(ParameterSetName='IMDS',Mandatory)]
         [switch]$AZUseIMDS,
         [ValidateSet('AzureCloud', 'AzureUSGovernment', 'AzureGermanCloud', 'AzureChinaCloud')]
@@ -433,7 +445,11 @@ function Connect-AZTenant {
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/v1-oauth2-client-creds-grant-flow
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-certificate-credentials
 
-    if ('Token' -eq $PSCmdlet.ParameterSetName) {
+    if ('TokenSecure' -eq $PSCmdlet.ParameterSetName) {
+        # convert the secure token to a normal string so we can parse it
+        $AZAccessToken = [pscredential]::new('a',$AZAccessTokenSecure).GetNetworkCredential().Password
+    }
+    if ('Token','TokenSecure' -contains $PSCmdlet.ParameterSetName) {
         # for explicit token payloads, always overwrite the cached token value
         Write-Debug "Attempting to parse explicit access token"
         $token = ConvertFrom-AccessToken $AZAccessToken
@@ -545,15 +561,42 @@ function Connect-AZTenant {
     } elseif ($PSCmdlet.ParameterSetName -in 'CertThumbprint','CertFile','DeprecatedCertFile') {
 
         if ('CertThumbprint' -eq $PSCmdlet.ParameterSetName) {
-            Write-Debug "Looking for cert thumbprint $AZCertThumbprint"
             # Look up the cert based on the thumbprint
-            # check CurrentUser first
-            if (-not ($cert = Get-Item "Cert:\CurrentUser\My\$AZCertThumbprint" -EA Ignore)) {
-                # check LocalMachine
-                if (-not ($cert = Get-Item "Cert:\LocalMachine\My\$AZCertThumbprint" -EA Ignore)) {
-                    throw "Certificate with thumbprint $AZCertThumbprint not found in CurrentUser or LocalMachine stores."
+            $cert = $null
+
+            # check CurrentUser first using .NET instead of Cert:\ since the latter
+            # doesn't work on Linux
+            Write-Debug "Checking for cert thumbprint $AZCertThumbprint in CurrentUser store."
+            $cuStore = [Security.Cryptography.X509Certificates.X509Store]::new('My', 'CurrentUser')
+            try {
+                $cuStore.Open('ReadOnly')
+                $cert = $cuStore.Certificates.Find('FindByThumbprint', $AZCertThumbprint, $false)
+            } catch {
+                $PSCmdlet.WriteWarning($_)
+            } finally {
+                $cuStore.Close()
+            }
+
+            # check LocalMachine next. This works on Windows, and maybe on MacOS,
+            # but not on Linux as of PS 7.5.
+            # MethodInvocationException: Exception calling "Open" with "1" argument(s): "Unix LocalMachine X509Store is limited to the Root and CertificateAuthority stores."
+            if (-not $cert) {
+                Write-Debug "Checking for cert thumbprint $AZCertThumbprint in LocalMachine store."
+                $lmStore = [Security.Cryptography.X509Certificates.X509Store]::new('My', 'LocalMachine')
+                try {
+                    $lmStore.Open('ReadOnly')
+                    $cert = $lmStore.Certificates.Find('FindByThumbprint', $AZCertThumbprint, $false)
+                } catch {
+                    $PSCmdlet.WriteWarning($_)
+                } finally {
+                    $lmStore.Close()
                 }
             }
+
+            if (-not $cert) {
+                throw "Certificate with thumbprint $AZCertThumbprint not found in CurrentUser or LocalMachine stores."
+            }
+
         } else {
             Write-Debug "Looking for cert pfx $AZCertPfx"
             $AZCertPfx = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($AZCertPfx)
@@ -608,15 +651,7 @@ function Connect-AZTenant {
             throw "Private key invalid for certificate with thumbprint $($cert.Thumbprint)."
         }
         $privKey = $cert.PrivateKey
-        if ($privKey -isnot [Security.Cryptography.RSACryptoServiceProvider]) {
-            # On non-Windows, the private key ends up being of type RSAOpenSsl
-            # which for some reason doesn't allow reading of the KeySize attribute
-            # which then breaks New-Jws's internal validation checks. So we need
-            # to convert it to an RSACryptoServiceProvider object instead.
-            $keyParams = $privKey.ExportParameters($true)
-            $privKey = [Security.Cryptography.RSACryptoServiceProvider]::new()
-            $privKey.ImportParameters($keyParams)
-        }
+        Write-Debug "Private key is type $($privKey.GetType().FullName)"
 
         Write-Verbose "Authenticating with certificate based credential"
         $clientId = [uri]::EscapeDataString($AZAppUsername)
@@ -751,12 +786,13 @@ function Get-AZTxtRecord {
     )
 
     # parse the zone name from the zone id and strip it from $RecordName
-    # to get the relativeRecordSetName
+    # to get the relative name
     $zoneName = $ZoneID.Substring($ZoneID.LastIndexOf('/')+1)
-    $relName = ($RecordName -ireplace [regex]::Escape($zoneName), [string]::Empty).TrimEnd('.')
+    $relName = $RecordName -ireplace "\.?$([regex]::Escape($zoneName.TrimEnd('.')))$",''
     if ($relName -eq [string]::Empty) {
         $relName = '@'
     }
+    Write-Debug "zoneName = $zoneName, relName = $relName"
 
     $recID = "$ZoneID/TXT/$($relName)"
 

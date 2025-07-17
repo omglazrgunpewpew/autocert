@@ -3,48 +3,74 @@
         Ensures Posh-ACME is installed, up to date, and imported.
         Also defines a function to ensure the ACME server is set.
 #>
-# Check if Posh-ACME module is installed; if not, install it
-if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
-    Write-Host -Object "Posh-ACME module not found. Installing..."
+
+# Check if we're in testing mode (use repo's module) or should prevent updates
+$isTestingMode = $env:AUTOCERT_TESTING_MODE -or $env:POSHACME_SKIP_UPGRADE_CHECK
+$repoModulePath = Join-Path -Path $PSScriptRoot -ChildPath '..\Modules\Posh-ACME'
+
+if ($isTestingMode -and (Test-Path $repoModulePath)) {
+    # In testing mode, use the repo's module directly
+    Write-Verbose "Testing mode: Using Posh-ACME module from repository"
+    Write-Log "Testing mode: Using Posh-ACME module from repository" -Level 'Info'
+    
     try {
-        Install-Module -Name Posh-ACME -Scope CurrentUser -Force -ErrorAction Stop
-        Write-Host -Object "Posh-ACME module installed."
+        Import-Module $repoModulePath -Force -ErrorAction Stop
+        $version = (Get-Module Posh-ACME).Version
+        Write-Verbose "Loaded Posh-ACME version $version from repository"
+        Write-Log "Loaded Posh-ACME version $version from repository" -Level 'Info'
     } catch {
-        Write-Host -Object "Failed to install Posh-ACME module: $($_)" -ForegroundColor Red
+        Write-Host -Object "Failed to load Posh-ACME from repository: $($_)" -ForegroundColor Red
+        Write-Log "Failed to load Posh-ACME from repository: $($_)" -Level 'Error'
         Exit
     }
 } else {
-    # Check for updates only if not explicitly disabled (useful for CI/CD)
-    if (-not $env:POSHACME_SKIP_UPGRADE_CHECK) {
-        $currentVersion = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).Version
+    # Normal mode: Check installation and updates
+    
+    # Check if Posh-ACME module is installed; if not, install it
+    if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
+        Write-Host -Object "Posh-ACME module not found. Installing..."
         try {
-            $latestVersion = (Find-Module -Name Posh-ACME).Version
-            if ($currentVersion -lt $latestVersion) {
-                Write-Host -Object "`nA newer version of Posh-ACME is available. Updating..."
-                Update-Module -Name Posh-ACME -Force -ErrorAction Stop
-                Write-Host -Object "Posh-ACME module updated to version $latestVersion."
-            }
+            Install-Module -Name Posh-ACME -Scope CurrentUser -Force -ErrorAction Stop
+            Write-Host -Object "Posh-ACME module installed."
         } catch {
-            Write-Host -Object "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
+            Write-Host -Object "Failed to install Posh-ACME module: $($_)" -ForegroundColor Red
+            Exit
         }
     } else {
-        Write-Verbose "Posh-ACME update check skipped (POSHACME_SKIP_UPGRADE_CHECK is set)"
+        # Check for updates only if not explicitly disabled
+        if (-not $env:POSHACME_SKIP_UPGRADE_CHECK) {
+            $currentVersion = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).Version
+            try {
+                $latestVersion = (Find-Module -Name Posh-ACME).Version
+                if ($currentVersion -lt $latestVersion) {
+                    Write-Host -Object "`nA newer version of Posh-ACME is available. Updating..."
+                    Update-Module -Name Posh-ACME -Force -ErrorAction Stop
+                    Write-Host -Object "Posh-ACME module updated to version $latestVersion."
+                    
+                    # Update repository copy after successful update
+                    $modulePath = (Get-Module -Name Posh-ACME -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1).ModuleBase
+                    try {
+                        if (-not (Test-Path $repoModulePath)) {
+                            New-Item -ItemType Directory -Path $repoModulePath -Force | Out-Null
+                        }
+                        Copy-Item -Path $modulePath\* -Destination $repoModulePath -Recurse -Force
+                        Write-Log "Posh-ACME module updated in repository to version $latestVersion"
+                    } catch {
+                        Write-Host -Object "Failed to update repository copy: $($_)" -ForegroundColor Yellow
+                        Write-Log "Failed to update repository copy: $($_)" -Level 'Warning'
+                    }
+                }
+            } catch {
+                Write-Host -Object "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Verbose "Posh-ACME update check skipped (POSHACME_SKIP_UPGRADE_CHECK is set)"
+        }
     }
+    
+    # Import the system module
+    Import-Module Posh-ACME -Force
 }
-# Store a copy of the module inside the repository for offline use
-$modulePath = (Get-Module -Name Posh-ACME -ListAvailable | Select-Object -Last 1).ModuleBase
-$targetPath = Join-Path -Path $PSScriptRoot -ChildPath '..\Modules\Posh-ACME'
-try {
-    if (-not (Test-Path $targetPath)) {
-        New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
-    }
-    Copy-Item -Path $modulePath\* -Destination $targetPath -Recurse -Force
-    Write-Log "Posh-ACME module copied to $targetPath"
-} catch {
-    Write-Host -Object "Failed to copy Posh-ACME module: $($_)" -ForegroundColor Yellow
-    Write-Log "Failed to copy Posh-ACME module: $($_)" -Level 'Warning'
-}
-Import-Module Posh-ACME -Force
 function Initialize-ACMEServer {
     if (-not (Get-PAServer)) {
         Set-PAServer LE_PROD

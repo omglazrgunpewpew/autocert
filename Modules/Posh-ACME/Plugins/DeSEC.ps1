@@ -236,25 +236,25 @@ function Find-DeSECRRset {
     )
 
     Write-Verbose "Attempting to find hosted zone for $RecordName"
-    if (!($domain = Find-DeSECZone $RecordName $AuthHeader)) {
+    if (!($zoneName = Find-DeSECZone $RecordName $AuthHeader)) {
         throw "Unable to find deSEC hosted zone for $RecordName"
     }
 
-    $subname = ($RecordName -ireplace [regex]::Escape($domain), [string]::Empty).TrimEnd('.')
+    $subname = $RecordName -ireplace "\.?$([regex]::Escape($zoneName.TrimEnd('.')))$",''
 
     # .NET thinks all URLS are Windows filenames (no trailing dot)
     # replace trailing ... with escaped %2e%2e%2e
     # https://stackoverflow.com/questions/856885/httpwebrequest-to-url-with-dot-at-the-end
-    $recordUri = "/domains/$($domain)/rrsets/$($subname)%2e%2e%2e/TXT/"
+    $recordUri = "/domains/$($zoneName)/rrsets/$($subname)%2e%2e%2e/TXT/"
     Write-Debug "$RecordName has URI: $recordUri"
 
     # get existing record
     try {
         $rrset = Invoke-deSEC $recordUri $AuthHeader
-        return $rrset, $recordUri, $domain, $subname
+        return $rrset, $recordUri, $zoneName, $subname
     } catch {
         if (404 -eq $_.Exception.Response.StatusCode) {
-            return $null, $null, $domain, $subname
+            return $null, $null, $zoneName, $subname
         }
         throw
     }
@@ -280,7 +280,8 @@ function Find-DeSECZone {
 
     # get the list of available zones
     try {
-        $zones = (Invoke-deSEC "/domains/" $AuthHeader).name
+        $resp = Invoke-deSEC "/domains/" $AuthHeader
+        $zones = @($resp.name)
     } catch { throw }
 
     # Since the provider could be hosting both apex and sub-zones, we need to find the closest/deepest
@@ -328,17 +329,25 @@ function Invoke-DeSEC {
         Method = $Method
         Headers = $AuthHeader
         ErrorAction = 'Stop'
+        Verbose = $false
     }
+    Write-Debug "$($Method.ToString().ToUpper()) $($queryParams.Uri)"
+
     if ($Body) {
         $queryParams.ContentType = 'application/json'
         $queryParams.Body = $Body
+        Write-Debug $Body
     }
 
     $retryHeader = 'Retry-After'
     $retrySeconds = 30  # default in case the header is missing from the response
     do {
         $retry = $false
-        try { Invoke-RestMethod @queryParams @script:UseBasic }
+        try {
+            $resp = Invoke-WebRequest @queryParams @script:UseBasic
+            Write-Debug "Response: $($resp.Content)"
+            return ($resp.Content | ConvertFrom-Json -Depth 10)
+        }
         catch {
             # re-throw anything other than HTTP 429
             if (429 -ne $_.Exception.Response.StatusCode) {
