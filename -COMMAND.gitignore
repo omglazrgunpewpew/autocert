@@ -1,0 +1,69 @@
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
+
+# Test results
+TestResults.xml
+TestResults/
+
+# Debug files
+debug.log
+*.debug
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# PowerShell ISE profiles
+*.ps1.ise
+
+# IDE files
+.vscode/
+.vs/
+.idea/
+*.swp
+*.swo
+
+# Certificates and keys (security)
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+*.cer
+
+# Configuration files with sensitive data
+config.json
+secrets.json
+credentials.json
+
+# Runtime data directories
+data/
+logs/
+cache/
+temp/
+var/
+
+# Build and output directories
+bin/
+obj/
+out/
+dist/
+
+# Backup files
+backup/
+*.backup
+
+# Temporary summary and report files
+*SUMMARY*.md
+*_REPORT_*.md
+StyleGuideReport_*.html
+TestReport_*.html
+
+# Local development notes
+AGENT.md
+
+# Development and diagnostic tools (excluded from production)
+dev-tools/
