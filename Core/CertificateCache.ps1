@@ -3,7 +3,6 @@
     .SYNOPSIS
         Certificate caching system.
 #>
-
 #region Certificate Cache Functions
 # Function to get cache file path
 function Get-CacheFilePath {
@@ -18,7 +17,6 @@ function Get-CacheFilePath {
     }
     return Join-Path -Path $cacheDir -ChildPath "$($MainDomain.Replace('*', '_wild_')).json"
 }
-
 # Function to get cached certificate
 function Get-CachedPACertificate {
     [CmdletBinding()]
@@ -27,10 +25,8 @@ function Get-CachedPACertificate {
         [string]$MainDomain,
         [switch]$Force
     )
-
     Write-Debug "Attempting to retrieve certificate for $MainDomain"
     $cachePath = Get-CacheFilePath -MainDomain $MainDomain
-
     if (-not $Force -and (Test-Path $cachePath)) {
         try {
             $cacheData = Get-Content -Path $cachePath -Raw | ConvertFrom-Json
@@ -42,31 +38,26 @@ function Get-CachedPACertificate {
             Write-Debug "Cache read failed: $($_.Exception.Message)"
         }
     }
-
     Write-Verbose "Fetching fresh certificate for $MainDomain"
     try {
         $maxAttempts = 3
         $attempt = 1
         $lastError = $null
-
         while ($attempt -le $maxAttempts) {
             try {
                 $cert = Get-PACertificate -MainDomain $MainDomain -ErrorAction Stop
                 if ($null -eq $cert) {
                     throw "Get-PACertificate returned null"
                 }
-
                 # Save to cache with file lock handling
                 $cacheData = @{
                     Certificate = $cert
                     ExpiryTime = (Get-Date).AddMinutes(30).ToString('o')
                 }
-
                 Invoke-WithRetry -ScriptBlock {
                     $cacheData | ConvertTo-Json | Set-Content -Path $cachePath -Force
                 } -MaxAttempts 3 -InitialDelaySeconds 1 `
                   -OperationName "Cache write for $MainDomain"
-
                 return $cert
             } catch {
                 $lastError = $_
@@ -79,12 +70,11 @@ function Get-CachedPACertificate {
         }
         throw "Failed to retrieve certificate after $maxAttempts attempts: $($lastError.Exception.Message)"
     } catch {
-        Write-Error "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)"
+        Write-Error -Message "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)"
         Write-Log "Critical error retrieving certificate for ${MainDomain}: $($_.Exception.Message)" -Level 'Error'
         throw
     }
 }
-
 # Function to clear the certificate cache
 function Clear-CertificateCache {
     [CmdletBinding()]
@@ -96,7 +86,6 @@ function Clear-CertificateCache {
     }
     Write-Verbose "Certificate cache cleared"
 }
-
 # Function to get certificate PEM content
 function Get-CertificatePEMContent {
     [CmdletBinding()]
@@ -106,14 +95,12 @@ function Get-CertificatePEMContent {
         [Parameter()]
         [switch]$IncludeKey
     )
-
     $result = @{
         CertContent = $null
         KeyContent = $null
         Success = $false
         ErrorMessage = $null
     }
-
     try {
         # Get certificate content
         if ($Certificate.CertificatePEM) {
@@ -125,7 +112,6 @@ function Get-CertificatePEMContent {
         } else {
             throw "Unable to retrieve PEM content from certificate object."
         }
-
         # Get key content if requested
         if ($IncludeKey) {
             if ($Certificate.KeyFile) {
@@ -134,14 +120,13 @@ function Get-CertificatePEMContent {
                 throw "Unable to retrieve key content from certificate object."
             }
         }
-
         $result.Success = $true
     } catch {
         $result.ErrorMessage = $_.Exception.Message
-        Write-Error $result.ErrorMessage
+        Write-Error -Message $result.ErrorMessage
         Write-Log $result.ErrorMessage -Level 'Error'
     }
-
     return $result
 }
 #endregion
+

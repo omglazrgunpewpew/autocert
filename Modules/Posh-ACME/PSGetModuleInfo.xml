@@ -7,18 +7,33 @@
     </TN>
     <MS>
       <S N="Name">Posh-ACME</S>
-      <Version N="Version">4.25.1</Version>
+      <Version N="Version">4.29.2</Version>
       <S N="Type">Module</S>
       <S N="Description">ACME protocol client for obtaining certificates using Let's Encrypt (or other ACME compliant CA)</S>
       <S N="Author">Ryan Bolger</S>
       <S N="CompanyName">rmbolger</S>
       <S N="Copyright">(c) 2018 Ryan Bolger. All rights reserved.</S>
-      <DT N="PublishedDate">2024-09-03T05:03:48-06:00</DT>
+      <DT N="PublishedDate">2025-07-15T15:34:14-06:00</DT>
       <Obj N="InstalledDate" RefId="1">
         <DT>2024-10-09T14:12:16.3670781-06:00</DT>
         <MS>
           <Obj N="DisplayHint" RefId="2">
             <TN RefId="1">
+              <T>Deserialized.Microsoft.PowerShell.Commands.DisplayHintType</T>
+              <T>Deserialized.System.Enum</T>
+              <T>Deserialized.System.ValueType</T>
+              <T>Deserialized.System.Object</T>
+            </TN>
+            <ToString>DateTime</ToString>
+            <I32>2</I32>
+          </Obj>
+        </MS>
+      </Obj>
+      <Obj N="UpdatedDate" RefId="3">
+        <DT>2025-07-16T12:57:04.100402-06:00</DT>
+        <MS>
+          <Obj N="DisplayHint" RefId="4">
+            <TN RefId="2">
               <T>Microsoft.PowerShell.Commands.DisplayHintType</T>
               <T>System.Enum</T>
               <T>System.ValueType</T>
@@ -29,12 +44,11 @@
           </Obj>
         </MS>
       </Obj>
-      <Nil N="UpdatedDate" />
       <URI N="LicenseUri">https://github.com/rmbolger/Posh-ACME/blob/main/LICENSE</URI>
       <URI N="ProjectUri">https://github.com/rmbolger/Posh-ACME</URI>
       <Nil N="IconUri" />
-      <Obj N="Tags" RefId="3">
-        <TN RefId="2">
+      <Obj N="Tags" RefId="5">
+        <TN RefId="3">
           <T>System.Object[]</T>
           <T>System.Array</T>
           <T>System.Object</T>
@@ -52,16 +66,16 @@
           <S>PSEdition_Core</S>
         </LST>
       </Obj>
-      <Obj N="Includes" RefId="4">
-        <TN RefId="3">
+      <Obj N="Includes" RefId="6">
+        <TN RefId="4">
           <T>System.Collections.Hashtable</T>
           <T>System.Object</T>
         </TN>
         <DCT>
           <En>
-            <S N="Key">Function</S>
-            <Obj N="Value" RefId="5">
-              <TNRef RefId="2" />
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="7">
+              <TNRef RefId="3" />
               <LST>
                 <S>Complete-PAOrder</S>
                 <S>Export-PAAccountKey</S>
@@ -72,6 +86,7 @@
                 <S>Get-PAOrder</S>
                 <S>Get-PAPlugin</S>
                 <S>Get-PAPluginArgs</S>
+                <S>Get-PAProfile</S>
                 <S>Get-PAServer</S>
                 <S>Install-PACertificate</S>
                 <S>Invoke-HttpChallengeListener</S>
@@ -99,23 +114,27 @@
           </En>
           <En>
             <S N="Key">RoleCapability</S>
-            <Obj N="Value" RefId="6">
-              <TNRef RefId="2" />
+            <Obj N="Value" RefId="8">
+              <TNRef RefId="3" />
               <LST />
             </Obj>
           </En>
           <En>
-            <S N="Key">DscResource</S>
-            <Ref N="Value" RefId="6" />
-          </En>
-          <En>
             <S N="Key">Cmdlet</S>
-            <Ref N="Value" RefId="6" />
+            <Ref N="Value" RefId="8" />
           </En>
           <En>
-            <S N="Key">Command</S>
-            <Obj N="Value" RefId="7">
-              <TNRef RefId="2" />
+            <S N="Key">Workflow</S>
+            <Ref N="Value" RefId="8" />
+          </En>
+          <En>
+            <S N="Key">DscResource</S>
+            <Ref N="Value" RefId="8" />
+          </En>
+          <En>
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="9">
+              <TNRef RefId="3" />
               <LST>
                 <S>Complete-PAOrder</S>
                 <S>Export-PAAccountKey</S>
@@ -126,6 +145,7 @@
                 <S>Get-PAOrder</S>
                 <S>Get-PAPlugin</S>
                 <S>Get-PAPluginArgs</S>
+                <S>Get-PAProfile</S>
                 <S>Get-PAServer</S>
                 <S>Install-PACertificate</S>
                 <S>Invoke-HttpChallengeListener</S>
@@ -151,23 +171,19 @@
               </LST>
             </Obj>
           </En>
-          <En>
-            <S N="Key">Workflow</S>
-            <Ref N="Value" RefId="6" />
-          </En>
         </DCT>
       </Obj>
       <Nil N="PowerShellGetFormatVersion" />
-      <S N="ReleaseNotes">## 4.25.1 (2024-09-02)_x000D__x000A__x000D__x000A_* Fix Azure IMDS auth for Arc-enabled servers</S>
-      <Obj N="Dependencies" RefId="8">
-        <TNRef RefId="2" />
+      <S N="ReleaseNotes">## 4.29.2 (2025-07-15)_x000D__x000A__x000D__x000A_* Fixed param set resolution error with New-PACertificate when using CSRPath/CSRString params (#629)_x000D__x000A_* Added workaround for non-compliant order response from KeyFactor ACME provider (#626)_x000D__x000A_* Added additional logging to DuckDNS plugin (#628)_x000D__x000A_* Tweaked debug output for ACME responses for better human readability</S>
+      <Obj N="Dependencies" RefId="10">
+        <TNRef RefId="3" />
         <LST />
       </Obj>
       <S N="RepositorySourceLocation">https://www.powershellgallery.com/api/v2</S>
       <S N="Repository">PSGallery</S>
       <S N="PackageManagementProvider">NuGet</S>
-      <Obj N="AdditionalMetadata" RefId="9">
-        <TN RefId="4">
+      <Obj N="AdditionalMetadata" RefId="11">
+        <TN RefId="5">
           <T>System.Management.Automation.PSCustomObject</T>
           <T>System.Object</T>
         </TN>
@@ -175,29 +191,29 @@
           <S N="copyright">(c) 2018 Ryan Bolger. All rights reserved.</S>
           <S N="description">ACME protocol client for obtaining certificates using Let's Encrypt (or other ACME compliant CA)</S>
           <S N="requireLicenseAcceptance">False</S>
-          <S N="releaseNotes">## 4.25.1 (2024-09-02)_x000D__x000A__x000D__x000A_* Fix Azure IMDS auth for Arc-enabled servers</S>
+          <S N="releaseNotes">## 4.29.2 (2025-07-15)_x000D__x000A__x000D__x000A_* Fixed param set resolution error with New-PACertificate when using CSRPath/CSRString params (#629)_x000D__x000A_* Added workaround for non-compliant order response from KeyFactor ACME provider (#626)_x000D__x000A_* Added additional logging to DuckDNS plugin (#628)_x000D__x000A_* Tweaked debug output for ACME responses for better human readability</S>
           <S N="isLatestVersion">True</S>
           <S N="isAbsoluteLatestVersion">True</S>
-          <S N="versionDownloadCount">103117</S>
-          <S N="downloadCount">1998853</S>
-          <S N="packageSize">1930493</S>
-          <S N="published">9/3/2024 5:03:48 -06:00</S>
-          <S N="created">9/3/2024 5:03:48 -06:00</S>
-          <S N="lastUpdated">10/9/2024 20:10:00 -06:00</S>
-          <S N="tags">LetsEncrypt ssl tls certificates acme Linux Mac PSModule PSEdition_Desktop PSEdition_Core PSFunction_Complete-PAOrder PSCommand_Complete-PAOrder PSFunction_Export-PAAccountKey PSCommand_Export-PAAccountKey PSFunction_Get-KeyAuthorization PSCommand_Get-KeyAuthorization PSFunction_Get-PAAccount PSCommand_Get-PAAccount PSFunction_Get-PAAuthorization PSCommand_Get-PAAuthorization PSFunction_Get-PACertificate PSCommand_Get-PACertificate PSFunction_Get-PAOrder PSCommand_Get-PAOrder PSFunction_Get-PAPlugin PSCommand_Get-PAPlugin PSFunction_Get-PAPluginArgs PSCommand_Get-PAPluginArgs PSFunction_Get-PAServer PSCommand_Get-PAServer PSFunction_Install-PACertificate PSCommand_Install-PACertificate PSFunction_Invoke-HttpChallengeListener PSCommand_Invoke-HttpChallengeListener PSFunction_New-PAAccount PSCommand_New-PAAccount PSFunction_New-PACertificate PSCommand_New-PACertificate PSFunction_New-PAOrder PSCommand_New-PAOrder PSFunction_New-PAAuthorization PSCommand_New-PAAuthorization PSFunction_Publish-Challenge PSCommand_Publish-Challenge PSFunction_Remove-PAAccount PSCommand_Remove-PAAccount PSFunction_Remove-PAOrder PSCommand_Remove-PAOrder PSFunction_Remove-PAServer PSCommand_Remove-PAServer PSFunction_Revoke-PAAuthorization PSCommand_Revoke-PAAuthorization PSFunction_Revoke-PACertificate PSCommand_Revoke-PACertificate PSFunction_Save-Challenge PSCommand_Save-Challenge PSFunction_Send-ChallengeAck PSCommand_Send-ChallengeAck PSFunction_Set-PAAccount PSCommand_Set-PAAccount PSFunction_Set-PAOrder PSCommand_Set-PAOrder PSFunction_Set-PAServer PSCommand_Set-PAServer PSFunction_Submit-ChallengeValidation PSCommand_Submit-ChallengeValidation PSFunction_Submit-OrderFinalize PSCommand_Submit-OrderFinalize PSFunction_Submit-Renewal PSCommand_Submit-Renewal PSFunction_Unpublish-Challenge PSCommand_Unpublish-Challenge PSIncludes_Function</S>
+          <S N="versionDownloadCount">3238</S>
+          <S N="downloadCount">2807782</S>
+          <S N="packageSize">1947828</S>
+          <S N="published">7/15/2025 15:34:14 -06:00</S>
+          <S N="created">7/15/2025 15:34:14 -06:00</S>
+          <S N="lastUpdated">7/16/2025 18:50:00 -06:00</S>
+          <S N="tags">LetsEncrypt ssl tls certificates acme Linux Mac PSModule PSEdition_Desktop PSEdition_Core PSFunction_Complete-PAOrder PSCommand_Complete-PAOrder PSFunction_Export-PAAccountKey PSCommand_Export-PAAccountKey PSFunction_Get-KeyAuthorization PSCommand_Get-KeyAuthorization PSFunction_Get-PAAccount PSCommand_Get-PAAccount PSFunction_Get-PAAuthorization PSCommand_Get-PAAuthorization PSFunction_Get-PACertificate PSCommand_Get-PACertificate PSFunction_Get-PAOrder PSCommand_Get-PAOrder PSFunction_Get-PAPlugin PSCommand_Get-PAPlugin PSFunction_Get-PAPluginArgs PSCommand_Get-PAPluginArgs PSFunction_Get-PAProfile PSCommand_Get-PAProfile PSFunction_Get-PAServer PSCommand_Get-PAServer PSFunction_Install-PACertificate PSCommand_Install-PACertificate PSFunction_Invoke-HttpChallengeListener PSCommand_Invoke-HttpChallengeListener PSFunction_New-PAAccount PSCommand_New-PAAccount PSFunction_New-PACertificate PSCommand_New-PACertificate PSFunction_New-PAOrder PSCommand_New-PAOrder PSFunction_New-PAAuthorization PSCommand_New-PAAuthorization PSFunction_Publish-Challenge PSCommand_Publish-Challenge PSFunction_Remove-PAAccount PSCommand_Remove-PAAccount PSFunction_Remove-PAOrder PSCommand_Remove-PAOrder PSFunction_Remove-PAServer PSCommand_Remove-PAServer PSFunction_Revoke-PAAuthorization PSCommand_Revoke-PAAuthorization PSFunction_Revoke-PACertificate PSCommand_Revoke-PACertificate PSFunction_Save-Challenge PSCommand_Save-Challenge PSFunction_Send-ChallengeAck PSCommand_Send-ChallengeAck PSFunction_Set-PAAccount PSCommand_Set-PAAccount PSFunction_Set-PAOrder PSCommand_Set-PAOrder PSFunction_Set-PAServer PSCommand_Set-PAServer PSFunction_Submit-ChallengeValidation PSCommand_Submit-ChallengeValidation PSFunction_Submit-OrderFinalize PSCommand_Submit-OrderFinalize PSFunction_Submit-Renewal PSCommand_Submit-Renewal PSFunction_Unpublish-Challenge PSCommand_Unpublish-Challenge PSIncludes_Function</S>
           <S N="developmentDependency">False</S>
-          <S N="updated">2024-10-09T20:10:00Z</S>
-          <S N="NormalizedVersion">4.25.1</S>
+          <S N="updated">2025-07-16T18:50:00Z</S>
+          <S N="NormalizedVersion">4.29.2</S>
           <S N="Authors">Ryan Bolger</S>
           <S N="IsPrerelease">false</S>
           <S N="ItemType">Module</S>
-          <S N="FileList">Posh-ACME.nuspec|Posh-ACME.Format.ps1xml|Posh-ACME.psd1|Posh-ACME.psm1|en-US\about_Posh-ACME.help.txt|en-US\Posh-ACME-help.xml|lib\BC.Crypto.1.8.8.2-netstandard2.0.dll|lib\BC.Crypto.1.8.8.2-netstandard2.0.xml|lib\license.txt|Plugins\AcmeDns-Readme.md|Plugins\AcmeDns.ps1|Plugins\Active24.ps1|Plugins\Akamai-Readme.md|Plugins\Akamai.ps1|Plugins\Aliyun-Readme.md|Plugins\Aliyun.ps1|Plugins\All-Inkl-Readme.md|Plugins\All-Inkl.ps1|Plugins\Aurora-Readme.md|Plugins\Aurora.ps1|Plugins\AutoDNS-Readme.md|Plugins\AutoDNS.ps1|Plugins\Azure-Readme.md|Plugins\Azure.ps1|Plugins\Beget-Readme.md|Plugins\Beget.ps1|Plugins\BlueCat-Readme.md|Plugins\BlueCat.ps1|Plugins\Bunny.ps1|Plugins\Cloudflare-Readme.md|Plugins\Cloudflare.ps1|Plugins\ClouDNS-Readme.md|Plugins\ClouDNS.ps1|Plugins\Combell.ps1|Plugins\Constellix-Readme.md|Plugins\Constellix.ps1|Plugins\CoreNetworks.ps1|Plugins\DeSEC-Readme.md|Plugins\DeSEC.ps1|Plugins\DMEasy-Readme.md|Plugins\DMEasy.ps1|Plugins\DNSimple-Readme.md|Plugins\DNSimple.ps1|Plugins\DNSPod-Readme.md|Plugins\DNSPod.ps1|Plugins\DOcean-Readme.md|Plugins\DOcean.ps1|Plugins\DomainOffensive-Readme.md|Plugins\DomainOffensive.ps1|Plugins\Domeneshop-Readme.md|Plugins\Domeneshop.ps1|Plugins\Dreamhost-Readme.md|Plugins\Dreamhost.ps1|Plugins\DuckDNS-Readme.md|Plugins\DuckDNS.ps1|Plugins\Dynu-Readme.md|Plugins\Dynu.ps1|Plugins\EasyDNS-Readme.md|Plugins\EasyDNS.ps1|Plugins\Easyname-Readme.md|Plugins\Easyname.ps1|Plugins\FreeDNS-Readme.md|Plugins\FreeDNS.ps1|Plugins\Gandi-Readme.md|Plugins\Gandi.ps1|Plugins\GCloud-Readme.md|Plugins\GCloud.ps1|Plugins\GoDaddy-Readme.md|Plugins\GoDaddy.ps1|Plugins\GoogleDomains.ps1|Plugins\Hetzner-Readme.md|Plugins\Hetzner.ps1|Plugins\HostingDe-Readme.md|Plugins\HostingDe.ps1|Plugins\HurricaneElectric-Readme.md|Plugins\HurricaneElectric.ps1|Plugins\HurricaneElectricDyn.ps1|Plugins\IBMSoftLayer-Readme.md|Plugins\IBMSoftLayer.ps1|Plugins\Infoblox-Readme.md|Plugins\Infoblox.ps1|Plugins\Infomaniak-Readme.md|Plugins\Infomaniak.ps1|Plugins\IONOS.ps1|Plugins\ISPConfig.ps1|Plugins\LeaseWeb.ps1|Plugins\Linode-Readme.md|Plugins\Linode.ps1|Plugins\Loopia-Readme.md|Plugins\Loopia.ps1|Plugins\LuaDns-Readme.md|Plugins\LuaDns.ps1|Plugins\Manual.ps1|Plugins\Namecheap-Readme.md|Plugins\Namecheap.ps1|Plugins\NameCom-Readme.md|Plugins\NameCom.ps1|Plugins\NameSilo-Readme.md|Plugins\NameSilo.ps1|Plugins\NS1-Readme.md|Plugins\NS1.ps1|Plugins\OnlineNet.ps1|Plugins\OVH-Readme.md|Plugins\OVH.ps1|Plugins\PointDNS-Readme.md|Plugins\PointDNS.ps1|Plugins\Porkbun.ps1|Plugins\PortsManagement.ps1|Plugins\PowerDNS.ps1|Plugins\Rackspace-Readme.md|Plugins\Rackspace.ps1|Plugins\README.md|Plugins\Regru-Readme.md|Plugins\Regru.ps1|Plugins\RFC2136-Readme.md|Plugins\RFC2136.ps1|Plugins\Route53-Readme.md|Plugins\Route53.ps1|Plugins\Selectel-Readme.md|Plugins\Selectel.ps1|Plugins\SimpleDNSPlus-Readme.md|Plugins\SimpleDNSPlus.ps1|Plugins\Simply-Readme.md|Plugins\Simply.ps1|Plugins\SimplyCom.ps1|Plugins\SSHProxy.ps1|Plugins\TencentDNS.ps1|Plugins\TotalUptime.ps1|Plugins\UKFast-Readme.md|Plugins\UKFast.ps1|Plugins\WebRoot-Readme.md|Plugins\WebRoot.ps1|Plugins\WebSelfHost-Readme.md|Plugins\WebSelfHost.ps1|Plugins\WebsupportSK.ps1|Plugins\WEDOS.ps1|Plugins\Windows-Readme.md|Plugins\Windows.ps1|Plugins\Yandex-Readme.md|Plugins\Yandex.ps1|Plugins\Zilore-Readme.md|Plugins\Zilore.ps1|Plugins\ZoneEdit.ps1|Plugins\Zonomi-Readme.md|Plugins\Zonomi.ps1|Plugins\_Example-DNS.ps1|Plugins\_Example-HTTP.ps1|Private\AcmeException.ps1|Private\ConvertFrom-Base64Url.ps1|Private\ConvertFrom-BCKey.ps1|Private\ConvertFrom-Jwk.ps1|Private\ConvertTo-Base64Url.ps1|Private\ConvertTo-Jwk.ps1|Private\ConvertTo-PAAuthorization.ps1|Private\Export-CertPfx.ps1|Private\Export-PACertFiles.ps1|Private\Export-Pem.ps1|Private\Export-PluginArgs.ps1|Private\Export-PluginVar.ps1|Private\Get-AlternateLinks.ps1|Private\Get-ChainIssuers.ps1|Private\Get-CsrDetails.ps1|Private\Get-EncryptionParam.ps1|Private\Get-Nonce.ps1|Private\Import-PAConfig.ps1|Private\Import-Pem.ps1|Private\Import-PfxCertInternal.ps1|Private\Import-PluginDetail.ps1|Private\Import-PluginVar.ps1|Private\Import-WindowsChain.ps1|Private\InitTLS.ps1|Private\Invoke-ACME.ps1|Private\MockWrappers.ps1|Private\New-AesKey.ps1|Private\New-Csr.ps1|Private\New-Jws.ps1|Private\New-PAKey.ps1|Private\Register-ArgCompleters.ps1|Private\Repair-ISODate.ps1|Private\Set-AltPluginEncryption.ps1|Private\Split-PemChain.ps1|Private\Start-SleepProgress.ps1|Private\Test-SecureStringNotNullOrEmpty.ps1|Private\Test-ValidDirUrl.ps1|Private\Test-ValidFriendlyName.ps1|Private\Test-ValidKey.ps1|Private\Test-ValidKeyLength.ps1|Private\Test-ValidPlugin.ps1|Private\Test-WinOnly.ps1|Private\Update-PAAccount.ps1|Private\Update-PAOrder.ps1|Private\Wait-AuthValidation.ps1|Public\Complete-PAOrder.ps1|Public\Export-PAAccountKey.ps1|Public\Get-KeyAuthorization.ps1|Public\Get-PAAccount.ps1|Public\Get-PAAuthorization.ps1|Public\Get-PACertificate.ps1|Public\Get-PAOrder.ps1|Public\Get-PAPlugin.ps1|Public\Get-PAPluginArgs.ps1|Public\Get-PAServer.ps1|Public\Install-PACertificate.ps1|Public\Invoke-HttpChallengeListener.ps1|Public\New-PAAccount.ps1|Public\New-PAAuthorization.ps1|Public\New-PACertificate.ps1|Public\New-PAOrder.ps1|Public\Publish-Challenge.ps1|Public\Remove-PAAccount.ps1|Public\Remove-PAOrder.ps1|Public\Remove-PAServer.ps1|Public\Revoke-PAAuthorization.ps1|Public\Revoke-PACertificate.ps1|Public\Save-Challenge.ps1|Public\Send-ChallengeAck.ps1|Public\Set-PAAccount.ps1|Public\Set-PAOrder.ps1|Public\Set-PAServer.ps1|Public\Submit-ChallengeValidation.ps1|Public\Submit-OrderFinalize.ps1|Public\Submit-Renewal.ps1|Public\Unpublish-Challenge.ps1</S>
+          <S N="FileList">Posh-ACME.nuspec|Plugins\HostingDe.ps1|Plugins\NameCom.ps1|Plugins\Selectel.ps1|Plugins\Windows.ps1|Private\Export-CertPfx.ps1|Private\Import-PluginVar.ps1|Private\Test-SecureStringNotNullOrEmpty.ps1|Public\Get-PAAuthorization.ps1|Public\Remove-PAAccount.ps1|Posh-ACME.Format.ps1xml|Plugins\Aurora.ps1|Plugins\DOcean.ps1|Plugins\HurricaneElectric.ps1|Plugins\NameSilo.ps1|Plugins\SimpleDNSPlus.ps1|Plugins\Yandex.ps1|Private\Export-PACertFiles.ps1|Private\Import-WindowsChain.ps1|Private\Test-ValidDirUrl.ps1|Public\Get-PACertificate.ps1|Public\Remove-PAOrder.ps1|Plugins\AutoDNS.ps1|Plugins\DomainOffensive.ps1|Plugins\HurricaneElectricDyn.ps1|Plugins\Netcup.ps1|Plugins\Simply.ps1|Plugins\Zilore.ps1|Private\Export-Pem.ps1|Private\InitTLS.ps1|Private\Test-ValidFriendlyName.ps1|Public\Get-PAOrder.ps1|Public\Remove-PAServer.ps1|Posh-ACME.psd1|Plugins\Azure.ps1|Plugins\Domeneshop.ps1|Plugins\IBMSoftLayer.ps1|Plugins\NS1.ps1|Plugins\SimplyCom.ps1|Plugins\ZoneEdit.ps1|Private\Export-PluginArgs.ps1|Private\Invoke-ACME.ps1|Private\Test-ValidKey.ps1|Public\Get-PAPlugin.ps1|Public\Revoke-PAAuthorization.ps1|Posh-ACME.psm1|Plugins\Beget.ps1|Plugins\Dreamhost.ps1|Plugins\Infoblox.ps1|Plugins\OnlineNet.ps1|Plugins\SOLIDServer.ps1|Plugins\Zonomi.ps1|Private\Export-PluginVar.ps1|Private\MockWrappers.ps1|Private\Test-ValidKeyLength.ps1|Public\Get-PAPluginArgs.ps1|Public\Revoke-PACertificate.ps1|en-US\about_Posh-ACME.help.txt|Plugins\BlueCat.ps1|Plugins\DuckDNS.ps1|Plugins\Infomaniak.ps1|Plugins\OVH.ps1|Plugins\SSHProxy.ps1|Plugins\_Example-DNS.ps1|Private\Get-AlternateLinks.ps1|Private\New-AesKey.ps1|Private\Test-ValidPlugin.ps1|Public\Get-PAProfile.ps1|Public\Save-Challenge.ps1|en-US\Posh-ACME-help.xml|Plugins\Bunny.ps1|Plugins\Dynu.ps1|Plugins\INWX.ps1|Plugins\PointDNS.ps1|Plugins\TencentDNS.ps1|Plugins\_Example-HTTP.ps1|Private\Get-ChainIssuers.ps1|Private\New-Csr.ps1|Private\Test-WinOnly.ps1|Public\Get-PAServer.ps1|Public\Send-ChallengeAck.ps1|lib\BC.Crypto.1.8.8.2-netstandard2.0.dll|Plugins\Cloudflare.ps1|Plugins\EasyDNS.ps1|Plugins\IONOS.ps1|Plugins\Porkbun.ps1|Plugins\TotalUptime.ps1|Private\AcmeException.ps1|Private\Get-CsrDetails.ps1|Private\New-Jws.ps1|Private\Update-PAAccount.ps1|Public\Install-PACertificate.ps1|Public\Set-PAAccount.ps1|lib\BC.Crypto.1.8.8.2-netstandard2.0.xml|Plugins\ClouDNS.ps1|Plugins\Easyname.ps1|Plugins\ISPConfig.ps1|Plugins\PortsManagement.ps1|Plugins\TransIP.ps1|Private\ConvertFrom-Base64Url.ps1|Private\Get-EncryptionParam.ps1|Private\New-PAKey.ps1|Private\Update-PAOrder.ps1|Public\Invoke-HttpChallengeListener.ps1|Public\Set-PAOrder.ps1|lib\license.txt|Plugins\Combell.ps1|Plugins\EuroDNSReseller.ps1|Plugins\LeaseWeb.ps1|Plugins\PowerDNS.ps1|Plugins\UKFast.ps1|Private\ConvertFrom-BCKey.ps1|Private\Get-Nonce.ps1|Private\Register-ArgCompleters.ps1|Private\Wait-AuthValidation.ps1|Public\New-PAAccount.ps1|Public\Set-PAServer.ps1|Plugins\AcmeDns.ps1|Plugins\Constellix.ps1|Plugins\FreeDNS.ps1|Plugins\Linode.ps1|Plugins\Rackspace.ps1|Plugins\WebRoot.ps1|Private\ConvertFrom-Jwk.ps1|Private\Import-PAConfig.ps1|Private\Repair-ISODate.ps1|Public\Complete-PAOrder.ps1|Public\New-PAAuthorization.ps1|Public\Submit-ChallengeValidation.ps1|Plugins\Active24.ps1|Plugins\CoreNetworks.ps1|Plugins\Gandi.ps1|Plugins\Loopia.ps1|Plugins\Regru.ps1|Plugins\WebSelfHost.ps1|Private\ConvertTo-Base64Url.ps1|Private\Import-Pem.ps1|Private\Set-AltPluginEncryption.ps1|Public\Export-PAAccountKey.ps1|Public\New-PACertificate.ps1|Public\Submit-OrderFinalize.ps1|Plugins\AddrTools.ps1|Plugins\DeSEC.ps1|Plugins\GCloud.ps1|Plugins\LuaDns.ps1|Plugins\RFC2136.ps1|Plugins\WebsupportSK.ps1|Private\ConvertTo-Jwk.ps1|Private\Import-PfxCertInternal.ps1|Private\Split-PemChain.ps1|Public\Get-KeyAuthorization.ps1|Public\New-PAOrder.ps1|Public\Submit-Renewal.ps1|Plugins\Akamai.ps1|Plugins\DMEasy.ps1|Plugins\GoDaddy.ps1|Plugins\Manual.ps1|Plugins\Route53.ps1|Plugins\WEDOS.ps1|Private\ConvertTo-PAAuthorization.ps1|Private\Import-PluginDetail.ps1|Private\Start-SleepProgress.ps1|Public\Get-PAAccount.ps1|Public\Publish-Challenge.ps1|Public\Unpublish-Challenge.ps1|Plugins\Aliyun.ps1|Plugins\DNSimple.ps1|Plugins\GoogleDomains.ps1|Plugins\Namecheap.ps1|Plugins\All-Inkl.ps1|Plugins\DNSPod.ps1|Plugins\Hetzner.ps1</S>
           <S N="GUID">5f52d490-68dd-411c-8252-828c199a4e63</S>
           <S N="PowerShellVersion">5.1</S>
           <S N="DotNetFrameworkVersion">4.7.1</S>
         </MS>
       </Obj>
-      <S N="InstalledLocation">C:\Users\crazz\OneDrive\Documents\PowerShell\Modules\Posh-ACME\4.25.1</S>
+      <S N="InstalledLocation">C:\Users\crazz\OneDrive\Documents\PowerShell\Modules\Posh-ACME\4.29.2</S>
     </MS>
   </Obj>
 </Objs>

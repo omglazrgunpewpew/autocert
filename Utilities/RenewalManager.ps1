@@ -13,21 +13,20 @@
 function Invoke-AutomatedRenewal {
     [CmdletBinding()]
     param(
-        [switch]$Force,
-        [switch]$NonInteractive
+        [switch]$Force
     )
-    
-    Write-Host "Running in renewal mode..." -ForegroundColor Cyan
+
+    Write-Host -Object "Running in renewal mode..." -ForegroundColor Cyan
     Write-Log "Starting renewal process (Version: $script:ScriptVersion)" -Level 'Info'
 
     try {
         # Load renewal configuration
         $config = Get-RenewalConfig
-        
+
         # Get all certificates and check renewal status
         $orders = Get-PAOrder
         if (-not $orders) {
-            Write-Host "No certificates found to renew." -ForegroundColor Yellow
+            Write-Warning -Message "No certificates found to renew."
             Write-Log "No certificates found for renewal" -Level 'Warning'
             return @{
                 Success = $true
@@ -38,14 +37,14 @@ function Invoke-AutomatedRenewal {
             }
         }
 
-        Write-Host "Found $($orders.Count) certificate(s) to check for renewal." -ForegroundColor Green
-        
+        Write-Information -MessageData "Found $($orders.Count) certificate(s) to check for renewal." -InformationAction Continue
+
         # Check renewal status for all certificates
         $renewalStatus = Get-CertificateRenewalStatus -Config $config
         $needsRenewal = $renewalStatus | Where-Object { $_.NeedsRenewal -or $Force }
-        
+
         if (-not $needsRenewal) {
-            Write-Host "No certificates need renewal at this time." -ForegroundColor Green
+            Write-Information -MessageData "No certificates need renewal at this time." -InformationAction Continue
             Write-Log "No certificates require renewal" -Level 'Info'
             return @{
                 Success = $true
@@ -56,70 +55,70 @@ function Invoke-AutomatedRenewal {
             }
         }
 
-        Write-Host "Found $($needsRenewal.Count) certificate(s) that need renewal." -ForegroundColor Yellow
-        
+        Write-Warning -Message "Found $($needsRenewal.Count) certificate(s) that need renewal."
+
         # Initialize counters and results
         $renewalCount = 0
         $errorCount = 0
         $skippedCount = 0
         $results = @()
-        
+
         # Process each certificate that needs renewal
         foreach ($cert in $needsRenewal) {
-            Write-Host "`nProcessing: $($cert.Domain)" -ForegroundColor Cyan
+            Write-Host -Object "`nProcessing: $($cert.Domain)" -ForegroundColor Cyan
             Write-Log "Starting renewal for certificate: $($cert.Domain)" -Level 'Info'
-            
+
             try {
                 # Apply randomization if configured
                 if ($config.UseRandomization -and -not $Force) {
                     $randomDelay = Get-Random -Minimum 0 -Maximum $config.RandomizationWindow
-                    Write-Host "Applying randomization delay: $randomDelay minutes" -ForegroundColor Gray
+                    Write-Host -Object "Applying randomization delay: $randomDelay minutes" -ForegroundColor Gray
                     Write-Log "Randomization delay applied: $randomDelay minutes for $($cert.Domain)" -Level 'Debug'
-                    
+
                     if ($randomDelay -gt 0) {
                         Start-Sleep -Seconds ($randomDelay * 60)
                     }
                 }
-                
+
                 # Attempt certificate renewal with retry logic
                 $renewalResult = Invoke-WithRetry -ScriptBlock {
                     Submit-Renewal -MainDomain $cert.Domain -Force:$Force
                 } -MaxAttempts $config.RetryAttempts -InitialDelaySeconds $config.RetryDelay -OperationName "Certificate renewal for $($cert.Domain)"
-                
+
                 if ($renewalResult) {
-                    Write-Host "✓ Renewed: $($cert.Domain)" -ForegroundColor Green
+                    Write-Information -MessageData "✓ Renewed: $($cert.Domain)" -InformationAction Continue
                     Write-Log "Certificate renewed: $($cert.Domain)" -Level 'Success'
                     $renewalCount++
-                    
+
                     $results += @{
                         Domain = $cert.Domain
                         Status = "Renewed"
                         Timestamp = Get-Date
                         ExpiryDate = $renewalResult.NotAfter
                     }
-                    
+
                     # Install certificate if auto-installation is enabled
                     if ($config.AutoInstall) {
                         try {
-                            Write-Host "Auto-installing renewed certificate..." -ForegroundColor Cyan
+                            Write-Host -Object "Auto-installing renewed certificate..." -ForegroundColor Cyan
                             Install-Certificate -MainDomain $cert.Domain -AutoMode
-                            Write-Host "✓ Certificate installed" -ForegroundColor Green
+                            Write-Information -MessageData "✓ Certificate installed" -InformationAction Continue
                             Write-Log "Certificate auto-installed: $($cert.Domain)" -Level 'Success'
                         } catch {
-                            Write-Warning "Certificate renewed but installation failed: $($_.Exception.Message)"
+                            Write-Warning -Message "Certificate renewed but installation failed: $($_.Exception.Message)"
                             Write-Log "Auto-installation failed for $($cert.Domain): $($_.Exception.Message)" -Level 'Warning'
                         }
                     }
                 } else {
                     throw "Renewal returned null result"
                 }
-                
+
             } catch {
                 $errorMsg = "Failed to renew certificate '$($cert.Domain)': $($_.Exception.Message)"
-                Write-Host "✗ $errorMsg" -ForegroundColor Red
+                Write-Error -Message "✗ $errorMsg"
                 Write-Log $errorMsg -Level 'Error'
                 $errorCount++
-                
+
                 $results += @{
                     Domain = $cert.Domain
                     Status = "Failed"
@@ -128,27 +127,27 @@ function Invoke-AutomatedRenewal {
                 }
             }
         }
-        
+
         # Handle certificates that were skipped
         $skippedCount = $orders.Count - $needsRenewal.Count
-        
+
         # Generate summary
-        Write-Host "`n" + "="*60 -ForegroundColor Cyan
-        Write-Host "RENEWAL SUMMARY" -ForegroundColor Cyan
-        Write-Host "="*60 -ForegroundColor Cyan
-        Write-Host "Certificates processed: $($orders.Count)" -ForegroundColor White
-        Write-Host "Renewed: $renewalCount" -ForegroundColor Green
-        Write-Host "Failed renewals: $errorCount" -ForegroundColor Red
-        Write-Host "Skipped (not due): $skippedCount" -ForegroundColor Yellow
-        Write-Host "Completion time: $(Get-Date)" -ForegroundColor Gray
-        
+        Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+        Write-Host -Object "RENEWAL SUMMARY" -ForegroundColor Cyan
+        Write-Host -Object "="*60 -ForegroundColor Cyan
+        Write-Host -Object "Certificates processed: $($orders.Count)" -ForegroundColor White
+        Write-Information -MessageData "Renewed: $renewalCount" -InformationAction Continue
+        Write-Error -Message "Failed renewals: $errorCount"
+        Write-Warning -Message "Skipped (not due): $skippedCount"
+        Write-Host -Object "Completion time: $(Get-Date)" -ForegroundColor Gray
+
         # Send notification if configured
         if ($config.NotificationEmail -and ($renewalCount -gt 0 -or $errorCount -gt 0)) {
             Send-RenewalNotificationSummary -Config $config -Results $results -RenewedCount $renewalCount -ErrorCount $errorCount -SkippedCount $skippedCount
         }
 
         Write-Log "Automatic renewal completed - Renewed: $renewalCount, Failed: $errorCount, Skipped: $skippedCount" -Level 'Info'
-        
+
         return @{
             Success = ($errorCount -eq 0)
             RenewedCount = $renewalCount
@@ -160,9 +159,9 @@ function Invoke-AutomatedRenewal {
 
     } catch {
         $criticalError = "Critical error in automated renewal: $($_.Exception.Message)"
-        Write-Error $criticalError
+        Write-Error -Message $criticalError
         Write-Log $criticalError -Level 'Error'
-        
+
         return @{
             Success = $false
             RenewedCount = 0
@@ -188,7 +187,7 @@ function Send-RenewalNotificationSummary {
         [Parameter(Mandatory = $true)]
         [int]$SkippedCount
     )
-    
+
     try {
         # Determine notification type and subject
         if ($ErrorCount -gt 0) {
@@ -201,7 +200,7 @@ function Send-RenewalNotificationSummary {
             $subject = "AutoCert: Renewal Check Completed"
             $priority = "Low"
         }
-        
+
         # Build HTML summary
         $htmlResults = ""
         foreach ($result in $Results) {
@@ -210,7 +209,7 @@ function Send-RenewalNotificationSummary {
                 "Failed" { "red" }
                 default { "orange" }
             }
-            
+
             $htmlResults += "<tr style='color: $statusColor;'>"
             $htmlResults += "<td>$($result.Domain)</td>"
             $htmlResults += "<td>$($result.Status)</td>"
@@ -224,7 +223,7 @@ function Send-RenewalNotificationSummary {
             }
             $htmlResults += "</tr>"
         }
-        
+
         $body = @"
 <!DOCTYPE html>
 <html>
@@ -250,7 +249,7 @@ function Send-RenewalNotificationSummary {
             <li class="warning">Skipped (not due): $SkippedCount</li>
         </ul>
     </div>
-    
+
     <h3>Certificate Details:</h3>
     <table>
         <tr>
@@ -261,19 +260,19 @@ function Send-RenewalNotificationSummary {
         </tr>
         $htmlResults
     </table>
-    
+
     <p><strong>Completion Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>
     <p><strong>Runtime:</strong> $((Get-Date) - $script:StartTime)</p>
     <p><strong>System:</strong> $env:COMPUTERNAME</p>
 </body>
 </html>
 "@
-        
+
         Send-RenewalNotification -Subject $subject -Body $body -ToEmail $Config.NotificationEmail -BodyAsHtml -Priority $priority
         Write-Log "Renewal notification sent to $($Config.NotificationEmail)" -Level 'Info'
-        
+
     } catch {
-        Write-Warning "Failed to send renewal notification: $($_.Exception.Message)"
+        Write-Warning -Message "Failed to send renewal notification: $($_.Exception.Message)"
         Write-Log "Notification sending failed: $($_.Exception.Message)" -Level 'Warning'
     }
 }
@@ -285,7 +284,7 @@ function Get-RenewalScheduleRecommendation {
     #>
     [CmdletBinding()]
     param()
-    
+
     try {
         $orders = Get-PAOrder
         if (-not $orders) {
@@ -294,18 +293,18 @@ function Get-RenewalScheduleRecommendation {
                 Recommendation = "No certificates found. Set up certificates first before scheduling renewals."
             }
         }
-        
+
         $config = Get-RenewalConfig
         $renewalStatus = Get-CertificateRenewalStatus -Config $config
-        
+
         # Analyze certificate expiration patterns
         $expirationDays = $renewalStatus | ForEach-Object { $_.DaysUntilExpiry }
         $avgDaysToExpiry = ($expirationDays | Measure-Object -Average).Average
         $minDaysToExpiry = ($expirationDays | Measure-Object -Minimum).Minimum
-        
+
         # Generate recommendations
         $recommendations = @()
-        
+
         # Frequency recommendation
         if ($minDaysToExpiry -le 7) {
             $recommendations += "URGENT: Run renewal immediately - certificates expiring within 7 days"
@@ -316,18 +315,18 @@ function Get-RenewalScheduleRecommendation {
         } else {
             $frequency = "Weekly"
         }
-        
+
         # Time recommendation
         $recommendedHour = Get-Random -Minimum 2 -Maximum 6  # Early morning hours
         $recommendedMinute = Get-Random -Minimum 0 -Maximum 59
-        
+
         $recommendations += "Recommended schedule: $frequency at $($recommendedHour.ToString('00')):$($recommendedMinute.ToString('00'))"
         $recommendations += "Use randomization to avoid peak times: Enable with 60-120 minute window"
-        
+
         if ($orders.Count -gt 5) {
             $recommendations += "Consider staggered renewals for large certificate sets"
         }
-        
+
         return @{
             HasCertificates = $true
             CertificateCount = $orders.Count
@@ -337,9 +336,9 @@ function Get-RenewalScheduleRecommendation {
             RecommendedTime = "$($recommendedHour.ToString('00')):$($recommendedMinute.ToString('00'))"
             Recommendations = $recommendations
         }
-        
+
     } catch {
-        Write-Error "Failed to analyze renewal schedule: $($_.Exception.Message)"
+        Write-Error -Message "Failed to analyze renewal schedule: $($_.Exception.Message)"
         return @{
             HasCertificates = $false
             Recommendation = "Error analyzing certificates: $($_.Exception.Message)"
@@ -350,3 +349,6 @@ function Get-RenewalScheduleRecommendation {
 # Export functions for module use
 # Export functions for dot-sourcing (commented out for script execution)
 # Export-ModuleMember -Function Invoke-AutomatedRenewal, Send-RenewalNotificationSummary, Get-RenewalScheduleRecommendation
+
+
+

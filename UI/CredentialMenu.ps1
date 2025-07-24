@@ -16,29 +16,29 @@
 function Show-CredentialManagementMenu {
     [CmdletBinding()]
     param()
-    
+
     Clear-Host
-    Write-Host "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host "    CREDENTIAL MANAGEMENT" -ForegroundColor Cyan
-    Write-Host "="*60 -ForegroundColor Cyan
+    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host -Object "    CREDENTIAL MANAGEMENT" -ForegroundColor Cyan
+    Write-Host -Object "="*60 -ForegroundColor Cyan
 
     # List stored credentials
     $credentials = Get-StoredCredential
     if ($credentials.Count -eq 0) {
-        Write-Host "No credentials found. You can add new ones." -ForegroundColor Yellow
+        Write-Warning -Message "No credentials found. You can add new ones."
     } else {
-        Write-Host "Stored Credentials:" -ForegroundColor Green
+        Write-Information -MessageData "Stored Credentials:" -InformationAction Continue
         foreach ($cred in $credentials) {
-            Write-Host "  • $($cred.Name) ($($cred.Type))" -ForegroundColor White
+            Write-Host -Object "  • $($cred.Name) ($($cred.Type))" -ForegroundColor White
         }
     }
 
-    Write-Host "`nAvailable Actions:" -ForegroundColor White
-    Write-Host "1. Add new credential" -ForegroundColor Green
-    Write-Host "2. Remove credential" -ForegroundColor Red
-    Write-Host "3. Test credential" -ForegroundColor Cyan
-    Write-Host "0. Return to Main Menu" -ForegroundColor DarkRed
-    Write-Host "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host -Object "`nAvailable Actions:" -ForegroundColor White
+    Write-Information -MessageData "1. Add new credential" -InformationAction Continue
+    Write-Error -Message "2. Remove credential"
+    Write-Host -Object "3. Test credential" -ForegroundColor Cyan
+    Write-Host -Object "0. Return to Main Menu" -ForegroundColor DarkRed
+    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
 
     $choice = Read-Host "Enter your choice"
 
@@ -57,7 +57,7 @@ function Show-CredentialManagementMenu {
         }
         '0' { return }
         default {
-            Write-Warning "Invalid option. Please try again."
+            Write-Warning -Message "Invalid option. Please try again."
             Read-Host "Press Enter to continue"
             Show-CredentialManagementMenu
         }
@@ -67,182 +67,185 @@ function Show-CredentialManagementMenu {
 function Invoke-AddCredentialMenu {
     [CmdletBinding()]
     param()
-    
+
     Clear-Host
-    Write-Host "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host "    ADD NEW CREDENTIAL" -ForegroundColor Cyan
-    Write-Host "="*60 -ForegroundColor Cyan
-    
+    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host -Object "    ADD NEW CREDENTIAL" -ForegroundColor Cyan
+    Write-Host -Object "="*60 -ForegroundColor Cyan
+
     # Get credential type
-    Write-Host "`nAvailable Credential Types:" -ForegroundColor Green
-    Write-Host "1. API Key (for services like Cloudflare, DigitalOcean, etc.)" -ForegroundColor White
-    Write-Host "2. Username/Password (for services like Namecheap, GoDaddy, etc.)" -ForegroundColor White
-    Write-Host "3. OAuth Token (for services like Google Cloud, AWS, etc.)" -ForegroundColor White
-    Write-Host "0. Cancel" -ForegroundColor Red
-    
+    Write-Information -MessageData "`nAvailable Credential Types:" -InformationAction Continue
+    Write-Host -Object "1. API Key (for services like Cloudflare, DigitalOcean, etc.)" -ForegroundColor White
+    Write-Host -Object "2. Username/Password (for services like Namecheap, GoDaddy, etc.)" -ForegroundColor White
+    Write-Host -Object "3. OAuth Token (for services like Google Cloud, AWS, etc.)" -ForegroundColor White
+    Write-Error -Message "0. Cancel"
+
     $typeChoice = Read-Host "`nSelect credential type"
     if ($typeChoice -eq "0") {
         return
     }
-    
+
     $credentialType = switch ($typeChoice) {
         '1' { "API Key" }
         '2' { "Username/Password" }
         '3' { "OAuth Token" }
-        default { 
-            Write-Warning "Invalid choice. Returning to credential menu."
+        default {
+            Write-Warning -Message "Invalid choice. Returning to credential menu."
             Read-Host "Press Enter to continue"
             return
         }
     }
-    
+
     # Get credential name/identifier
     $credName = Read-Host "`nEnter a name for this credential (e.g. 'Cloudflare-Primary')"
     if ([string]::IsNullOrWhiteSpace($credName)) {
-        Write-Warning "Credential name cannot be empty."
+        Write-Warning -Message "Credential name cannot be empty."
         Read-Host "Press Enter to continue"
         return
     }
-    
+
     # Get service provider
     $provider = Read-Host "Enter the service provider (e.g. 'Cloudflare', 'Route53', etc.)"
-    
+
     try {
         switch ($credentialType) {
             "API Key" {
                 $apiKey = Read-Host "Enter API Key" -AsSecureString
                 $apiSecret = Read-Host "Enter API Secret (if applicable, otherwise press Enter)" -AsSecureString
-                
+
                 # Create the credential object
                 Add-DNSProviderCredential -Name $credName -Provider $provider -Type "APIKey" -Key $apiKey -Secret $apiSecret
             }
             "Username/Password" {
                 $username = Read-Host "Enter Username"
                 $password = Read-Host "Enter Password" -AsSecureString
-                
+
                 # Create the credential object
                 Add-DNSProviderCredential -Name $credName -Provider $provider -Type "UsernamePassword" -Username $username -Password $password
             }
             "OAuth Token" {
                 $token = Read-Host "Enter OAuth Token" -AsSecureString
-                
+
                 # Create the credential object
                 Add-DNSProviderCredential -Name $credName -Provider $provider -Type "OAuth" -Token $token
             }
         }
-        
-        Write-Host "`nCredential '$credName' added." -ForegroundColor Green
+
+        Write-Information -MessageData "`nCredential '$credName' added." -InformationAction Continue
     } catch {
-        Write-Error "Failed to add credential: $($_.Exception.Message)"
+        Write-Error -Message "Failed to add credential: $($_.Exception.Message)"
     }
-    
+
     Read-Host "Press Enter to continue"
 }
 
 function Invoke-RemoveCredentialMenu {
     [CmdletBinding()]
     param()
-    
+
     Clear-Host
-    Write-Host "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host "    REMOVE CREDENTIAL" -ForegroundColor Cyan
-    Write-Host "="*60 -ForegroundColor Cyan
-    
+    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host -Object "    REMOVE CREDENTIAL" -ForegroundColor Cyan
+    Write-Host -Object "="*60 -ForegroundColor Cyan
+
     # List stored credentials
     $credentials = Get-StoredCredential
     if ($credentials.Count -eq 0) {
-        Write-Host "No credentials found." -ForegroundColor Yellow
+        Write-Warning -Message "No credentials found."
         Read-Host "Press Enter to continue"
         return
     }
-    
-    Write-Host "Select credential to remove:" -ForegroundColor Green
+
+    Write-Information -MessageData "Select credential to remove:" -InformationAction Continue
     for ($i = 0; $i -lt $credentials.Count; $i++) {
-        Write-Host "  $($i + 1). $($credentials[$i].Name) ($($credentials[$i].Type))" -ForegroundColor White
+        Write-Host -Object "  $($i + 1). $($credentials[$i].Name) ($($credentials[$i].Type))" -ForegroundColor White
     }
-    Write-Host "  0. Cancel" -ForegroundColor Red
-    
+    Write-Error -Message "  0. Cancel"
+
     $credChoice = Read-Host "`nEnter your choice"
     if ($credChoice -eq "0") {
         return
     }
-    
+
     $credIndex = [int]$credChoice - 1
     if ($credIndex -ge 0 -and $credIndex -lt $credentials.Count) {
         $selectedCred = $credentials[$credIndex]
-        
-        Write-Host "`nYou are about to remove credential '$($selectedCred.Name)'." -ForegroundColor Yellow
-        Write-Host "This cannot be undone. Are you sure? (yes/no)" -ForegroundColor Red
-        
+
+        Write-Warning -Message "`nYou are about to remove credential '$($selectedCred.Name)'."
+        Write-Error -Message "This cannot be undone. Are you sure? (yes/no)"
+
         $confirm = Read-Host
         if ($confirm -eq "yes") {
             try {
                 Remove-DNSProviderCredential -Name $selectedCred.Name
-                Write-Host "Credential removed." -ForegroundColor Green
+                Write-Information -MessageData "Credential removed." -InformationAction Continue
             } catch {
-                Write-Error "Failed to remove credential: $($_.Exception.Message)"
+                Write-Error -Message "Failed to remove credential: $($_.Exception.Message)"
             }
         } else {
-            Write-Host "Operation cancelled." -ForegroundColor Yellow
+            Write-Warning -Message "Operation cancelled."
         }
     } else {
-        Write-Warning "Invalid selection."
+        Write-Warning -Message "Invalid selection."
     }
-    
+
     Read-Host "Press Enter to continue"
 }
 
 function Invoke-TestCredentialMenu {
     [CmdletBinding()]
     param()
-    
+
     Clear-Host
-    Write-Host "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host "    TEST CREDENTIAL" -ForegroundColor Cyan
-    Write-Host "="*60 -ForegroundColor Cyan
-    
+    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+    Write-Host -Object "    TEST CREDENTIAL" -ForegroundColor Cyan
+    Write-Host -Object "="*60 -ForegroundColor Cyan
+
     # List stored credentials
     $credentials = Get-StoredCredential
     if ($credentials.Count -eq 0) {
-        Write-Host "No credentials found." -ForegroundColor Yellow
+        Write-Warning -Message "No credentials found."
         Read-Host "Press Enter to continue"
         return
     }
-    
-    Write-Host "Select credential to test:" -ForegroundColor Green
+
+    Write-Information -MessageData "Select credential to test:" -InformationAction Continue
     for ($i = 0; $i -lt $credentials.Count; $i++) {
-        Write-Host "  $($i + 1). $($credentials[$i].Name) ($($credentials[$i].Type))" -ForegroundColor White
+        Write-Host -Object "  $($i + 1). $($credentials[$i].Name) ($($credentials[$i].Type))" -ForegroundColor White
     }
-    Write-Host "  0. Cancel" -ForegroundColor Red
-    
+    Write-Error -Message "  0. Cancel"
+
     $credChoice = Read-Host "`nEnter your choice"
     if ($credChoice -eq "0") {
         return
     }
-    
+
     $credIndex = [int]$credChoice - 1
     if ($credIndex -ge 0 -and $credIndex -lt $credentials.Count) {
         $selectedCred = $credentials[$credIndex]
-        
-        Write-Host "`nTesting credential '$($selectedCred.Name)'..." -ForegroundColor Cyan
-        
+
+        Write-Host -Object "`nTesting credential '$($selectedCred.Name)'..." -ForegroundColor Cyan
+
         try {
             $testResult = Test-DNSProviderCredential -Name $selectedCred.Name
             if ($testResult) {
-                Write-Host "Credential test successful! Authentication with provider works correctly." -ForegroundColor Green
+                Write-Information -MessageData "Credential test successful! Authentication with provider works correctly." -InformationAction Continue
             } else {
-                Write-Host "Credential test failed! Authentication with provider failed." -ForegroundColor Red
+                Write-Error -Message "Credential test failed! Authentication with provider failed."
             }
         } catch {
-            Write-Error "Error testing credential: $($_.Exception.Message)"
+            Write-Error -Message "Error testing credential: $($_.Exception.Message)"
         }
     } else {
-        Write-Warning "Invalid selection."
+        Write-Warning -Message "Invalid selection."
     }
-    
+
     Read-Host "Press Enter to continue"
 }
 
 # Export functions
 # Export functions for dot-sourcing (commented out for script execution)
 # Export-ModuleMember -Function Show-CredentialManagementMenu
+
+
+

@@ -1,7 +1,7 @@
 @{
 
 RootModule = 'Posh-ACME.psm1'
-ModuleVersion = '4.25.1'
+ModuleVersion = '4.29.2'
 GUID = '5f52d490-68dd-411c-8252-828c199a4e63'
 Author = 'Ryan Bolger'
 Copyright = '(c) 2018 Ryan Bolger. All rights reserved.'
@@ -30,6 +30,7 @@ FunctionsToExport = @(
     'Get-PAOrder'
     'Get-PAPlugin'
     'Get-PAPluginArgs'
+    'Get-PAProfile'
     'Get-PAServer'
     'Install-PACertificate'
     'Invoke-HttpChallengeListener'
@@ -83,9 +84,12 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
-## 4.25.1 (2024-09-02)
+## 4.29.2 (2025-07-15)
 
-* Fix Azure IMDS auth for Arc-enabled servers
+* Fixed param set resolution error with New-PACertificate when using CSRPath/CSRString params (#629)
+* Added workaround for non-compliant order response from KeyFactor ACME provider (#626)
+* Added additional logging to DuckDNS plugin (#628)
+* Tweaked debug output for ACME responses for better human readability
 '@
 
     }

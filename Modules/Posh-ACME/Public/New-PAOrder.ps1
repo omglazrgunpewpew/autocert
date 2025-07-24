@@ -1,6 +1,7 @@
 function New-PAOrder {
     [CmdletBinding(SupportsShouldProcess,DefaultParameterSetName='FromScratch')]
     [OutputType('PoshACME.PAOrder')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidAssignmentToAutomaticVariable','')]
     param(
         [Parameter(ParameterSetName='FromScratch',Mandatory,Position=0)]
         [Parameter(ParameterSetName='ImportKey',Mandatory,Position=0)]
@@ -38,8 +39,7 @@ function New-PAOrder {
         [string]$PfxPass='poshacme',
         [Parameter(ParameterSetName='FromScratch')]
         [Parameter(ParameterSetName='ImportKey')]
-        [ValidateScript({Test-SecureStringNotNullOrEmpty $_ -ThrowOnFail})]
-        [securestring]$PfxPassSecure,
+        [securestring]$PfxPassSecure=[Net.NetworkCredential]::new('','poshacme').SecurePassword,
         [Parameter(ParameterSetName='FromScratch')]
         [Parameter(ParameterSetName='ImportKey')]
         [switch]$UseModernPfxEncryption,
@@ -51,7 +51,8 @@ function New-PAOrder {
         [int]$ValidationTimeout=60,
         [string]$PreferredChain,
         [switch]$Force,
-        [string]$ReplacesCert
+        [string]$ReplacesCert,
+        [string]$Profile
     )
 
     try {
@@ -93,7 +94,7 @@ function New-PAOrder {
     # PfxPassSecure takes precedence over PfxPass if both are specified but we
     # need the value in plain text. So we'll just take over the PfxPass variable
     # to use for the rest of the function.
-    if ($PfxPassSecure) {
+    if ('PfxPassSecure' -in $PSBoundParameters.Keys) {
         # throw a warning if they also specified PfxPass
         if ('PfxPass' -in $PSBoundParameters.Keys) {
             Write-Warning "PfxPass and PfxPassSecure were both specified. Using value from PfxPassSecure."
@@ -123,10 +124,11 @@ function New-PAOrder {
 
         $oldDomains = (@($order.MainDomain) + @($order.SANs) | Sort-Object) -join ','
 
-        # skip confirmation if the Domains or KeyLength are different regardless
-        # of the original order status or if the order is pending but expired
+        # skip confirmation if the Domains, KeyLength, or Profile are different
+        # regardless of the original order status or if the order is pending but expired
         if ( ($order -and ($KeyLength -ne $order.KeyLength -or
              ($oldDomains -ne ($Domain | Sort-Object) -join ',') -or
+             ($Profile -and $Profile -ne $order.Profile) -or
              ($order.status -eq 'pending' -and (Get-DateTimeOffsetNow) -gt ([DateTimeOffset]::Parse($order.expires))) ))) {
             # do nothing
 
@@ -204,6 +206,16 @@ function New-PAOrder {
         $payload.replaces = $ReplacesCert
     }
 
+    # Add the cert profile if specified
+    # https://www.ietf.org/archive/id/draft-aaron-acme-profiles-00.html
+    if ($Profile) {
+        if ($Profile -in (Get-PAProfile).Profile) {
+            $payload.profile = $Profile
+        } else {
+            Write-Warning "Profile '$Profile' is not currently supported on this ACME server. Ignoring profile selection."
+        }
+    }
+
     $payloadJson = $payload | ConvertTo-Json -Depth 5 -Compress
 
     # send the request
@@ -213,7 +225,9 @@ function New-PAOrder {
         # ACME server should send HTTP 409 Conflict status if we tried to specify
         # a 'replaces' value that has already been replaced. So if we get that,
         # retry the request without that field included.
-        if (409 -eq $_.Exception.Data.status) {
+        # It will also send HTTP 404 for various other reasons that it can't find
+        # the cert to be replaced.
+        if ($_.Exception.Data.status -in 404,409) {
             Write-Warning $_.Exception.Data.detail
             Write-Verbose "Resubmitting new order without 'replaces' field."
             $payload.Remove('replaces')
@@ -229,6 +243,13 @@ function New-PAOrder {
     # process the response
     $order = $response.Content | ConvertFrom-Json
     $order.PSObject.TypeNames.Insert(0,'PoshACME.PAOrder')
+
+    # Work around KeyFactor ACME bug that fails to include the expires field when required
+    # https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.3
+    if ($order.status -in 'pending','valid' -and -not $order.expires) {
+        $order | Add-Member 'expires' '9999-12-31T23:59:59Z' -Force # [DateTime]::MaxValue.ToString('yyyy-MM-ddTHH:mm:ssZ')
+        Write-Warning "Invalid ACME response from CA. Order object has status $($order.status) but is missing the 'expires' field which violates RFC8555 section 7.1.3. Please notify your CA. Using alternative value $($order.expires)."
+    }
 
     # fix any dates that may have been parsed by PSCore's JSON serializer
     $order.expires = Repair-ISODate $order.expires

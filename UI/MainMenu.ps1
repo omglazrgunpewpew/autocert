@@ -13,30 +13,45 @@
 #>
 
 function Show-Menu {
+    <#
+    .SYNOPSIS
+        Displays the main menu for AutoCert
+    .DESCRIPTION
+        Shows the primary interactive menu for the AutoCert certificate management system
+    .OUTPUTS
+        None. This function displays the menu interface.
+    .EXAMPLE
+        Show-Menu
+        Displays the main AutoCert menu
+    #>
     [CmdletBinding()]
+    [OutputType([void])]
     param()
-    
+
     Clear-Host
-    
+
     # Initialize ACME server if function is available
     if (Get-Command Initialize-ACMEServer -ErrorAction SilentlyContinue) {
         Initialize-ACMEServer -ErrorAction SilentlyContinue | Out-Null
     }
-    
+
     # Display header with system information
-    Write-Host "`n" + "="*70 -ForegroundColor Cyan
-    Write-Host "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
-    Write-Host "                            Version $script:ScriptVersion" -ForegroundColor Gray
-    Write-Host "="*70 -ForegroundColor Cyan
-    
+    $headerLine = "`n" + ("=" * 70)
+    Write-Host -Object $headerLine -ForegroundColor Cyan
+    Write-Host -Object "    AUTOCERT LET'S ENCRYPT CERTIFICATE MANAGEMENT SYSTEM" -ForegroundColor Cyan
+    Write-Host -Object "                            Version $script:ScriptVersion" -ForegroundColor Gray
+    $separatorLine = "=" * 70
+    Write-Host -Object $separatorLine -ForegroundColor Cyan
+
     # Show current ACME server
     try {
         $currentServer = (Get-PAServer).Name
-        Write-Host "ACME Server: $currentServer" -ForegroundColor Yellow
-    } catch {
-        Write-Host "ACME Server: Not configured" -ForegroundColor Yellow
+        Write-Warning -Message "ACME Server: $currentServer"
     }
-    
+    catch {
+        Write-Warning -Message "ACME Server: Not configured"
+    }
+
     # Show certificate summary with status
     try {
         $orders = Get-PAOrder
@@ -46,47 +61,55 @@ function Show-Menu {
             $needsRenewal = ($renewalStatus | Where-Object { $_.NeedsRenewal }).Count
             $expiringSoon = ($renewalStatus | Where-Object { $_.DaysUntilExpiry -le 7 }).Count
             $total = $orders.Count
-            
-            Write-Host "Certificates: $total total" -ForegroundColor Green
+
+            Write-Information -MessageData "Certificates: $total total" -InformationAction Continue
             if ($needsRenewal -gt 0) {
-                Write-Host "Renewals Needed: $needsRenewal" -ForegroundColor Yellow
+                Write-Warning -Message "Renewals Needed: $needsRenewal"
             }
             if ($expiringSoon -gt 0) {
-                Write-Host "Critically Expiring: $expiringSoon" -ForegroundColor Red
+                Write-Error -Message "Critically Expiring: $expiringSoon"
             }
-        } else {
-            Write-Host "Certificates: None configured" -ForegroundColor Yellow
         }
-    } catch {
-        Write-Host "Certificate Status: Unavailable" -ForegroundColor Gray
+        else {
+            Write-Warning -Message "Certificates: None configured"
+        }
     }
-    
+    catch {
+        Write-Host -Object "Certificate Status: Unavailable" -ForegroundColor Gray
+    }
+
     # Show system status
     try {
         $task = Get-ScheduledTask -TaskName "Posh-ACME Certificate Renewal" -ErrorAction SilentlyContinue
         if ($task) {
             $taskStatus = if ($task.State -eq "Ready") { "Configured & Active" } else { "Configured but $($task.State)" }
-            Write-Host "Auto-Renewal: $taskStatus" -ForegroundColor $(if ($task.State -eq "Ready") { "Green" } else { "Yellow" })
-        } else {
-            Write-Host "Auto-Renewal: Not configured" -ForegroundColor Yellow
+            Write-Host -Object "Auto-Renewal: $taskStatus" -ForegroundColor $(if ($task.State -eq "Ready") { "Green" } else { "Yellow" })
         }
-    } catch {
-        Write-Host "Auto-Renewal: Status unavailable" -ForegroundColor Gray
+        else {
+            Write-Host -Object "Auto-Renewal: Not configured" -ForegroundColor Yellow
+        }
     }
-    
-    Write-Host "`nAvailable Actions:" -ForegroundColor White
-    Write-Host "1. Register a new certificate" -ForegroundColor Green
-    Write-Host "2. Install existing certificate" -ForegroundColor Cyan
-    Write-Host "3. Configure automatic renewal" -ForegroundColor Yellow
-    Write-Host "4. View and Manage existing certificates" -ForegroundColor Magenta
-    Write-Host "5. Options" -ForegroundColor Blue
-    Write-Host "6. Manage Credentials" -ForegroundColor DarkCyan
-    Write-Host "7. System health check" -ForegroundColor DarkGreen
-    Write-Host "S. Help / About" -ForegroundColor Gray
-    Write-Host "0. Exit" -ForegroundColor DarkRed
-    Write-Host "`n" + "="*70 -ForegroundColor Cyan
+    catch {
+        Write-Host -Object "Auto-Renewal: Status unavailable" -ForegroundColor Gray
+    }
+
+    Write-Host -Object "`nAvailable Actions:" -ForegroundColor White
+    Write-Information -MessageData "1. Register a new certificate" -InformationAction Continue
+    Write-Host -Object "2. Install existing certificate" -ForegroundColor Cyan
+    Write-Warning -Message "3. Configure automatic renewal"
+    Write-Host -Object "4. View and Manage existing certificates" -ForegroundColor Magenta
+    Write-Host -Object "5. Options" -ForegroundColor Blue
+    Write-Host -Object "6. Manage Credentials" -ForegroundColor DarkCyan
+    Write-Host -Object "7. System health check" -ForegroundColor DarkGreen
+    Write-Host -Object "S. Help / About" -ForegroundColor Gray
+    Write-Host -Object "0. Exit" -ForegroundColor DarkRed
+    $footerLine = "`n" + ("=" * 70)
+    Write-Host -Object $footerLine -ForegroundColor Cyan
 }
 
 # Export functions
 # Export functions for dot-sourcing (commented out for script execution)
 # Export-ModuleMember -Function Show-Menu
+
+
+
