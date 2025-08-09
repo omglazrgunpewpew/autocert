@@ -210,14 +210,20 @@ function Send-RenewalNotificationSummary {
                 default { "orange" }
             }
 
+            $domain   = [System.Web.HttpUtility]::HtmlEncode($result.Domain)
+            $status   = [System.Web.HttpUtility]::HtmlEncode($result.Status)
+            $processed = [System.Web.HttpUtility]::HtmlEncode($result.Timestamp.ToString('yyyy-MM-dd HH:mm'))
+
             $htmlResults += "<tr style='color: $statusColor;'>"
-            $htmlResults += "<td>$($result.Domain)</td>"
-            $htmlResults += "<td>$($result.Status)</td>"
-            $htmlResults += "<td>$($result.Timestamp.ToString('yyyy-MM-dd HH:mm'))</td>"
+            $htmlResults += "<td>$domain</td>"
+            $htmlResults += "<td>$status</td>"
+            $htmlResults += "<td>$processed</td>"
             if ($result.ExpiryDate) {
-                $htmlResults += "<td>$($result.ExpiryDate.ToString('yyyy-MM-dd'))</td>"
+                $expiry = [System.Web.HttpUtility]::HtmlEncode($result.ExpiryDate.ToString('yyyy-MM-dd'))
+                $htmlResults += "<td>$expiry</td>"
             } elseif ($result.Error) {
-                $htmlResults += "<td>$($result.Error)</td>"
+                $errorMsg = [System.Web.HttpUtility]::HtmlEncode($result.Error)
+                $htmlResults += "<td>$errorMsg</td>"
             } else {
                 $htmlResults += "<td>-</td>"
             }
@@ -268,7 +274,7 @@ function Send-RenewalNotificationSummary {
 </html>
 "@
 
-        Send-RenewalNotification -Subject $subject -Body $body -ToEmail $Config.NotificationEmail -BodyAsHtml -Priority $priority
+        Send-RenewalNotification -Subject $subject -Body $body -ToEmail $Config.NotificationEmail -Priority $priority
         Write-Log "Renewal notification sent to $($Config.NotificationEmail)" -Level 'Info'
 
     } catch {

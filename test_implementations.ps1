@@ -17,8 +17,8 @@ if ($TestEmail -or $TestAll) {
         . "$PSScriptRoot\Core\RenewalConfig.ps1"
         
         # Test SMTP configuration
-        Write-Host "  • Testing Set-SmtpConfiguration..." -ForegroundColor Green
-        $smtpResult = Set-SmtpConfiguration -SmtpServer "smtp.test.com" -FromEmail "test@test.com" -SmtpPort 587 -UseSsl $true
+        Write-Host "  • Testing Set-SmtpSettings..." -ForegroundColor Green
+        $smtpResult = Set-SmtpSettings -SmtpServer "smtp.test.com" -FromEmail "test@test.com" -SmtpPort 587 -UseSsl $true
         if ($smtpResult) {
             Write-Host "    ✅ SMTP configuration saved successfully" -ForegroundColor Green
         } else {
@@ -26,8 +26,8 @@ if ($TestEmail -or $TestAll) {
         }
         
         # Test configuration retrieval
-        Write-Host "  • Testing Get-SmtpConfiguration..." -ForegroundColor Green
-        $config = Get-SmtpConfiguration
+        Write-Host "  • Testing Get-SmtpSettings..." -ForegroundColor Green
+        $config = Get-SmtpSettings
         if ($config) {
             Write-Host "    ✅ SMTP configuration retrieved: $($config.SmtpServer)" -ForegroundColor Green
         } else {
@@ -81,7 +81,7 @@ Write-Host "✅ DNS provider API testing: Framework implemented" -ForegroundColo
 Write-Host "✅ Combell pagination: Enhanced with caching and proper pagination" -ForegroundColor Green
 
 Write-Host "`n📋 Next Steps:" -ForegroundColor Yellow
-Write-Host "• Configure SMTP settings: Set-SmtpConfiguration" -ForegroundColor White
+Write-Host "• Configure SMTP settings: Set-SmtpSettings" -ForegroundColor White
 Write-Host "• Test email: Test-EmailNotification" -ForegroundColor White
 Write-Host "• Setup provider credentials for API testing" -ForegroundColor White
 Write-Host "• Enable email notifications in renewal configuration" -ForegroundColor White
