@@ -1,15 +1,21 @@
-# Functions/Register-Certificate.ps1
+﻿# Functions/Register-Certificate.ps1
 <#
     .SYNOPSIS
         Certificate registration with DNS provider support,
         robust error handling, and validation.
 #>
-function Register-Certificate {
-    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='High')]
+function Register-Certificate
+{
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
         [Parameter()]
         [switch]$Force
     )
+    # Ensure circuit breaker is loaded
+    if (-not (Get-Command -Name Invoke-WithCircuitBreaker -ErrorAction SilentlyContinue)) {
+        . "$PSScriptRoot\..\Core\CircuitBreaker.ps1"
+    }
+
     # Ensure ACME server is set
     Initialize-ACMEServer
     # Load public suffix list for accurate domain parsing
@@ -18,12 +24,15 @@ function Register-Certificate {
     # Load user settings
     $settings = Get-ScriptSettings
     # Prompt for domain name with validation
-    do {
+    do
+    {
         $domain = Read-Host "`nEnter the domain name (e.g., server.domain.com) or 0 to go back"
-        if ($domain -eq '0') {
+        if ($domain -eq '0')
+        {
             return
         }
-        if (Test-ValidDomain -Domain $domain) {
+        if (Test-ValidDomain -Domain $domain)
+        {
             break
         }
         Write-Warning -Message "Please enter a valid domain name."
@@ -36,44 +45,56 @@ function Register-Certificate {
     $mainDomain = $domain
     $domains = @()
     # Ask for certificate type
-    while ($true) {
+    while ($true)
+    {
         Write-Host -Object "`nSelect the type of certificate you want to create:"
         Write-Host -Object "1) Server-specific certificate for $domain"
         Write-Host -Object "2) Wildcard certificate for *.$baseDomain"
         Write-Host -Object "3) Multi-domain certificate (SAN)"
         Write-Host -Object "0) Back"
-        $certTypeChoice = Get-ValidatedInput -Prompt "`nEnter the number corresponding to your choice (0-3)" -ValidOptions 1,2,3
-        switch ($certTypeChoice) {
+        $certTypeChoice = Get-ValidatedInput -Prompt "`nEnter the number corresponding to your choice (0-3)" -ValidOptions 1, 2, 3
+        switch ($certTypeChoice)
+        {
             0 { return }
-            1 {
+            1
+            {
                 $mainDomain = $domain
                 $domains = @($mainDomain)
                 break
             }
-            2 {
+            2
+            {
                 $mainDomain = "*.$baseDomain"
                 $domains = @($mainDomain)
                 break
             }
-            3 {
+            3
+            {
                 # Multi-domain certificate
                 $domains = @($domain)  # Start with main domain
-                while ($true) {
+                while ($true)
+                {
                     $additionalDomain = Read-Host "`nEnter additional domain (or press Enter to finish, 0 to cancel)"
-                    if ($additionalDomain -eq '0') {
+                    if ($additionalDomain -eq '0')
+                    {
                         return
                     }
-                    if ([string]::IsNullOrWhiteSpace($additionalDomain)) {
+                    if ([string]::IsNullOrWhiteSpace($additionalDomain))
+                    {
                         break
                     }
-                    if (Test-ValidDomain -Domain $additionalDomain) {
-                        if ($domains -notcontains $additionalDomain) {
+                    if (Test-ValidDomain -Domain $additionalDomain)
+                    {
+                        if ($domains -notcontains $additionalDomain)
+                        {
                             $domains += $additionalDomain
                             Write-Information -MessageData "Added: $additionalDomain" -InformationAction Continue
-                        } else {
+                        } else
+                        {
                             Write-Warning -Message "Domain already added: $additionalDomain"
                         }
-                    } else {
+                    } else
+                    {
                         Write-Warning -Message "Invalid domain format: $additionalDomain"
                     }
                 }
@@ -81,7 +102,8 @@ function Register-Certificate {
                 break
             }
         }
-        if ($domains.Count -gt 0) {
+        if ($domains.Count -gt 0)
+        {
             break
         }
     }
@@ -91,26 +113,33 @@ function Register-Certificate {
     # Attempt to auto-detect DNS provider
     $dnsProvider = Get-DNSProvider -Domain $baseDomain
     $plugin = $null
-    if ($dnsProvider.Name -ne "Unknown") {
+    if ($dnsProvider.Name -ne "Unknown")
+    {
         Write-Information -MessageData "`nDetected DNS provider: $($dnsProvider.Name) (Confidence: $($dnsProvider.Confidence))" -InformationAction Continue
         Write-Log "Detected DNS provider: $($dnsProvider.Name)"
-        if ($dnsProvider.Confidence -eq "High") {
+        if ($dnsProvider.Confidence -eq "High")
+        {
             $useDetected = Read-Host "`nUse detected provider $($dnsProvider.Name)? (Y/N)"
-            if ($useDetected -match '^[Yy]$') {
+            if ($useDetected -match '^[Yy]$')
+            {
                 $plugin = $dnsProvider.Plugin
             }
         }
-    } else {
+    } else
+    {
         Write-Warning -Message "`nDNS provider could not be automatically detected."
-        if ($dnsProvider.NSRecords.Count -gt 0) {
+        if ($dnsProvider.NSRecords.Count -gt 0)
+        {
             Write-Host -Object "Detected NS records:" -ForegroundColor Cyan
             $dnsProvider.NSRecords | ForEach-Object { Write-Host -Object "  - $_" -ForegroundColor Gray }
         }
     }
     # If DNS provider not detected or user declined, prompt for manual selection
-    if (-not $plugin) {
+    if (-not $plugin)
+    {
         $pluginSelected = $false
-        while (-not $pluginSelected) {
+        while (-not $pluginSelected)
+        {
             Write-Host -Object "`nSelect the challenge plugin:"
             Write-Host -Object "1) DNS - Cloudflare"
             Write-Host -Object "2) DNS - AWS Route53"
@@ -120,8 +149,9 @@ function Register-Certificate {
             Write-Host -Object "6) Manual (default)"
             Write-Host -Object "7) Other DNS Plugin"
             Write-Host -Object "0) Back"
-            $pluginOption = Get-ValidatedInput -Prompt "`nEnter the corresponding number (0-7)" -ValidOptions 1,2,3,4,5,6,7
-            switch ($pluginOption) {
+            $pluginOption = Get-ValidatedInput -Prompt "`nEnter the corresponding number (0-7)" -ValidOptions 1, 2, 3, 4, 5, 6, 7
+            switch ($pluginOption)
+            {
                 0 { return }
                 1 { $plugin = 'Cloudflare'; $pluginSelected = $true }
                 2 { $plugin = 'Route53'; $pluginSelected = $true }
@@ -129,27 +159,34 @@ function Register-Certificate {
                 4 { $plugin = 'GoogleDomains'; $pluginSelected = $true }
                 5 { $plugin = 'DigitalOcean'; $pluginSelected = $true }
                 6 { $plugin = 'Manual'; $pluginSelected = $true }
-                7 {
+                7
+                {
                     # List all available DNS plugins
                     $plugins = @(Get-PAPlugin | Where-Object { $_.ChallengeType -eq 'dns-01' })
-                    if ($plugins.Count -eq 0) {
+                    if ($plugins.Count -eq 0)
+                    {
                         Write-Warning -Message "`nNo DNS plugins are available."
                         $plugin = 'Manual'
                         $pluginSelected = $true
-                    } else {
+                    } else
+                    {
                         $dnsPluginSelected = $false
-                        while (-not $dnsPluginSelected) {
+                        while (-not $dnsPluginSelected)
+                        {
                             Write-Host -Object "`nAvailable DNS Plugins:"
                             $i = 1
-                            foreach ($p in $plugins) {
+                            foreach ($p in $plugins)
+                            {
                                 Write-Host -Object "$i) $($p.Name)"
                                 $i++
                             }
                             Write-Host -Object "0) Back"
                             $pluginSelection = Get-ValidatedInput -Prompt "`nEnter the number corresponding to your choice" -ValidOptions (1..$plugins.Count)
-                            if ($pluginSelection -eq 0) {
+                            if ($pluginSelection -eq 0)
+                            {
                                 break
-                            } else {
+                            } else
+                            {
                                 $plugin = $plugins[$pluginSelection - 1].Name
                                 $pluginSelected = $true
                                 $dnsPluginSelected = $true
@@ -162,38 +199,48 @@ function Register-Certificate {
     }
     Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring ACME account..." -PercentComplete 40
     # Ensure an ACME account exists
-    if (-not (Get-PAAccount)) {
+    if (-not (Get-PAAccount))
+    {
         Write-Host -Object "`nNo ACME account found. Creating a new account..."
         $email = $settings.LastUsedEmail
-        if (-not $email -or -not (Test-ValidEmail -Email $email)) {
-            do {
+        if (-not $email -or -not (Test-ValidEmail -Email $email))
+        {
+            do
+            {
                 $email = Read-Host "`nEnter your email address for Let's Encrypt notifications or 0 to go back"
-                if ($email -eq '0') {
+                if ($email -eq '0')
+                {
                     return
                 }
             } while (-not (Test-ValidEmail -Email $email))
-        } else {
+        } else
+        {
             $useStoredEmail = Read-Host "`nUse stored email address ($email)? (Y/N)"
-            if ($useStoredEmail -notmatch '^[Yy]$') {
-                do {
+            if ($useStoredEmail -notmatch '^[Yy]$')
+            {
+                do
+                {
                     $email = Read-Host "`nEnter your email address for Let's Encrypt notifications or 0 to go back"
-                    if ($email -eq '0') {
+                    if ($email -eq '0')
+                    {
                         return
                     }
                 } while (-not (Test-ValidEmail -Email $email))
             }
         }
-        try {
+        try
+        {
             Invoke-WithRetry -ScriptBlock {
                 New-PAAccount -AcceptTOS -Contact $email -ErrorAction Stop
             } -MaxAttempts 3 -InitialDelaySeconds 5 `
-              -OperationName "ACME account creation"
+                -OperationName "ACME account creation"
             Write-Information -MessageData "`nACME account created." -InformationAction Continue
             Write-Log "ACME account created with email: $email"
             # Save email for future use
             $settings.LastUsedEmail = $email
             Save-ScriptSettings -Settings $settings
-        } catch {
+        } catch
+        {
             Write-Error -Message "Failed to create ACME account after multiple attempts: $($_)"
             Write-Log "Failed to create ACME account: $($_)" -Level 'Error'
             return
@@ -203,10 +250,13 @@ function Register-Certificate {
     # Initialize plugin arguments
     $pluginArgs = @{}
     # Handle plugin-specific authentication
-    switch ($plugin) {
-        'Cloudflare' {
+    switch ($plugin)
+    {
+        'Cloudflare'
+        {
             $cred = Get-SecureCredential -ProviderName 'Cloudflare'
-            if (-not $cred) {
+            if (-not $cred)
+            {
                 Write-Host -Object "`nCloudflare credentials not found. Opening browser for API token creation..." -ForegroundColor Cyan
                 Start-Process "https://dash.cloudflare.com/profile/api-tokens"
                 Write-Host -Object "`nPlease follow these steps to create an API Token:`n" -ForegroundColor Cyan
@@ -221,94 +271,117 @@ function Register-Certificate {
                 Write-Host -Object "7. Give your token a name and click 'Continue to summary'."
                 Write-Host -Object "8. Review and click 'Create Token'."
                 Write-Host -Object "9. Copy the API Token displayed.`n"
-                do {
+                do
+                {
                     $cfToken = Read-Host "`nEnter your Cloudflare API Token or 0 to go back" -AsSecureString
                     $tokenString = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($cfToken))
-                    if ($tokenString -eq '0') {
+                    if ($tokenString -eq '0')
+                    {
                         return
                     }
                     # Validate token format (basic check)
-                    if ($tokenString.Length -ge 40 -and $tokenString -match '^[a-zA-Z0-9_-]+$') {
+                    if ($tokenString.Length -ge 40 -and $tokenString -match '^[a-zA-Z0-9_-]+$')
+                    {
                         break
-                    } else {
+                    } else
+                    {
                         Write-Warning -Message "Invalid token format. Cloudflare API tokens are typically 40+ characters of letters, numbers, underscores, and hyphens."
                     }
                 } while ($true)
                 $cfCredential = New-Object System.Management.Automation.PSCredential ('CFToken', $cfToken)
                 Set-SecureCredential -ProviderName 'Cloudflare' -Credential $cfCredential
-            } else {
+            } else
+            {
                 $cfToken = $cred.Password
             }
             $pluginArgs = @{ CFToken = $cfToken }
         }
-        'Route53' {
+        'Route53'
+        {
             $awsProfile = Read-Host "`nEnter your AWS profile name (leave blank for default) or 0 to go back"
-            if ($awsProfile -eq '0') {
+            if ($awsProfile -eq '0')
+            {
                 return
             }
-            if ($awsProfile) {
+            if ($awsProfile)
+            {
                 $pluginArgs = @{ ProfileName = $awsProfile }
             }
         }
-        'Azure' {
+        'Azure'
+        {
             Write-Host -Object "`nAuthenticating with Azure..."
-            if (-not (Get-Module -ListAvailable -Name Az.Accounts)) {
+            if (-not (Get-Module -ListAvailable -Name Az.Accounts))
+            {
                 Write-Warning -Message "Az.Accounts module not found. Installing..."
-                try {
+                try
+                {
                     Install-Module -Name Az.Accounts -Scope CurrentUser -Force -ErrorAction Stop
                     Import-Module Az.Accounts
-                } catch {
+                } catch
+                {
                     $msg = "Failed to install Az.Accounts module: $($_.Exception.Message)"
                     Write-Error -Message $msg
                     Write-Log $msg -Level 'Error'
                     return
                 }
-            } else {
+            } else
+            {
                 Import-Module Az.Accounts
             }
-            try {
+            try
+            {
                 Invoke-WithRetry -ScriptBlock {
                     Connect-AzAccount -UseDeviceAuthentication -ErrorAction Stop
                 } -MaxAttempts 3 -InitialDelaySeconds 5 `
-                  -OperationName "Azure authentication" `
-                  -SuccessCondition { Get-AzContext }
+                    -OperationName "Azure authentication" `
+                    -SuccessCondition { Get-AzContext }
                 $azContext = Get-AzContext
                 $pluginArgs = @{
                     SubscriptionId = $azContext.Subscription.Id
-                    TenantId       = $azContext.Tenant.Id
+                    TenantId = $azContext.Tenant.Id
                 }
                 Write-Information -MessageData "Azure authentication successful." -InformationAction Continue
-            } catch {
+            } catch
+            {
                 Write-Error -Message "Failed to authenticate with Azure after multiple attempts: $($_)"
                 Write-Log "Failed to authenticate with Azure: $($_)" -Level 'Error'
                 return
             }
         }
-        'Manual' {
+        'Manual'
+        {
             Write-Warning -Message "`nManual challenge selected. You will need to create DNS TXT records manually."
         }
-        default {
+        default
+        {
             # Handle other plugins
             Write-Host -Object "`nYou selected the $plugin plugin."
             # Prompt to view plugin's guide
             $viewGuide = Read-Host "`nWould you like to view the $plugin plugin guide? (Y/N)"
-            if ($viewGuide -match '^[Yy]$') {
+            if ($viewGuide -match '^[Yy]$')
+            {
                 $guideUrl = "https://poshac.me/docs/v4/Plugins/$plugin/"
                 Start-Process $guideUrl
             }
             # Retrieve plugin parameter information
-            try {
+            try
+            {
                 $pluginInfo = Get-PAPlugin -Plugin $plugin
                 $pluginParams = $pluginInfo.Params
-                if ($pluginParams) {
+                if ($pluginParams)
+                {
                     Write-Host -Object "`nThe $plugin plugin requires the following parameters:"
-                    foreach ($param in $pluginParams) {
-                        do {
+                    foreach ($param in $pluginParams)
+                    {
+                        do
+                        {
                             $paramValue = Read-Host -Prompt "`nEnter value for '$param' or type '0' to go back"
                             if ($paramValue -eq '0') { return }
                             $pluginArgs[$param] = $paramValue
                             # Validate parameters if rules exist
-                            if (-not (Test-PluginParameters -Plugin $plugin -Parameters $pluginArgs)) {
+                            if (-not (Test-PluginParameters -Plugin $plugin -Parameters $pluginArgs))
+                            {
                                 Write-Warning -Message "Invalid parameter format. Please try again."
                                 $pluginArgs.Remove($param)
                                 continue
@@ -316,11 +389,13 @@ function Register-Certificate {
                             break
                         } while ($true)
                     }
-                } else {
+                } else
+                {
                     Write-Host -Object "`nThe $plugin plugin does not require any parameters."
                     $pluginArgs = @{}
                 }
-            } catch {
+            } catch
+            {
                 Write-Warning -Message "Failed to get plugin information: $($_)"
                 $pluginArgs = @{}
             }
@@ -330,23 +405,30 @@ function Register-Certificate {
     # Submit certificate order
     Write-Host -Object "`nRequesting certificate for domain(s): $($domains -join ', ')" -ForegroundColor Cyan
     Write-Log "Requesting certificate for domain(s): $($domains -join ', ')"
-    try {
-        if ($plugin -eq 'Manual') {
-            # Manual challenge handling
+    try
+    {
+        if ($plugin -eq 'Manual')
+        {
+            # Manual challenge handling with circuit breaker protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Preparing manual challenge..." -PercentComplete 75
-            $cert = New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            }
             Write-Warning -Message "`nPlease create the following DNS TXT records:"
             Write-Warning -Message "=" * 80
             $challengeRecords = @()
-            foreach ($authz in $cert.Authorization) {
-                foreach ($challenge in $authz.Challenges) {
-                    if ($challenge.Type -eq 'dns-01') {
+            foreach ($authz in $cert.Authorization)
+            {
+                foreach ($challenge in $authz.Challenges)
+                {
+                    if ($challenge.Type -eq 'dns-01')
+                    {
                         $dnsName = "_acme-challenge." + $authz.Identifier
                         $txtValue = $challenge.DnsDigest
                         Write-Host -Object "$dnsName -> $txtValue" -ForegroundColor White
                         $challengeRecords += @{
-                            Name = $dnsName
-                            Value = $txtValue
+                            Name   = $dnsName
+                            Value  = $txtValue
                             Domain = $authz.Identifier
                         }
                     }
@@ -354,9 +436,11 @@ function Register-Certificate {
             }
             Write-Warning -Message "=" * 80
             # DNS propagation checking
-            while ($true) {
+            while ($true)
+            {
                 $continue = Read-Host "`nPress Enter when you have created the DNS records and they have propagated, or type '0' to cancel"
-                if ($continue -eq '0') {
+                if ($continue -eq '0')
+                {
                     Write-Warning -Message "`nOperation canceled by the user."
                     return
                 }
@@ -364,33 +448,40 @@ function Register-Certificate {
                 # Test DNS record propagation
                 $allRecordsPresent = $true
                 $propagationResults = @()
-                foreach ($record in $challengeRecords) {
+                foreach ($record in $challengeRecords)
+                {
                     Write-Host -Object "Checking DNS propagation for $($record.Name)..." -ForegroundColor Cyan
                     $isPropagated = Test-DNSPropagation -DnsName $record.Name -ExpectedValue $record.Value -MaxAttempts 5 -DelaySeconds 10
                     $propagationResults += @{
-                        Domain = $record.Domain
-                        DnsName = $record.Name
-                        Expected = $record.Value
+                        Domain     = $record.Domain
+                        DnsName    = $record.Name
+                        Expected   = $record.Value
                         Propagated = $isPropagated
                     }
-                    if (-not $isPropagated) {
+                    if (-not $isPropagated)
+                    {
                         $allRecordsPresent = $false
                         Write-Warning -Message "DNS TXT record not found for $($record.Name)"
-                    } else {
-                        Write-Information -MessageData "✓ DNS TXT record found for $($record.Name)" -InformationAction Continue
+                    } else
+                    {
+                        Write-Information -MessageData "OK DNS TXT record found for $($record.Name)" -InformationAction Continue
                     }
                 }
-                if ($allRecordsPresent) {
+                if ($allRecordsPresent)
+                {
                     # Proceed with validation using retry logic
                     Write-ProgressHelper -Activity "Certificate Registration" -Status "Validating domain ownership..." -PercentComplete 85
-                    try {
+                    try
+                    {
                         $validationResult = Invoke-WithRetry -ScriptBlock {
                             Complete-AuthChallenge -AuthChain $cert -DnsSleep 0 -Verbose
                             # Check authorization status
                             $allValid = $true
-                            foreach ($authz in $cert.Authorization) {
+                            foreach ($authz in $cert.Authorization)
+                            {
                                 $status = Get-PAAuthorization -AuthUrl $authz.location -Verbose
-                                if ($status.status -ne 'valid') {
+                                if ($status.status -ne 'valid')
+                                {
                                     $allValid = $false
                                     Write-Error -Message "Authorization failed for domain $($authz.Identifier). Status: $($status.status)"
                                     break
@@ -398,26 +489,31 @@ function Register-Certificate {
                             }
                             return $allValid
                         } -MaxAttempts 3 -InitialDelaySeconds 30 `
-                          -OperationName "Domain validation" `
-                          -SuccessCondition { $_ -eq $true }
-                        if ($validationResult) {
+                            -OperationName "Domain validation" `
+                            -SuccessCondition { $_ -eq $true }
+                        if ($validationResult)
+                        {
                             Write-Information -MessageData "`nAll domain validations completed!" -InformationAction Continue
                             Write-Log "All domain validations completed."
                             break
                         }
-                    } catch {
+                    } catch
+                    {
                         Write-Error -Message "`nValidation failed: $($_)"
                         Write-Log "Validation failed during manual challenge: $($_)" -Level 'Error'
                         $retry = Read-Host "`nWould you like to retry validation? (Y/N)"
-                        if ($retry -notmatch '^[Yy]$') {
+                        if ($retry -notmatch '^[Yy]$')
+                        {
                             Write-Warning -Message "`nReturning to the main menu"
                             return
                         }
                     }
-                } else {
+                } else
+                {
                     Write-Warning -Message "`nDNS Propagation Summary:"
-                    foreach ($result in $propagationResults) {
-                        $status = if ($result.Propagated) { "✓ READY" } else { "✗ PENDING" }
+                    foreach ($result in $propagationResults)
+                    {
+                        $status = if ($result.Propagated) { "OK READY" } else { "X PENDING" }
                         $color = if ($result.Propagated) { "Green" } else { "Red" }
                         Write-Host -Object "  $($result.Domain): $status" -ForegroundColor $color
                     }
@@ -427,13 +523,15 @@ function Register-Certificate {
             }
             # Final certificate retrieval and verification
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Finalizing certificate..." -PercentComplete 90
-            try {
+            try
+            {
                 $cert = Invoke-WithRetry -ScriptBlock {
                     Get-PACertificate -MainDomain $mainDomain -ErrorAction Stop
                 } -MaxAttempts 5 -InitialDelaySeconds 10 `
-                  -OperationName "Certificate retrieval" `
-                  -SuccessCondition { $null -ne $_.Certificate }
-                if (-not $cert.Certificate) {
+                    -OperationName "Certificate retrieval" `
+                    -SuccessCondition { $null -ne $_.Certificate }
+                if (-not $cert.Certificate)
+                {
                     Write-Error -Message "`nCertificate was not issued. Please check the Let's Encrypt logs."
                     Write-Log "Certificate was not issued for $mainDomain" -Level 'Error'
                     Read-Host "`nPress Enter to return to the main menu"
@@ -446,25 +544,30 @@ function Register-Certificate {
                 Write-Host -Object "Valid Until: $($cert.Certificate.NotAfter)" -ForegroundColor Cyan
                 Write-Host -Object "Thumbprint: $($cert.Certificate.Thumbprint)" -ForegroundColor Cyan
                 Write-Log "Certificate issued for $mainDomain, valid until $($cert.Certificate.NotAfter)"
-            } catch {
+            } catch
+            {
                 Write-Error -Message "`nFailed to retrieve issued certificate: $($_)"
                 Write-Log "Failed to retrieve issued certificate for ${mainDomain}: $($_)" -Level 'Error'
                 Read-Host "`nPress Enter to return to the main menu"
                 return
             }
-        } else {
-            # Automated challenge handling
+        } else
+        {
+            # Automated challenge handling with circuit breaker and retry protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Processing automated challenge..." -PercentComplete 75
-            $cert = Invoke-WithRetry -ScriptBlock {
-                # Use -Force to overwrite existing orders
-                New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
-            } -MaxAttempts 3 -InitialDelaySeconds 30 `
-              -OperationName "Certificate acquisition" `
-              -SuccessCondition {
-                $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
-              }
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                Invoke-WithRetry -ScriptBlock {
+                    # Use -Force to overwrite existing orders
+                    New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
+                } -MaxAttempts 3 -InitialDelaySeconds 30 `
+                    -OperationName "Certificate acquisition" `
+                    -SuccessCondition {
+                    $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
+                }
+            }
             # Verify certificate was obtained
-            if (-not $cert -or (-not $cert.CertFile -and -not $cert.FullChainFile -and -not $cert.PfxFile)) {
+            if (-not $cert -or (-not $cert.CertFile -and -not $cert.FullChainFile -and -not $cert.PfxFile))
+            {
                 Write-Error -Message "`nFailed to obtain the certificate. Please check the output above for errors."
                 Write-Log "Failed to obtain the certificate for $mainDomain" -Level 'Error'
                 Read-Host "`nPress Enter to return to the main menu"
@@ -477,7 +580,8 @@ function Register-Certificate {
         # Call Install-Certificate function to handle installation options
         Write-Host -Object "`nProceeding to certificate installation..." -ForegroundColor Cyan
         Install-Certificate -PACertificate $cert
-    } catch {
+    } catch
+    {
         Write-Error -Message "`nAn error occurred during certificate request: $($_)"
         Write-Log "An error occurred during certificate request: $($_)" -Level 'Error'
         # Provide helpful troubleshooting information
@@ -487,7 +591,8 @@ function Register-Certificate {
         Write-Host -Object "3. Ensure the domain is publicly resolvable"
         Write-Host -Object "4. Check your internet connection"
         Write-Host -Object "5. Try again in a few minutes"
-    } finally {
+    } finally
+    {
         Write-Progress -Activity "Certificate Registration" -Completed
     }
     Read-Host "`nPress Enter to return to the main menu"
