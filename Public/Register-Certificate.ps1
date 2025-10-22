@@ -11,6 +11,11 @@ function Register-Certificate
         [Parameter()]
         [switch]$Force
     )
+    # Ensure circuit breaker is loaded
+    if (-not (Get-Command -Name Invoke-WithCircuitBreaker -ErrorAction SilentlyContinue)) {
+        . "$PSScriptRoot\..\Core\CircuitBreaker.ps1"
+    }
+
     # Ensure ACME server is set
     Initialize-ACMEServer
     # Load public suffix list for accurate domain parsing
@@ -404,9 +409,11 @@ function Register-Certificate
     {
         if ($plugin -eq 'Manual')
         {
-            # Manual challenge handling
+            # Manual challenge handling with circuit breaker protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Preparing manual challenge..." -PercentComplete 75
-            $cert = New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            }
             Write-Warning -Message "`nPlease create the following DNS TXT records:"
             Write-Warning -Message "=" * 80
             $challengeRecords = @()
@@ -546,15 +553,17 @@ function Register-Certificate
             }
         } else
         {
-            # Automated challenge handling
+            # Automated challenge handling with circuit breaker and retry protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Processing automated challenge..." -PercentComplete 75
-            $cert = Invoke-WithRetry -ScriptBlock {
-                # Use -Force to overwrite existing orders
-                New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
-            } -MaxAttempts 3 -InitialDelaySeconds 30 `
-                -OperationName "Certificate acquisition" `
-                -SuccessCondition {
-                $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                Invoke-WithRetry -ScriptBlock {
+                    # Use -Force to overwrite existing orders
+                    New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
+                } -MaxAttempts 3 -InitialDelaySeconds 30 `
+                    -OperationName "Certificate acquisition" `
+                    -SuccessCondition {
+                    $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
+                }
             }
             # Verify certificate was obtained
             if (-not $cert -or (-not $cert.CertFile -and -not $cert.FullChainFile -and -not $cert.PfxFile))

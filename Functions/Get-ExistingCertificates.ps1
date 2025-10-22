@@ -3,10 +3,13 @@
         Lists all existing Posh-ACME certificates and displays relevant details.
     .PARAMETER ShowMenu
         Shows an interactive menu for certificate selection and returns the selected order.
+    .NOTES
+        Function name uses plural noun intentionally as it operates on a collection of certificates.
 #>
 function Get-ExistingCertificates {
     [CmdletBinding()]
     [OutputType([System.Object[]])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Function operates on multiple certificates by design')]
     param(
         [switch]$ShowMenu
     )

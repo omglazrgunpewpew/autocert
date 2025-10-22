@@ -108,9 +108,9 @@ function New-RenewalScheduledTask {
         $registeredTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($registeredTask) {
             Write-Information -MessageData "Scheduled task '$taskName' created." -InformationAction Continue
-            Write-Host -Object "Base run time: $($baseTime.ToString('HH:mm'))" -ForegroundColor Cyan
+            Write-Information -MessageData "Base run time: $($baseTime.ToString('HH:mm'))" -InformationAction Continue
             if ($Config.UseRandomization) {
-                Write-Host -Object "Random delay window: $($Config.RandomizationWindow) minutes" -ForegroundColor Cyan
+                Write-Information -MessageData "Random delay window: $($Config.RandomizationWindow) minutes" -InformationAction Continue
             }
             Write-Log "Scheduled task '$taskName' created with base time $($baseTime.ToString('HH:mm'))"
             return $true
@@ -410,14 +410,16 @@ If you received this email, the notification system is working correctly.
 "@
     
     $result = Send-RenewalNotification -Subject $subject -Body $body -ToEmail $ToEmail -Priority 'Info'
-    
+
     if ($result) {
-        Write-Host "Test email sent successfully to $ToEmail" -ForegroundColor Green
+        Write-Information -MessageData "Test email sent successfully to $ToEmail" -InformationAction Continue
+        Write-Log "Test email sent successfully to $ToEmail" -Level 'Success'
     }
     else {
-        Write-Host "Failed to send test email to $ToEmail" -ForegroundColor Red
+        Write-Warning -Message "Failed to send test email to $ToEmail"
+        Write-Log "Failed to send test email to $ToEmail" -Level 'Error'
     }
-    
+
     return $result
 }
 

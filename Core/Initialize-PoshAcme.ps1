@@ -19,7 +19,7 @@ if ($isTestingMode -and (Test-Path $repoModulePath)) {
         Write-Verbose "Loaded Posh-ACME version $version from repository"
         Write-Log "Loaded Posh-ACME version $version from repository" -Level 'Info'
     } catch {
-        Write-Host -Object "Failed to load Posh-ACME from repository: $($_)" -ForegroundColor Red
+        Write-Error "Failed to load Posh-ACME from repository: $($_)"
         Write-Log "Failed to load Posh-ACME from repository: $($_)" -Level 'Error'
         Exit
     }
@@ -28,12 +28,12 @@ if ($isTestingMode -and (Test-Path $repoModulePath)) {
     
     # Check if Posh-ACME module is installed; if not, install it
     if (-not (Get-Module -ListAvailable -Name Posh-ACME)) {
-        Write-Host -Object "Posh-ACME module not found. Installing..."
+        Write-Information -MessageData "Posh-ACME module not found. Installing..." -InformationAction Continue
         try {
             Install-Module -Name Posh-ACME -Scope CurrentUser -Force -ErrorAction Stop
-            Write-Host -Object "Posh-ACME module installed."
+            Write-Information -MessageData "Posh-ACME module installed." -InformationAction Continue
         } catch {
-            Write-Host -Object "Failed to install Posh-ACME module: $($_)" -ForegroundColor Red
+            Write-Error "Failed to install Posh-ACME module: $($_)"
             Exit
         }
     } else {
@@ -43,10 +43,10 @@ if ($isTestingMode -and (Test-Path $repoModulePath)) {
             try {
                 $latestVersion = (Find-Module -Name Posh-ACME).Version
                 if ($currentVersion -lt $latestVersion) {
-                    Write-Host -Object "`nA newer version of Posh-ACME is available. Updating..."
+                    Write-Information -MessageData "`nA newer version of Posh-ACME is available. Updating..." -InformationAction Continue
                     Update-Module -Name Posh-ACME -Force -ErrorAction Stop
-                    Write-Host -Object "Posh-ACME module updated to version $latestVersion."
-                    
+                    Write-Information -MessageData "Posh-ACME module updated to version $latestVersion." -InformationAction Continue
+
                     # Update repository copy after successful update
                     $modulePath = (Get-Module -Name Posh-ACME -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1).ModuleBase
                     try {
@@ -56,12 +56,12 @@ if ($isTestingMode -and (Test-Path $repoModulePath)) {
                         Copy-Item -Path $modulePath\* -Destination $repoModulePath -Recurse -Force
                         Write-Log "Posh-ACME module updated in repository to version $latestVersion"
                     } catch {
-                        Write-Host -Object "Failed to update repository copy: $($_)" -ForegroundColor Yellow
+                        Write-Warning -Message "Failed to update repository copy: $($_)"
                         Write-Log "Failed to update repository copy: $($_)" -Level 'Warning'
                     }
                 }
             } catch {
-                Write-Host -Object "Could not check for updates to Posh-ACME module: $($_)" -ForegroundColor Yellow
+                Write-Warning -Message "Could not check for updates to Posh-ACME module: $($_)"
             }
         } else {
             Write-Verbose "Posh-ACME update check skipped (POSHACME_SKIP_UPGRADE_CHECK is set)"

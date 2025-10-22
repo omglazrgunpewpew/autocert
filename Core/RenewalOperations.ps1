@@ -1,6 +1,11 @@
 ﻿# RenewalOperations.ps1
 # Certificate renewal and automation functions
 
+# Ensure circuit breaker is loaded
+if (-not (Get-Command -Name Invoke-WithCircuitBreaker -ErrorAction SilentlyContinue)) {
+    . "$PSScriptRoot\CircuitBreaker.ps1"
+}
+
 function Invoke-AutomaticRenewal
 {
     <#
@@ -31,8 +36,10 @@ function Invoke-AutomaticRenewal
         # Load renewal configuration
         $config = Get-RenewalConfig
 
-        # Get all certificates and check renewal status
-        $orders = Get-PAOrder
+        # Get all certificates and check renewal status with circuit breaker protection
+        $orders = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+            Get-PAOrder
+        }
         if (-not $orders)
         {
             Write-Warning -Message "No certificates found to renew."
@@ -54,8 +61,10 @@ function Invoke-AutomaticRenewal
 
             try
             {
-                # Check if renewal is needed
-                $cert = Get-PACertificate -MainDomain $mainDomain
+                # Check if renewal is needed - protected by circuit breaker
+                $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                    Get-PACertificate -MainDomain $mainDomain
+                }
                 $daysUntilExpiry = ($cert.Certificate.NotAfter - (Get-Date)).Days
 
                 $result = [PSCustomObject]@{
@@ -70,10 +79,12 @@ function Invoke-AutomaticRenewal
                 {
                     Write-Information -MessageData "Renewing certificate for $mainDomain (expires in $daysUntilExpiry days)..." -InformationAction Continue
 
-                    # Attempt renewal with retries
-                    $renewed = Invoke-WithRetry -ScriptBlock {
-                        return New-PACertificate -MainDomain $mainDomain -Force
-                    } -MaxAttempts 3 -InitialDelaySeconds 30 -OperationName "Certificate renewal for $mainDomain"
+                    # Attempt renewal with circuit breaker and retries for maximum resilience
+                    $renewed = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                        Invoke-WithRetry -ScriptBlock {
+                            return New-PACertificate -MainDomain $mainDomain -Force
+                        } -MaxAttempts 3 -InitialDelaySeconds 30 -OperationName "Certificate renewal for $mainDomain"
+                    }
 
                     if ($renewed)
                     {

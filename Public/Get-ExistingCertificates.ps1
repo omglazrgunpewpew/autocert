@@ -3,6 +3,9 @@
         Lists all existing Posh-ACME certificates and displays relevant details.
     .PARAMETER ShowMenu
         Shows an interactive menu for certificate selection and returns the selected order.
+    .NOTES
+        Function name is singular to comply with PowerShell naming conventions.
+        For the plural version (Get-ExistingCertificates), see Functions directory.
 #>
 function Get-ExistingCertificate
 {

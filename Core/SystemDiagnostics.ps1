@@ -434,6 +434,76 @@ function Test-SystemHealth
     Write-ProgressHelper -Activity "System Health Check" -Status "Health check complete" -PercentComplete 100
     Write-Progress -Activity "System Health Check" -Completed
 
+    Write-ProgressHelper -Activity "System Health Check" -Status "Checking circuit breakers..." -PercentComplete 95
+
+    # Check circuit breaker status
+    Write-Information -MessageData "`n9. Circuit Breaker Status:" -InformationAction Continue
+    try
+    {
+        # Ensure circuit breaker module is loaded
+        if (-not (Get-Command -Name Get-CircuitBreakerStatus -ErrorAction SilentlyContinue)) {
+            . "$PSScriptRoot\CircuitBreaker.ps1"
+        }
+
+        $cbStatus = Get-CircuitBreakerStatus
+        if ($cbStatus -and $cbStatus.Count -gt 0)
+        {
+            foreach ($name in $cbStatus.Keys)
+            {
+                $cb = $cbStatus[$name]
+                $stateColor = switch ($cb.State) {
+                    'Closed' { 'Green' }
+                    'HalfOpen' { 'Yellow' }
+                    'Open' { 'Red' }
+                    default { 'Gray' }
+                }
+
+                Write-Information -MessageData "   $name`: $($cb.State)" -InformationAction Continue
+                if ($cb.State -ne 'Closed')
+                {
+                    Write-Information -MessageData "     Failures: $($cb.FailureCount)" -InformationAction Continue
+                    if ($cb.LastFailureTime -and $cb.LastFailureTime -ne [datetime]::MinValue)
+                    {
+                        $timeSinceFailure = (Get-Date) - $cb.LastFailureTime
+                        Write-Information -MessageData "     Last Failure: $($timeSinceFailure.ToString('hh\:mm\:ss')) ago" -InformationAction Continue
+                    }
+                }
+
+                # Alert on open circuit breakers
+                if ($cb.State -eq 'Open')
+                {
+                    $healthWarnings += "Circuit breaker '$name' is OPEN due to repeated failures"
+                }
+                elseif ($cb.State -eq 'HalfOpen')
+                {
+                    $healthWarnings += "Circuit breaker '$name' is in HALF-OPEN state (testing recovery)"
+                }
+
+                # Check failure history
+                if ($cb.FailureHistory -and $cb.FailureHistory.Count -gt 0)
+                {
+                    $recentFailures = 0
+                    foreach ($key in $cb.FailureHistory.Keys)
+                    {
+                        $recentFailures += $cb.FailureHistory[$key].Count
+                    }
+                    if ($recentFailures -gt 0)
+                    {
+                        Write-Verbose "     Recent failure events: $recentFailures"
+                    }
+                }
+            }
+        }
+        else
+        {
+            Write-Information -MessageData "   Circuit breakers: Not yet initialized" -InformationAction Continue
+        }
+    }
+    catch
+    {
+        Write-Verbose "Circuit breaker check failed: $($_.Exception.Message)"
+    }
+
     # Display comprehensive summary
     Write-Information -MessageData "`n" + "="*60 -InformationAction Continue
     Write-Information -MessageData "HEALTH CHECK SUMMARY" -InformationAction Continue

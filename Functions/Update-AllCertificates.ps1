@@ -1,10 +1,13 @@
 <#
     .SYNOPSIS
         Renews all existing certificates via scheduled task or manual trigger.
+    .NOTES
+        Function name uses plural noun intentionally as it operates on all certificates.
 #>
 function Update-AllCertificates {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([System.Boolean])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification='Function updates all certificates by design')]
     param(
         [switch]$Force
     )
