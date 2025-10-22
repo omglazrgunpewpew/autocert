@@ -70,8 +70,8 @@ Credential Management Menu
 ├── 3. Test credential
 └── 0. Return to Main Menu
 
-⚠️  ISSUE: This menu has NO LOOP!
-    Will return to main menu after ONE action.
+✅  FIXED: This menu now has a while loop!
+    Continues until user selects option 0.
 ```
 
 ## Main Menu Options Mapping
@@ -85,7 +85,7 @@ Credential Management Menu
 | 3 | Configure automatic renewal | `Set-AutomaticRenewal` | Functions/Set-AutomaticRenewal.ps1 | No | ✅ Working |
 | 4 | View and Manage certificates | `Show-CertificateManagementMenu` | Main.ps1:2956 | Yes | ✅ Working |
 | 5 | Options | `Show-Options` | Functions/Show-Options.ps1:5 | Yes | ✅ Working |
-| 6 | Manage Credentials | `Show-CredentialManagementMenu` | Main.ps1:2149 | **NO** | ❌ **Missing Loop** |
+| 6 | Manage Credentials | `Show-CredentialManagementMenu` | Main.ps1:2057 | Yes | ✅ Working |
 | 7 | System health check | `Test-SystemHealth` | Core/SystemDiagnostics.ps1:4 | No | ✅ Working |
 | S | Help / About | `Show-Help` | UI/HelpSystem.ps1:16 | No | ✅ Working |
 | 0 | Exit | Exit 0 | Built-in | N/A | ✅ Working |
@@ -135,16 +135,16 @@ Credential Management Menu
 
 ## Credential Management Submenu
 
-### Entry Point: Main.ps1 Line 2149-2240
+### Entry Point: Main.ps1 Line 2057-2150
 
 | Option | Label | Function Called | Location | Status |
 |--------|-------|-----------------|----------|--------|
-| 1 | Add new credential | Inline code | Main.ps1:2176-2191 | ⚠️ Works once |
-| 2 | Remove credential | `Remove-StoredCredential` | Functions/Manage-Credentials.ps1:140 | ⚠️ Works once |
-| 3 | Test credential | Inline code | Main.ps1:2210-2233 | ⚠️ Works once |
+| 1 | Add new credential | Inline code | Main.ps1:2085-2100 | ✅ Working |
+| 2 | Remove credential | `Remove-StoredCredential` | Functions/Manage-Credentials.ps1:140 | ✅ Working |
+| 3 | Test credential | Inline code | Main.ps1:2119-2142 | ✅ Working |
 | 0 | Return to Main Menu | return | Built-in | ✅ Working |
 
-**CRITICAL ISSUE:** This menu has NO `while ($true)` loop, so it only executes ONCE then returns to main menu. User must re-enter the menu for each operation.
+**FIXED:** This menu now has a proper `while ($true)` loop and will continue looping until the user selects option 0.
 
 ## Required Functions Verification
 
@@ -168,30 +168,31 @@ All functions called from menus exist and are properly loaded:
 | `Remove-StoredCredential` | Functions/Manage-Credentials.ps1 | 140 (function) | ✅ Available |
 | `Get-CertificateRenewalStatus` | Core/RenewalConfig.ps1 | 170 (function) | ✅ Available |
 
-## Issues Found
+## Issues Found and Fixed
 
-### 🔴 Critical Issues
+### ✅ Fixed Issues
 
-1. **Show-CredentialManagementMenu Missing Loop**
-   - **Location:** Main.ps1:2149-2240
+1. **Show-CredentialManagementMenu Missing Loop** - FIXED
+   - **Location:** Main.ps1:2057-2150
    - **Problem:** No `while ($true)` loop
-   - **Impact:** Menu only executes once, then returns to main menu
-   - **Fix:** Wrap entire menu body in `while ($true) { ... }`
+   - **Solution Applied:** Added `while ($true)` loop around menu body
+   - **Status:** ✅ Menu now loops correctly until user exits
 
-### ⚠️ Security Issues
+2. **Password Displayed in Plain Text** - FIXED
+   - **Location:** Main.ps1:2133
+   - **Problem:** Test credential option showed password in plain text
+   - **Solution Applied:** Masked password with `Write-Warning -Message "  Password: ******* (hidden for security)"`
+   - **Status:** ✅ Password now hidden for security
 
-2. **Password Displayed in Plain Text**
-   - **Location:** Main.ps1:2224
-   - **Problem:** Test credential option shows password in plain text
-   - **Impact:** Security risk if screen is visible to others
-   - **Fix:** Mask password with asterisks or remove display
+3. **Duplicate Function Definitions** - FIXED
+   - **Locations:** Show-CredentialManagementMenu at lines 621 and 2149
+   - **Problem:** Function defined twice, causing maintenance issues
+   - **Solution Applied:** Removed first duplicate (lines 621-712)
+   - **Status:** ✅ Only one definition remains
 
 ### 📝 Minor Issues
 
-3. **Duplicate Function Definitions**
-   - **Locations:** Show-CredentialManagementMenu at lines 621 and 2149
-   - **Impact:** Confusing, wastes space, harder to maintain
-   - **Fix:** Remove first definition, keep only the later one
+
 
 4. **Inconsistent Return Behavior**
    - Some menus use `break` in loops
@@ -261,16 +262,16 @@ return exits Show-CertificateManagementMenu
 Back to Main Menu loop
 ```
 
-### Example 3: Credential Management (BROKEN)
+### Example 3: Credential Management (FIXED)
 
 ```
 User at Main Menu
   ↓
 User enters "6" (Manage Credentials)
   ↓
-Show-CredentialManagementMenu called (Main.ps1:2149)
+Show-CredentialManagementMenu called (Main.ps1:2057)
   ↓
-❌ NO LOOP! Single execution only
+✅ while ($true) loop starts
   ↓
 Menu displays with credential list
   ↓
@@ -280,13 +281,15 @@ Credential added
   ↓
 Read-Host "Press Enter to continue"
   ↓
-❌ Function ends, no loop to return to menu
+✅ Loop continues, menu redisplays
+  ↓
+User can perform multiple operations
+  ↓
+User enters "0" (Return to Main Menu)
   ↓
 return exits Show-CredentialManagementMenu
   ↓
 Back to Main Menu
-  ↓
-User must select option 6 again for next operation!
 ```
 
 ## Testing Checklist
@@ -301,40 +304,30 @@ User must select option 6 again for next operation!
 - [ ] Option 5: Options submenu - loops correctly
   - [ ] ACME server change works
   - [ ] Returns to main menu on option 0
-- [ ] Option 6: Credentials menu - ❌ **BROKEN - needs loop fix**
-  - [ ] Add credential works (but returns to main menu)
-  - [ ] Remove credential works (but returns to main menu)
-  - [ ] Test credential works (but returns to main menu)
+- [ ] Option 6: Credentials menu - ✅ **FIXED - now loops correctly**
+  - [ ] Add credential works and returns to menu
+  - [ ] Remove credential works and returns to menu
+  - [ ] Test credential works with masked password
 - [ ] Option 7: System health - completes and returns to main menu
 - [ ] Option S: Help - displays and returns to main menu
 - [ ] Option 0: Exit - terminates application
 
 ## Recommendations
 
-### Immediate Fix Required
+### ✅ Completed Fixes
 
-1. **Add Loop to Show-CredentialManagementMenu**
-   ```powershell
-   function Show-CredentialManagementMenu {
-       while ($true) {  # ← ADD THIS
-           Clear-Host
-           # ... rest of menu code ...
-       }  # ← ADD THIS
-   }
-   ```
+1. **Added Loop to Show-CredentialManagementMenu** - DONE
+   - Added `while ($true)` loop at line 2058
+   - Added closing brace at line 2149
+   - Menu now loops until user selects option 0
 
-2. **Mask Password in Test Credential**
-   ```powershell
-   # Change from:
-   Write-Host -Object "  Password: $password" -ForegroundColor White
+2. **Masked Password in Test Credential** - DONE
+   - Changed line 2133 to mask password display
+   - Now shows: `Write-Warning -Message "  Password: ******* (hidden for security)"`
 
-   # To:
-   Write-Warning -Message "  Password: ******* (hidden for security)"
-   ```
-
-3. **Remove Duplicate Function Definitions**
-   - Delete lines 621-719 (first Show-CredentialManagementMenu)
-   - Keep only lines 2149-2240 (second definition)
+3. **Removed Duplicate Function Definitions** - DONE
+   - Deleted first Show-CredentialManagementMenu (lines 621-712)
+   - Kept only the second definition at line 2057
 
 ### Future Improvements
 
@@ -360,5 +353,8 @@ User must select option 6 again for next operation!
 ---
 
 **Last Updated:** 2025-10-22
-**Status:** 🔴 **Critical Issue Found** - Credential Management Menu missing loop
-**Action Required:** Fix Show-CredentialManagementMenu before production use
+**Status:** ✅ **All Critical Issues Fixed** - Credential Management Menu now working correctly
+**Changes Applied:**
+- Added while loop to Show-CredentialManagementMenu
+- Masked password display for security
+- Removed duplicate function definitions

@@ -618,98 +618,6 @@ function Show-Menu {
 }
 
 # Credential management menu
-function Show-CredentialManagementMenu {
-    Clear-Host
-    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
-    Write-Host -Object "    CREDENTIAL MANAGEMENT" -ForegroundColor Cyan
-    Write-Host -Object "="*60 -ForegroundColor Cyan
-
-    # List stored credentials
-    $credentials = Get-StoredCredential
-    if ($credentials.Count -eq 0) {
-        Write-Warning -Message "No credentials found. You can add new ones."
-    } else {
-        Write-Information -MessageData "Stored Credentials:" -InformationAction Continue
-        foreach ($cred in $credentials) {
-            Write-Host -Object "  • $($cred.Target)" -ForegroundColor White
-        }
-    }
-
-    Write-Host -Object "`nAvailable Actions:" -ForegroundColor White
-    Write-Information -MessageData "1. Add new credential" -InformationAction Continue
-    Write-Error -Message "2. Remove credential"
-    Write-Host -Object "3. Test credential" -ForegroundColor Cyan
-    Write-Host -Object "0. Return to Main Menu" -ForegroundColor DarkRed
-    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
-
-    $choice = Read-Host "Enter your choice"
-
-    switch ($choice) {
-        '1' {
-            # Add new credential
-            $target = Read-Host "Enter credential target (e.g., DNS provider name)"
-            $username = Read-Host "Enter username" -AsSecureString
-            $password = Read-Host "Enter password" -AsSecureString
-
-            try {
-                $cred = New-Object System.Management.Automation.PSCredential ($username, $password)
-                $null = $cred | Export-Clixml -Path "$env:LOCALAPPDATA\Posh-ACME\credentials.xml" -Force
-                Write-Information -MessageData "Credential added." -InformationAction Continue
-            } catch {
-                Write-Error -Message "Failed to add credential: $($_.Exception.Message)"
-            }
-
-            Read-Host "Press Enter to continue"
-        }
-        '2' {
-            # Remove credential
-            $target = Read-Host "Enter credential target to remove"
-
-            try {
-                $cred = Get-StoredCredential -Target $target
-                if ($cred) {
-                    Remove-StoredCredential -Target $target
-                    Write-Information -MessageData "Credential removed." -InformationAction Continue
-                } else {
-                    Write-Warning -Message "Credential not found."
-                }
-            } catch {
-                Write-Error -Message "Failed to remove credential: $($_.Exception.Message)"
-            }
-
-            Read-Host "Press Enter to continue"
-        }
-        '3' {
-            # Test credential
-            $target = Read-Host "Enter credential target to test"
-
-            try {
-                $cred = Get-StoredCredential -Target $target
-                if ($cred) {
-                    # Attempt to use credential (e.g., test DNS resolution)
-                    $username = $cred.UserName
-                    $password = $cred.GetNetworkCredential().Password
-
-                    # For demonstration, just display credential (do not do this in production)
-                    Write-Information -MessageData "Credential for ${target}:" -InformationAction Continue
-                    Write-Host -Object "  Username: $username" -ForegroundColor White
-                    Write-Host -Object "  Password: $password" -ForegroundColor White
-                } else {
-                    Write-Warning -Message "Credential not found."
-                }
-            } catch {
-                Write-Error -Message "Failed to test credential: $($_.Exception.Message)"
-            }
-
-            Read-Host "Press Enter to continue"
-        }
-        '0' { return }
-        default {
-            Write-Warning -Message "Invalid option. Please try again."
-            Read-Host "Press Enter to continue"
-        }
-    }
-}
 
 function Invoke-SingleCertificateManagement {
     [CmdletBinding()]
@@ -2147,8 +2055,9 @@ function Show-Menu {
 
 # Credential management menu
 function Show-CredentialManagementMenu {
-    Clear-Host
-    Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
+    while ($true) {
+        Clear-Host
+        Write-Host -Object "`n" + "="*60 -ForegroundColor Cyan
     Write-Host -Object "    CREDENTIAL MANAGEMENT" -ForegroundColor Cyan
     Write-Host -Object "="*60 -ForegroundColor Cyan
 
@@ -2218,10 +2127,10 @@ function Show-CredentialManagementMenu {
                     $username = $cred.UserName
                     $password = $cred.GetNetworkCredential().Password
 
-                    # For demonstration, just display credential (do not do this in production)
+                    # Display credential information (password masked for security)
                     Write-Information -MessageData "Credential for ${target}:" -InformationAction Continue
                     Write-Host -Object "  Username: $username" -ForegroundColor White
-                    Write-Host -Object "  Password: $password" -ForegroundColor White
+                    Write-Warning -Message "  Password: ******* (hidden for security)"
                 } else {
                     Write-Warning -Message "Credential not found."
                 }
@@ -2236,6 +2145,7 @@ function Show-CredentialManagementMenu {
             Write-Warning -Message "Invalid option. Please try again."
             Read-Host "Press Enter to continue"
         }
+    }
     }
 }
 
