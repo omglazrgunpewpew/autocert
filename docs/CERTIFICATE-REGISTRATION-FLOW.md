@@ -43,14 +43,34 @@ Register-Certificate Function Executes:
   ├─ Validate Domain (Test-ValidDomain)
   ├─ Extract Base Domain (Get-BaseDomain)
   ├─ Select Certificate Type
-  ├─ Detect DNS Provider (Get-DNSProvider)
-  ├─ Select DNS Plugin
+  │   ├─ 1) Server-specific certificate
+  │   ├─ 2) Wildcard certificate (*.domain)
+  │   └─ 3) Multi-domain certificate (SAN)
+  ├─ **NEW: Select Challenge Type** (Lines 113-146)
+  │   ├─ 1) DNS-01 Challenge (default)
+  │   ├─ 2) HTTP-01 Self-hosted listener
+  │   └─ 3) HTTP-01 Existing web server
+  ├─ IF DNS-01:
+  │   ├─ Detect DNS Provider (Get-DNSProvider)
+  │   ├─ Select DNS Plugin
+  │   ├─ Configure DNS Plugin Parameters
+  │   └─ Set $plugin and $pluginArgs
+  ├─ IF HTTP-01 Self-Host:
+  │   ├─ Set $plugin = 'WebSelfHost'
+  │   ├─ Ask for Port (default 80)
+  │   ├─ Ask for Timeout (default 120s)
+  │   └─ Set $pluginArgs (WSHPort, WSHTimeout)
+  ├─ IF HTTP-01 WebRoot:
+  │   ├─ Set $plugin = 'WebRoot'
+  │   ├─ Ask for Web Root Path
+  │   ├─ Validate Path Exists
+  │   ├─ Ask for Exact Path Option
+  │   └─ Set $pluginArgs (WRPath, WRExactPath)
   ├─ Create/Verify ACME Account
-  ├─ Configure DNS Plugin Parameters
   ├─ Request Certificate:
-  │   ├─ Manual Mode:
+  │   ├─ Manual DNS Mode:
   │   │   └─ Invoke-WithCircuitBreaker → New-PACertificate
-  │   └─ Automated Mode:
+  │   └─ Automated Mode (DNS/HTTP):
   │       └─ Invoke-WithCircuitBreaker → Invoke-WithRetry → New-PACertificate
   ├─ Verify Certificate Obtained
   └─ Prompt for Installation
@@ -93,7 +113,17 @@ All these functions are loaded by Main.ps1 during initialization:
 - `New-PAAccount` - Create ACME account
 - `New-PACertificate` - Request certificate (PROTECTED BY CIRCUIT BREAKER)
 - `Get-PACertificate` - Retrieve certificate details
-- `Get-PAPlugin` - List available DNS plugins
+- `Get-PAPlugin` - List available DNS/HTTP plugins
+
+### HTTP-01 Challenge Plugins (New)
+- **WebSelfHost Plugin** - Self-hosted HTTP listener
+  - Parameters: WSHPort (default 80), WSHTimeout (default 120)
+  - Starts temporary HTTP server on specified port
+  - Responds to ACME challenge requests automatically
+- **WebRoot Plugin** - Existing web server integration
+  - Parameters: WRPath (web root path), WRExactPath (optional)
+  - Writes challenge files to web server document root
+  - Works with IIS, Apache, nginx, etc.
 
 ## Circuit Breaker Integration
 
@@ -280,8 +310,142 @@ Section 9 displays:
 - **Circuit Breaker Overhead:** < 10ms per operation
 - **Retry Logic:** Adds 30-60 seconds per retry attempt
 
+## HTTP-01 Challenge Flow (New in 2.0.0)
+
+### Challenge Type Selection
+
+After selecting certificate type, users now choose validation method:
+
+```
+1) DNS-01 Challenge (default - requires DNS provider API)
+2) HTTP-01 Challenge - Self-hosted listener
+3) HTTP-01 Challenge - Existing web server
+```
+
+### HTTP-01 Self-Hosted Listener Flow
+
+**Plugin:** WebSelfHost
+**File:** Functions/Register-Certificate.ps1 (Lines 240-289)
+
+```
+User selects HTTP-01 Self-Hosted
+  ↓
+Configure Port:
+  ├─ Default: 80
+  └─ Custom: 1-65535 (requires port forwarding)
+  ↓
+Configure Timeout:
+  ├─ Default: 120 seconds
+  └─ Custom: 0 = unlimited
+  ↓
+Set Plugin Parameters:
+  ├─ $plugin = 'WebSelfHost'
+  └─ $pluginArgs = @{WSHPort=80; WSHTimeout=120}
+  ↓
+Request Certificate:
+  └─ New-PACertificate -Domain $domain -Plugin WebSelfHost -PluginArgs $pluginArgs
+  ↓
+Posh-ACME Starts HTTP Listener:
+  ├─ Binds to http://+:80/.well-known/acme-challenge/
+  ├─ Responds to ACME challenge requests
+  ├─ Let's Encrypt validates domain ownership
+  └─ Listener stops after validation
+  ↓
+Certificate Issued
+```
+
+**Requirements:**
+- Port 80 must be available (not in use)
+- Domain must resolve to server's public IP
+- Firewall must allow inbound port 80
+- Administrator privileges (to bind port 80)
+
+### HTTP-01 Web Root Flow
+
+**Plugin:** WebRoot
+**File:** Functions/Register-Certificate.ps1 (Lines 291-352)
+
+```
+User selects HTTP-01 WebRoot
+  ↓
+Configure Web Root:
+  ├─ Prompt for path (e.g., C:\inetpub\wwwroot)
+  ├─ Validate path exists
+  └─ Create if necessary
+  ↓
+Configure Path Mode:
+  ├─ Standard: Create .well-known/acme-challenge/ subdirectory
+  └─ Exact: Use specified path as-is
+  ↓
+Set Plugin Parameters:
+  ├─ $plugin = 'WebRoot'
+  └─ $pluginArgs = @{WRPath='C:\inetpub\wwwroot'; WRExactPath=$false}
+  ↓
+Request Certificate:
+  └─ New-PACertificate -Domain $domain -Plugin WebRoot -PluginArgs $pluginArgs
+  ↓
+Posh-ACME Writes Challenge Files:
+  ├─ Creates directory: $WRPath\.well-known\acme-challenge\
+  ├─ Writes file with token name
+  ├─ File content = key authorization
+  └─ Web server serves file at http://domain/.well-known/acme-challenge/{token}
+  ↓
+Let's Encrypt Validates:
+  ├─ Requests http://domain/.well-known/acme-challenge/{token}
+  ├─ Verifies file content matches expected value
+  └─ Marks domain as validated
+  ↓
+Posh-ACME Cleans Up:
+  └─ Removes challenge file
+  ↓
+Certificate Issued
+```
+
+**Requirements:**
+- Web server running (IIS, Apache, nginx)
+- Web root directory writable
+- `.well-known` path publicly accessible
+- Domain configured in web server
+
+### HTTP-01 vs DNS-01 Decision Matrix
+
+| Scenario | Recommended Method |
+|----------|-------------------|
+| Wildcard certificate (`*.domain.com`) | DNS-01 only |
+| Server behind firewall (no public IP) | DNS-01 |
+| DNS provider without API | HTTP-01 |
+| Existing web server (IIS/Apache/nginx) | HTTP-01 WebRoot |
+| API server (no web server) | HTTP-01 Self-Host or DNS-01 |
+| Port 80 not available | DNS-01 |
+| Internal/private domain | DNS-01 Manual |
+| Simple public web server | HTTP-01 WebRoot |
+| Quick testing | HTTP-01 Self-Host |
+
+### HTTP-01 Error Scenarios
+
+1. **Port 80 in use:**
+   - Error: "Address already in use"
+   - Solution: Use WebRoot method or stop conflicting service
+
+2. **Firewall blocking:**
+   - Error: "Connection timeout"
+   - Solution: Open port 80 in firewall
+
+3. **Domain not resolving:**
+   - Error: "DNS resolution failed"
+   - Solution: Check A record, wait for propagation
+
+4. **Web root not writable:**
+   - Error: "Access denied"
+   - Solution: Grant write permissions, run as Administrator
+
+5. **Challenge file not accessible:**
+   - Error: "404 Not Found"
+   - Solution: Check web server configuration, verify `.well-known` path
+
 ## Related Documentation
 
+- [HTTP-CHALLENGES.md](./HTTP-CHALLENGES.md) - **NEW** Complete HTTP-01 guide
 - [RELIABILITY.md](./RELIABILITY.md) - Circuit breaker and resilience patterns
 - [DNS-PROVIDERS.md](./DNS-PROVIDERS.md) - DNS provider setup guides
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
@@ -289,12 +453,12 @@ Section 9 displays:
 
 ## Version History
 
-- **2.0.0** (2025-10) - Added circuit breaker integration to certificate registration
+- **2.0.0** (2025-10) - Added circuit breaker integration and HTTP-01 challenge support
 - **1.9.0** (2025-07) - DNS provider auto-detection improvements
 - **1.8.0** (2025-07) - Email notification system
 - **1.7.0** (2025-07) - Initial menu-based system
 
 ---
 
-**Last Updated:** 2025-10-22
-**Validation Status:** ✅ Complete - Flow verified and documented
+**Last Updated:** 2025-10-23
+**Validation Status:** ✅ Complete - Flow verified and documented including HTTP-01 support
