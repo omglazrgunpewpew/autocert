@@ -207,7 +207,7 @@ function Test-NetworkConnectivity {
                 ResponseTime = (Measure-Command { Invoke-WebRequest -Uri "https://$testHost" -UseBasicParsing -TimeoutSec $TimeoutSeconds }).TotalMilliseconds
             }
         } catch {
-            $results[$host] = @{
+            $results[$testHost] = @{
                 Success = $false
                 Error = $_.Exception.Message
             }
