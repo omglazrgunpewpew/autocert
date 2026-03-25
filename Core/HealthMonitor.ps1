@@ -53,7 +53,7 @@ class HealthCheck {
         return $result
     }
 }
-function Initialize-HealthCheck {
+function Initialize-HealthChecks {
     [CmdletBinding()]
     [OutputType([void])]
     param()
@@ -239,6 +239,12 @@ function Initialize-HealthCheck {
         )
     }
 }
+
+function Initialize-HealthCheck {
+    [CmdletBinding()]
+    param()
+    Initialize-HealthChecks
+}
 function Invoke-HealthCheck {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable[]])]
@@ -249,7 +255,7 @@ function Invoke-HealthCheck {
         [switch]$Detailed
     )
     if (-not $script:HealthChecks) {
-        Initialize-HealthCheck
+        Initialize-HealthChecks
     }
     $checksToRun = @()
     if ($CheckNames.Count -gt 0) {

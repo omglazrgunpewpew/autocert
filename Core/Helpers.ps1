@@ -367,17 +367,8 @@ function Get-NextFileVersion {
         [string]$baseName, # 'cert' or 'pvkey'
         [string]$extension = ".pem"
     )
-    $latestVersion = -1
-    $files = Get-ChildItem -Path $folderPath -Filter "$baseName*${extension}"
-    foreach ($file in $files) {
-        if ($file.Name -match "${baseName}(\d+)$extension") {
-            [int]$versionNumber = $Matches[1]
-            if ($versionNumber -gt $latestVersion) {
-                $latestVersion = $versionNumber
-            }
-        }
-    }
-    return ($latestVersion + 1).ToString("D3")
+    # Use timestamp-based versioning for concurrency safety
+    return (Get-Date).ToString('yyyyMMddHHmmssfff')
 }
 # Get Recording Server certificate folder path
 function Get-RSCertFolder {
@@ -484,5 +475,7 @@ function Save-RevokedCertificates {
         Write-Warning -Message "Failed to save revoked certificates: $($_)"
         Write-Log "Failed to save revoked certificates: $($_)" -Level 'Warning'
     }
-}
+} 
 
+# Export functions for dot-sourcing (commented out for script execution)
+# Export-ModuleMember -Function Invoke-WithRetry, Write-ProgressHelper

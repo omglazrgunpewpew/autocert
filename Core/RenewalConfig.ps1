@@ -234,9 +234,9 @@ function Send-RenewalNotification {
         }
         
         # Load SMTP configuration from secure storage or config
-        $smtpConfig = Get-SmtpConfiguration
+        $smtpConfig = Get-SmtpSettings
         if (-not $smtpConfig) {
-            Write-Log "SMTP configuration not found. Please run Set-SmtpConfiguration first." -Level 'Error'
+            Write-Log "SMTP configuration not found. Please run Set-SmtpSettings first." -Level 'Error'
             return $false
         }
         
@@ -297,91 +297,6 @@ function Send-RenewalNotification {
     }
 }
 
-# Function to configure SMTP settings
-function Set-SmtpConfiguration {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$SmtpServer,
-        [Parameter(Mandatory = $true)]
-        [string]$FromEmail,
-        [Parameter()]
-        [int]$SmtpPort = 587,
-        [Parameter()]
-        [bool]$UseSsl = $true,
-        [Parameter()]
-        [pscredential]$Credential,
-        [Parameter()]
-        [string]$ConfigPath = "$env:LOCALAPPDATA\PoshACME\smtp_config.json"
-    )
-    
-    try {
-        # Ensure directory exists
-        $configDir = Split-Path -Path $ConfigPath -Parent
-        if (-not (Test-Path $configDir)) {
-            New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-        }
-        
-        # Prepare configuration object
-        $smtpConfig = @{
-            SmtpServer = $SmtpServer
-            FromEmail  = $FromEmail
-            SmtpPort   = $SmtpPort
-            UseSsl     = $UseSsl
-            Timestamp  = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-        }
-        
-        # Store credentials securely if provided
-        if ($Credential) {
-            $credentialPath = "$env:LOCALAPPDATA\PoshACME\smtp_credential.xml"
-            $Credential | Export-Clixml -Path $credentialPath
-            $smtpConfig.CredentialPath = $credentialPath
-        }
-        
-        # Save configuration
-        $smtpConfig | ConvertTo-Json | Set-Content -Path $ConfigPath
-        Write-Log "SMTP configuration saved successfully" -Level 'Success'
-        return $true
-        
-    }
-    catch {
-        $errorMsg = "Failed to save SMTP configuration: $($_.Exception.Message)"
-        Write-Log $errorMsg -Level 'Error'
-        Write-Error $errorMsg
-        return $false
-    }
-}
-
-# Function to retrieve SMTP configuration
-function Get-SmtpConfiguration {
-    [CmdletBinding()]
-    param (
-        [Parameter()]
-        [string]$ConfigPath = "$env:LOCALAPPDATA\PoshACME\smtp_config.json"
-    )
-    
-    try {
-        if (-not (Test-Path $ConfigPath)) {
-            Write-Log "SMTP configuration file not found: $ConfigPath" -Level 'Warning'
-            return $null
-        }
-        
-        $config = Get-Content $ConfigPath | ConvertFrom-Json
-        
-        # Load credentials if path is specified
-        if ($config.CredentialPath -and (Test-Path $config.CredentialPath)) {
-            $config.Credential = Import-Clixml -Path $config.CredentialPath
-        }
-        
-        return $config
-        
-    }
-    catch {
-        $errorMsg = "Failed to load SMTP configuration: $($_.Exception.Message)"
-        Write-Log $errorMsg -Level 'Error'
-        return $null
-    }
-}
 
 # Function to test email notification system
 function Test-EmailNotification {

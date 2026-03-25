@@ -27,8 +27,8 @@
 - **File**: `Core/RenewalConfig.ps1`
 - **New functions**:
   - `Send-RenewalNotification` - Complete email sending implementation
-  - `Set-SmtpConfiguration` - Secure SMTP settings storage
-  - `Get-SmtpConfiguration` - Retrieve SMTP settings
+  - `Set-SmtpSettings` - Secure SMTP settings storage
+  - `Get-SmtpSettings` - Retrieve SMTP settings
   - `Test-EmailNotification` - Test email functionality
 
   - `Send-CertificateNotification` - Template-based notifications
@@ -146,7 +146,7 @@ All new functions include:
 
 ```powershell
 # Configure SMTP
-Set-SmtpConfiguration -SmtpServer "smtp.gmail.com" -FromEmail "notify@domain.com" -Credential $cred
+Set-SmtpSettings -SmtpServer "smtp.gmail.com" -FromEmail "notify@domain.com" -Credential $cred
 
 # Test email
 Test-EmailNotification -ToEmail "admin@domain.com"

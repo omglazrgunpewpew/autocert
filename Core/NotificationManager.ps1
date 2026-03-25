@@ -258,7 +258,7 @@ function Send-EmailNotification {
             return @{ Success = $false; Error = "No email recipient configured" }
         }
         # Get SMTP settings
-        $smtpSettings = Get-SMTPSettings
+        $smtpSettings = Get-SmtpSettings
         if (-not $smtpSettings) {
             return @{ Success = $false; Error = "SMTP settings not configured" }
         }
@@ -589,25 +589,69 @@ function Send-SlackNotification {
         return @{ Success = $false; Error = $_.Exception.Message }
     }
 }
-function Get-SMTPSettings {
+function Set-SmtpSettings {
     [CmdletBinding()]
-    [OutputType([System.Collections.Hashtable])]
-    param()
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$SmtpServer,
+        [Parameter(Mandatory = $true)]
+        [string]$FromEmail,
+        [Parameter()]
+        [int]$SmtpPort = 587,
+        [Parameter()]
+        [bool]$UseSsl = $true,
+        [Parameter()]
+        [pscredential]$Credential,
+        [Parameter()]
+        [string]$ConfigPath = "$env:LOCALAPPDATA\PoshACME\smtp_config.json"
+    )
     try {
-        $config = Get-RenewalConfig
-        if ($config.SMTPSettings) {
-            return $config.SMTPSettings
+        $configDir = Split-Path -Path $ConfigPath -Parent
+        if (-not (Test-Path $configDir)) {
+            New-Item -ItemType Directory -Path $configDir -Force | Out-Null
         }
-        # Default SMTP settings (can be customized)
-        return @{
-            Server = 'localhost'
-            Port = 25
-            UseSSL = $false
-            From = "autocert@$env:COMPUTERNAME"
-            Credential = $null
+        $smtpConfig = @{
+            Server    = $SmtpServer
+            From      = $FromEmail
+            Port      = $SmtpPort
+            UseSSL    = $UseSsl
+            Timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
         }
+        if ($Credential) {
+            $credentialPath = "$env:LOCALAPPDATA\PoshACME\smtp_credential.xml"
+            $Credential | Export-Clixml -Path $credentialPath
+            $smtpConfig.CredentialPath = $credentialPath
+        }
+        $smtpConfig | ConvertTo-Json | Set-Content -Path $ConfigPath
+        Write-Log "SMTP configuration saved successfully" -Level 'Success'
+        return $true
     } catch {
-        Write-Log "Failed to get SMTP settings: $($_.Exception.Message)" -Level 'Error'
+        $errorMsg = "Failed to save SMTP configuration: $($_.Exception.Message)"
+        Write-Log $errorMsg -Level 'Error'
+        Write-Error $errorMsg
+        return $false
+    }
+}
+
+function Get-SmtpSettings {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [string]$ConfigPath = "$env:LOCALAPPDATA\PoshACME\smtp_config.json"
+    )
+    try {
+        if (-not (Test-Path $ConfigPath)) {
+            Write-Log "SMTP configuration file not found: $ConfigPath" -Level 'Warning'
+            return $null
+        }
+        $config = Get-Content $ConfigPath | ConvertFrom-Json
+        if ($config.CredentialPath -and (Test-Path $config.CredentialPath)) {
+            $config.Credential = Import-Clixml -Path $config.CredentialPath
+        }
+        return $config
+    } catch {
+        $errorMsg = "Failed to load SMTP configuration: $($_.Exception.Message)"
+        Write-Log $errorMsg -Level 'Error'
         return $null
     }
 }

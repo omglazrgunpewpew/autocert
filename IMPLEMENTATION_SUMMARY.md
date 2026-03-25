@@ -6,7 +6,7 @@
 Implemented a complete email notification system to replace the placeholder `Send-RenewalNotification` function in `Core\RenewalConfig.ps1`.
 
 ### Features Implemented
-- **SMTP Configuration Management**: `Set-SmtpConfiguration` and `Get-SmtpConfiguration` functions
+- **SMTP Configuration Management**: `Set-SmtpSettings` and `Get-SmtpSettings` functions
 - **Secure Credential Storage**: Credentials stored using PowerShell's secure XML format
 - **Email Sending**: Full `Send-MailMessage` integration with error handling
 - **Template Support**: Integration with existing notification templates from `NotificationManager.ps1`
@@ -15,15 +15,15 @@ Implemented a complete email notification system to replace the placeholder `Sen
 
 ### New Functions Added
 - `Send-RenewalNotification` - Enhanced with full SMTP support
-- `Set-SmtpConfiguration` - Configure SMTP server settings
-- `Get-SmtpConfiguration` - Retrieve stored SMTP configuration
+- `Set-SmtpSettings` - Configure SMTP server settings
+- `Get-SmtpSettings` - Retrieve stored SMTP configuration
 - `Test-EmailNotification` - Send test emails
 - `Send-CertificateNotification` - Template-based certificate notifications
 
 ### Usage Examples
 ```powershell
 # Configure SMTP settings
-Set-SmtpConfiguration -SmtpServer "smtp.gmail.com" -FromEmail "autocert@company.com" -SmtpPort 587 -UseSsl $true -Credential $cred
+Set-SmtpSettings -SmtpServer "smtp.gmail.com" -FromEmail "autocert@company.com" -SmtpPort 587 -UseSsl $true -Credential $cred
 
 # Test email system
 Test-EmailNotification -ToEmail "admin@company.com"
@@ -132,7 +132,7 @@ A comprehensive test script has been created: `test_implementations.ps1`
 1. Configure SMTP settings:
    ```powershell
    $cred = Get-Credential  # Your SMTP credentials
-   Set-SmtpConfiguration -SmtpServer "your-smtp-server.com" -FromEmail "autocert@yourcompany.com" -Credential $cred
+   Set-SmtpSettings -SmtpServer "your-smtp-server.com" -FromEmail "autocert@yourcompany.com" -Credential $cred
    ```
 
 2. Enable email notifications in renewal config:
