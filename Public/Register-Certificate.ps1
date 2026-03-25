@@ -11,6 +11,11 @@ function Register-Certificate
         [Parameter()]
         [switch]$Force
     )
+    # Ensure circuit breaker is loaded
+    if (-not (Get-Command -Name Invoke-WithCircuitBreaker -ErrorAction SilentlyContinue)) {
+        . "$PSScriptRoot\..\Core\CircuitBreaker.ps1"
+    }
+
     # Ensure ACME server is set
     Initialize-ACMEServer
     # Load public suffix list for accurate domain parsing
@@ -104,9 +109,48 @@ function Register-Certificate
     }
     Write-Host -Object "`nCertificate will be issued for:" -ForegroundColor Cyan
     $domains | ForEach-Object { Write-Host -Object "  - $_" -ForegroundColor Yellow }
-    Write-ProgressHelper -Activity "Certificate Registration" -Status "Detecting DNS provider..." -PercentComplete 25
-    # Attempt to auto-detect DNS provider
-    $dnsProvider = Get-DNSProvider -Domain $baseDomain
+
+    # Select challenge type
+    Write-Host -Object "`nSelect the challenge validation method:"
+    Write-Host -Object "1) DNS-01 Challenge (default - requires DNS provider API access)"
+    Write-Host -Object "2) HTTP-01 Challenge - Self-hosted listener (requires port 80 access)"
+    Write-Host -Object "3) HTTP-01 Challenge - Existing web server (requires web root access)"
+    Write-Host -Object "0) Back"
+
+    $challengeType = $null
+    $challengeTypeSelected = $false
+    while (-not $challengeTypeSelected)
+    {
+        $challengeChoice = Get-ValidatedInput -Prompt "`nEnter the corresponding number (0-3)" -ValidOptions 0, 1, 2, 3
+        switch ($challengeChoice)
+        {
+            0 { return }
+            1
+            {
+                $challengeType = 'DNS-01'
+                $challengeTypeSelected = $true
+            }
+            2
+            {
+                $challengeType = 'HTTP-01-SelfHost'
+                $challengeTypeSelected = $true
+            }
+            3
+            {
+                $challengeType = 'HTTP-01-WebRoot'
+                $challengeTypeSelected = $true
+            }
+        }
+    }
+
+    Write-Log "Challenge type selected: $challengeType"
+
+    # Handle DNS-01 challenge
+    if ($challengeType -eq 'DNS-01')
+    {
+        Write-ProgressHelper -Activity "Certificate Registration" -Status "Detecting DNS provider..." -PercentComplete 25
+        # Attempt to auto-detect DNS provider
+        $dnsProvider = Get-DNSProvider -Domain $baseDomain
     $plugin = $null
     if ($dnsProvider.Name -ne "Unknown")
     {
@@ -192,6 +236,121 @@ function Register-Certificate
             }
         }
     }
+    }
+    # Handle HTTP-01 Self-Hosted challenge
+    elseif ($challengeType -eq 'HTTP-01-SelfHost')
+    {
+        Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring HTTP listener..." -PercentComplete 25
+        $plugin = 'WebSelfHost'
+        $pluginArgs = @{}
+
+        # Ask for port configuration
+        Write-Host -Object "`nHTTP-01 Self-Hosted Listener Configuration"
+        Write-Host -Object "This will start an HTTP listener on your server to respond to ACME challenges."
+        Write-Host -Object "`nIMPORTANT: Ensure that:"
+        Write-Host -Object "  - Port 80 (or custom port) is not already in use"
+        Write-Host -Object "  - The domain points to this server's public IP"
+        Write-Host -Object "  - Firewall allows incoming connections on the specified port"
+        Write-Host -Object "  - If using a custom port, ensure proper port forwarding (80 -> custom port)"
+
+        $useCustomPort = Read-Host "`nUse custom port? (Y/N, default=N to use port 80)"
+        if ($useCustomPort -match '^[Yy]$')
+        {
+            do
+            {
+                $customPort = Read-Host "Enter port number (1-65535) or 0 to cancel"
+                if ($customPort -eq '0') { return }
+                if ($customPort -match '^\d+$' -and [int]$customPort -ge 1 -and [int]$customPort -le 65535)
+                {
+                    $pluginArgs['WSHPort'] = $customPort
+                    Write-Information -MessageData "Using port: $customPort" -InformationAction Continue
+                    break
+                }
+                Write-Warning -Message "Please enter a valid port number between 1 and 65535."
+            } while ($true)
+        }
+        else
+        {
+            Write-Information -MessageData "Using default port: 80" -InformationAction Continue
+        }
+
+        # Ask for timeout
+        $customTimeout = Read-Host "`nEnter listener timeout in seconds (default=120, 0=unlimited)"
+        if ($customTimeout -match '^\d+$')
+        {
+            $pluginArgs['WSHTimeout'] = [int]$customTimeout
+        }
+        else
+        {
+            $pluginArgs['WSHTimeout'] = 120
+        }
+
+        Write-Log "HTTP-01 SelfHost configured with port: $($pluginArgs.WSHPort), timeout: $($pluginArgs.WSHTimeout)"
+    }
+    # Handle HTTP-01 WebRoot challenge
+    elseif ($challengeType -eq 'HTTP-01-WebRoot')
+    {
+        Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring web root..." -PercentComplete 25
+        $plugin = 'WebRoot'
+        $pluginArgs = @{}
+
+        Write-Host -Object "`nHTTP-01 Web Root Configuration"
+        Write-Host -Object "This will place challenge files in your existing web server's document root."
+        Write-Host -Object "`nIMPORTANT: Ensure that:"
+        Write-Host -Object "  - Your web server (IIS, Apache, nginx) is running"
+        Write-Host -Object "  - The domain is configured in your web server"
+        Write-Host -Object "  - The web root path is accessible and writable"
+        Write-Host -Object "  - The /.well-known/acme-challenge/ path is publicly accessible"
+
+        do
+        {
+            $webRoot = Read-Host "`nEnter the full path to your web server's document root (e.g., C:\inetpub\wwwroot) or 0 to cancel"
+            if ($webRoot -eq '0') { return }
+
+            # Validate path exists
+            if (Test-Path -Path $webRoot -PathType Container)
+            {
+                $pluginArgs['WRPath'] = $webRoot
+                Write-Information -MessageData "Web root path set to: $webRoot" -InformationAction Continue
+                break
+            }
+            else
+            {
+                Write-Warning -Message "Path does not exist or is not accessible: $webRoot"
+                $createPath = Read-Host "Would you like to create this directory? (Y/N)"
+                if ($createPath -match '^[Yy]$')
+                {
+                    try
+                    {
+                        New-Item -Path $webRoot -ItemType Directory -Force -ErrorAction Stop | Out-Null
+                        $pluginArgs['WRPath'] = $webRoot
+                        Write-Information -MessageData "Created web root path: $webRoot" -InformationAction Continue
+                        break
+                    }
+                    catch
+                    {
+                        Write-Error -Message "Failed to create directory: $($_.Exception.Message)"
+                    }
+                }
+            }
+        } while ($true)
+
+        # Ask about exact path
+        Write-Host -Object "`nBy default, challenge files will be placed in: $webRoot\.well-known\acme-challenge\"
+        $useExactPath = Read-Host "Use the specified path as-is without adding .well-known/acme-challenge? (Y/N, default=N)"
+        if ($useExactPath -match '^[Yy]$')
+        {
+            $pluginArgs['WRExactPath'] = $true
+            Write-Information -MessageData "Challenge files will be placed directly in: $webRoot" -InformationAction Continue
+        }
+        else
+        {
+            Write-Information -MessageData "Challenge files will be placed in: $webRoot\.well-known\acme-challenge\" -InformationAction Continue
+        }
+
+        Write-Log "HTTP-01 WebRoot configured with path: $webRoot"
+    }
+
     Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring ACME account..." -PercentComplete 40
     # Ensure an ACME account exists
     if (-not (Get-PAAccount))
@@ -241,11 +400,17 @@ function Register-Certificate
             return
         }
     }
-    Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring DNS plugin..." -PercentComplete 55
-    # Initialize plugin arguments
-    $pluginArgs = @{}
-    # Handle plugin-specific authentication
-    switch ($plugin)
+
+    # Configure DNS plugin arguments (only for DNS-01 challenges)
+    if ($challengeType -eq 'DNS-01')
+    {
+        Write-ProgressHelper -Activity "Certificate Registration" -Status "Configuring DNS plugin..." -PercentComplete 55
+        # Initialize plugin arguments if not already set
+        if (-not $pluginArgs) {
+            $pluginArgs = @{}
+        }
+        # Handle plugin-specific authentication
+        switch ($plugin)
     {
         'Cloudflare'
         {
@@ -396,6 +561,8 @@ function Register-Certificate
             }
         }
     }
+    }  # End of DNS-01 configuration block
+
     Write-ProgressHelper -Activity "Certificate Registration" -Status "Requesting certificate..." -PercentComplete 70
     # Submit certificate order
     Write-Host -Object "`nRequesting certificate for domain(s): $($domains -join ', ')" -ForegroundColor Cyan
@@ -404,9 +571,11 @@ function Register-Certificate
     {
         if ($plugin -eq 'Manual')
         {
-            # Manual challenge handling
+            # Manual challenge handling with circuit breaker protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Preparing manual challenge..." -PercentComplete 75
-            $cert = New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                New-PACertificate -Domain $mainDomain -Plugin $plugin -DnsSleep 0 -Verbose
+            }
             Write-Warning -Message "`nPlease create the following DNS TXT records:"
             Write-Warning -Message "=" * 80
             $challengeRecords = @()
@@ -546,15 +715,17 @@ function Register-Certificate
             }
         } else
         {
-            # Automated challenge handling
+            # Automated challenge handling with circuit breaker and retry protection
             Write-ProgressHelper -Activity "Certificate Registration" -Status "Processing automated challenge..." -PercentComplete 75
-            $cert = Invoke-WithRetry -ScriptBlock {
-                # Use -Force to overwrite existing orders
-                New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
-            } -MaxAttempts 3 -InitialDelaySeconds 30 `
-                -OperationName "Certificate acquisition" `
-                -SuccessCondition {
-                $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
+            $cert = Invoke-WithCircuitBreaker -OperationName 'CertificateRenewal' -Operation {
+                Invoke-WithRetry -ScriptBlock {
+                    # Use -Force to overwrite existing orders
+                    New-PACertificate -Domain $mainDomain -Plugin $plugin -PluginArgs $pluginArgs -Force -Verbose
+                } -MaxAttempts 3 -InitialDelaySeconds 30 `
+                    -OperationName "Certificate acquisition" `
+                    -SuccessCondition {
+                    $_ -and ($_.CertFile -or $_.FullChainFile -or $_.PfxFile)
+                }
             }
             # Verify certificate was obtained
             if (-not $cert -or (-not $cert.CertFile -and -not $cert.FullChainFile -and -not $cert.PfxFile))

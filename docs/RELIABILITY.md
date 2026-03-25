@@ -20,21 +20,37 @@ This document outlines the reliability and error handling features in AutoCert.
 
 ### 2. Circuit Breaker Pattern
 
-Prevents cascade failures by temporarily stopping operations that are likely to fail.
+Prevents cascade failures by temporarily stopping operations that are likely to fail. The circuit breaker is fully integrated into all critical Posh-ACME API operations.
 
 **Implemented Circuit Breakers:**
 
-- **DNS Validation**: Protects against DNS provider failures
-- **Certificate Renewal**: Prevents repeated ACME server failures
-- **Certificate Installation**: Guards against certificate store issues
-- **Email Notifications**: Prevents notification spam during outages
+- **DNS Validation**: Protects against DNS provider failures (3 failures, 300s timeout)
+- **Certificate Renewal**: Prevents repeated ACME server failures (2 failures, 600s timeout)
+  - Wraps `New-PACertificate` calls in Register-Certificate and renewal operations
+  - Wraps `Get-PAOrder` and `Get-PACertificate` calls for certificate checks
+- **Certificate Installation**: Guards against certificate store issues (3 failures, 180s timeout)
+- **Email Notifications**: Prevents notification spam during outages (5 failures, 900s timeout)
+
+**Integration Points:**
+
+- `Core/RenewalOperations.ps1`: All ACME operations protected
+- `Public/Register-Certificate.ps1`: New certificate requests protected
+- `Core/SystemDiagnostics.ps1`: Circuit breaker status monitoring
+- Combined with exponential retry logic for maximum resilience
 
 **Configuration:**
 
-- Configurable failure thresholds
-- Exponential backoff timing
-- Automatic recovery mechanisms
-- Fallback operation support
+- Configurable failure thresholds per operation type
+- Automatic state transitions: Closed → Open → HalfOpen → Closed
+- Self-healing with success threshold validation
+- Failure history tracking per hour for pattern analysis
+- Manual reset capability via `Reset-CircuitBreaker`
+
+**States:**
+
+- **Closed**: Normal operation, requests pass through
+- **Open**: Failures exceeded threshold, requests blocked
+- **HalfOpen**: Testing recovery, limited requests allowed
 
 ### 3. Health Monitoring
 
@@ -179,17 +195,33 @@ try {
 ### Circuit Breaker Monitoring
 
 ```powershell
-# Check circuit breaker status
+# Check circuit breaker status for all operations
 $status = Get-CircuitBreakerStatus
 foreach ($operation in $status.Keys) {
-    Write-Host "$operation`: $($status[$operation].State)"
-    if ($status[$operation].State -eq 'Open') {
-        Write-Warning "Circuit breaker is open for $operation"
+    $cb = $status[$operation]
+    Write-Host "$operation`: State=$($cb.State), Failures=$($cb.FailureCount)"
+
+    if ($cb.State -eq 'Open') {
+        $remainingTime = 300 - ((Get-Date) - $cb.LastFailureTime).TotalSeconds
+        Write-Warning "Circuit breaker is OPEN for $operation - retry in $([math]::Round($remainingTime))s"
+    }
+    elseif ($cb.State -eq 'HalfOpen') {
+        Write-Host "$operation is testing recovery (HalfOpen state)"
     }
 }
 
-# Reset circuit breaker if needed
-Reset-CircuitBreaker -OperationName 'DNSValidation'
+# Check specific operation
+$certRenewalStatus = Get-CircuitBreakerStatus -OperationName 'CertificateRenewal'
+Write-Host "Certificate Renewal Circuit Breaker: $($certRenewalStatus.State)"
+
+# Reset circuit breaker if needed (manual intervention)
+Reset-CircuitBreaker -OperationName 'CertificateRenewal'
+
+# Reset all circuit breakers
+Reset-CircuitBreaker
+
+# Circuit breaker status is also included in system health checks
+Test-SystemHealth  # Shows circuit breaker states in section 9
 ```
 
 ### Certificate Backup
