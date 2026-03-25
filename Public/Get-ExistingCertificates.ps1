@@ -143,4 +143,15 @@ function Get-ExistingCertificate
 
 
 
+# Backward-compatible plural function name expected by existing tests/documentation
+function Get-ExistingCertificates {
+    [CmdletBinding()] param(
+        [switch]$ShowMenu
+    )
+    # Delegate to singular implementation
+    Get-ExistingCertificate -ShowMenu:$ShowMenu
+}
+
+
+
 

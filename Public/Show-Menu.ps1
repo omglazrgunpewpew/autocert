@@ -83,6 +83,7 @@ function Show-Menu
   5. Options
   6. Credential management
   7. System health check
+  8. CompleteView deployment
 
   S. Show help
   0. Exit

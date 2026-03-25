@@ -51,6 +51,11 @@ bin/
 obj/
 out/
 dist/
+output/
+tmp/
+
+# Browser automation artifacts
+.playwright-cli/
 
 # Backup files
 backup/

@@ -64,4 +64,10 @@ function Update-AllCertificate
     }
 }
 
+# Backward compatibility wrapper expected by tests/documentation
+function Update-AllCertificates {
+    [CmdletBinding(SupportsShouldProcess)] param([switch]$Force)
+    Update-AllCertificate -Force:$Force
+}
+
 

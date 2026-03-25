@@ -28,6 +28,19 @@ function Invoke-AutomaticRenewal
 
     try
     {
+        $completeViewConfig = Get-CompleteViewDeploymentConfig -ErrorAction SilentlyContinue
+        if ($completeViewConfig -and $completeViewConfig.Enabled) {
+            Write-Information -MessageData "CompleteView deployment detected. Running CompleteView renewal orchestration..." -InformationAction Continue
+            $cvResult = Update-CompleteViewCertificates -Force:$Force
+            if ($cvResult.Success) {
+                Write-Log "CompleteView automatic renewal completed successfully" -Level 'Info'
+                return 0
+            }
+
+            Write-Log "CompleteView automatic renewal completed with failures" -Level 'Error'
+            return 1
+        }
+
         # Load renewal configuration
         $config = Get-RenewalConfig
 

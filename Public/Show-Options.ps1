@@ -59,3 +59,10 @@ function Set-ACMEServer
     Read-Host "`nPress Enter to return to options"
 }
 
+# Backward compatibility: original test expects Show-Options
+function Show-Options {
+    [CmdletBinding()]
+    param()
+    Show-Option
+}
+

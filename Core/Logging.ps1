@@ -43,8 +43,22 @@ function Write-Log {
     $logEntry = "$timestamp [$Level] $Message"
     try {
         $logEntry | Out-File -FilePath $script:LogFile -Append -Encoding UTF8
-    } catch {
+    }
+    catch {
         # Fallback if log file is locked
         Write-Verbose "Failed to write to log file: $_"
     }
+}
+
+# Backward-compatible unified logging function expected by newer components
+if (-not (Get-Command Write-AutoCertLog -ErrorAction SilentlyContinue)) {
+    function Write-AutoCertLog {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory)] [string]$Message,
+            [ValidateSet('Debug', 'Info', 'Warning', 'Error', 'Success')] [string]$Level = 'Info'
+        )
+        Write-Log -Message $Message -Level $Level
+    }
+    Set-Alias -Name Write-LogMessage -Value Write-AutoCertLog -ErrorAction SilentlyContinue
 }

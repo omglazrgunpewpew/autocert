@@ -33,7 +33,7 @@ $env:POSHACME_SKIP_UPGRADE_CHECK = $true
 # Define test configurations
 $testConfigs = @{
     'Unit'                 = @{
-        Scripts     = @('Autocert.Tests.ps1')
+        Scripts     = @('Autocert.Tests.ps1', 'Unit\CompleteViewDeployment.Tests.ps1')
         Description = 'Basic unit tests for core functions'
         Tags        = @('Unit')
     }
@@ -201,7 +201,7 @@ function Invoke-TestSuite {
         }
     }
 
-    return $suiteResults
+    return [pscustomobject]$suiteResults
 }
 
 function New-TestReport {
@@ -288,10 +288,39 @@ $allResults = @()
 $exitCode = 0
 
 try {
-    # Check prerequisites
-    if (-not (Test-Prerequisites)) {
-        Write-TestLog "Prerequisites check failed" -Level 'Error'
-        exit 1
+    # Check prerequisites (function was previously named Test-Prerequisite)
+    if (Get-Command Test-Prerequisites -ErrorAction SilentlyContinue) {
+        if (-not (Test-Prerequisites)) {
+            Write-TestLog "Prerequisites check failed" -Level 'Error'
+            exit 1
+        }
+    }
+    elseif (Get-Command Test-Prerequisite -ErrorAction SilentlyContinue) {
+        if (-not (Test-Prerequisite)) {
+            Write-TestLog "Prerequisite check failed" -Level 'Error'
+            exit 1
+        }
+    }
+    else {
+        Write-TestLog "Prerequisite function not found. Attempting inline prerequisite validation..." -Level 'Warning'
+        # Minimal inline prerequisite validation fallback
+        try {
+            Import-Module Pester -MinimumVersion 5.0 -ErrorAction Stop
+        }
+        catch {
+            Write-TestLog "Pester not available. Attempting to install for current user..." -Level 'Warning'
+            try {
+                # Ensure TLS 1.2 for PowerShellGet
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                Install-Module Pester -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
+                Import-Module Pester -ErrorAction Stop
+                Write-TestLog "Pester installed successfully." -Level 'Success'
+            }
+            catch {
+                Write-TestLog "Failed to install/import Pester: $($_.Exception.Message)" -Level 'Error'
+                exit 1
+            }
+        }
     }
 
     # Determine which test suites to run
